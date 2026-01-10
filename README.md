@@ -1,49 +1,61 @@
 # CodeToContent
 
-> Turn real code into real content—automatically.
+> **Turn real code into real content—automatically.**
 
-CodeToContent transforms your GitHub development activity into authentic, high-quality content for X, LinkedIn, and blogs using Gemini 3's long-context reasoning.
+CodeToContent is a developer-first tool that connects to your GitHub repository, analyzes your actual development activity (commits, PRs, diffs), and uses **Gemini 3's long-context reasoning** to generate authentic, high-quality content for X (Twitter), LinkedIn, and technical blogs.
 
-## The Problem
+Unlike generic AI writers, CodeToContent adheres to one core principle:
+**"If the code didn't happen, the content shouldn't exist."**
 
-Developers create valuable technical progress daily, but most of that value dies inside GitHub. Turning commits, PRs, and architectural decisions into engaging content requires time and storytelling skills—skills many developers lack or can't consistently apply.
+---
 
-## How It Works
+## ⚡ The Problem
 
-1. **Connect** - OAuth integration with your GitHub account
-2. **Analyze** - Detects meaningful events (features, bug fixes, refactors, architectural changes)
-3. **Extract** - Gemini 3 reasons over your code to understand intent, tradeoffs, and lessons learned
-4. **Generate** - Creates platform-specific drafts for X threads, LinkedIn posts, and blog outlines
+Developers create immense value daily in the form of code, architectural decisions, and problem-solving. However, most of that value remains locked inside GitHub repositories.
 
-## Key Features
+*   **Valuable insights remain invisible:** "I shipped a complex refactor but didn't write about why."
+*   **Content creation is high-friction:** Translating diffs to English requires time and storytelling skills.
+*   **Inconsistency:** Developers want to build a personal brand but struggle to post regularly.
 
-- **GitHub Integration** - Access commits, PRs, diffs, and comments
-- **Smart Activity Detection** - Filters for high-signal development events
-- **Insight Extraction** - Uses Gemini 3 to answer: What problem was solved? Why was this change necessary? What tradeoffs were made?
-- **Multi-Platform Output** - Distinct tones for X, LinkedIn, and blogs, all grounded in the same facts
+## 🚀 Core Functionality
 
-## Why Gemini 3?
+CodeToContent automates the pipeline from `git push` to "Published":
 
-Without Gemini 3's long-context reasoning, this product doesn't work. It enables:
-- Analysis of full code diffs and PR history
-- Reasoning over code evolution
-- Extracting intent from raw code
-- Synthesizing technical narratives
+1.  **GitHub OAuth Integration**: Securely connects to your repositories without storing your code.
+2.  **Development Activity Analyzer**: Filters the noise. It identifies *meaningful* events—feature additions, complex bug fixes, and architectural overhauls—while ignoring basic maintenance or distinct commits.
+3.  **Insight Extraction Engine**: The core intelligence layer. It doesn't just summarize; it *understands*.
+4.  **Multi-Platform Generation**:
+    *   **X (Twitter)**: Threads that hook readers and explain technical concepts concisely.
+    *   **LinkedIn**: Professional, narrative-driven posts highlighting business value and lessons learned.
+    *   **Blog Posts**: Structured outlines or full drafts for deep dives.
 
-## Target Users
+---
 
-- Indie developers
-- Solo founders
-- Early-stage startup engineers
+## 🧠 The Secret Sauce: Gemini 3 Integration
 
-Anyone actively coding who wants visibility but dislikes content creation.
+The heart of CodeToContent is **Gemini 3**. Standard LLMs struggle with the nuance of software development because they lack the context window to see the "whole picture."
 
-## Product Principle
+**Why Gemini 3 is essential:**
 
-> If the code didn't happen, the content shouldn't exist.
+*   **Long-Context Reasoning**: Gemini 3 effectively ingests entire commit histories, large diffs across multiple files, and PR comments simultaneously. It can link a change in `api/auth.ts` to a frontend update in `components/Login.tsx` to understand the *full feature*.
+*   **Intent Extraction**: It infers *why* a change happened. It distinguishes between a "hacky fix" and a "strategic refactor" by analyzing the code structure itself.
+*   **Audience Adaptation**: It translates raw technical logic (e.g., "Switched from polling to WebSockets") into audience-appropriate narratives (e.g., "How we reduced server load by 90% by rethinking our real-time architecture").
 
-Every piece of content is anchored to real code and real decisions—no generic AI fluff.
+**The Pipeline:**
+`Raw GitHub Data` → `Gemini 3 Context Window` → `Reasoning & Insight Extraction` → `Draft Content`
 
-## License
+---
 
-MIT
+## 🛠️ Tech Stack
+
+*   **Framework**: Next.js (App Router)
+*   **Language**: TypeScript
+*   **Styling**: Vanilla CSS Modules (Clean, dark-themed, no-nonsense)
+*   **AI**: Google Gemini 3 API
+*   **Auth**: Auth.js (GitHub Provider)
+
+## 🔮 Roadmap
+
+*   [ ] **MVP**: GitHub connection + Single Repo Analysis + Content Generation.
+*   [ ] **V2**: User activity dashboard & History.
+*   [ ] **Future**: Automated scheduling and "Style Training" (teach Gemini your writing voice).
