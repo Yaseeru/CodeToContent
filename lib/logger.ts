@@ -37,13 +37,9 @@ interface LogEntry {
 }
 
 class LoggerImpl implements Logger {
-     private isProduction: boolean
-
-     constructor() {
-          this.isProduction = process.env.NODE_ENV === 'production'
-     }
-
      private log(level: LogLevel, message: string, context?: LogContext, error?: Error): void {
+          const isProduction = process.env.NODE_ENV === 'production'
+
           const entry: LogEntry = {
                timestamp: new Date().toISOString(),
                level,
@@ -62,7 +58,7 @@ class LoggerImpl implements Logger {
                }
           }
 
-          if (this.isProduction) {
+          if (isProduction) {
                // JSON format for production (log aggregation systems)
                console.log(JSON.stringify(entry))
           } else {

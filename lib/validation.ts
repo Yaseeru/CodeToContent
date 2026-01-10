@@ -6,16 +6,16 @@ import { z } from 'zod'
 // Validation schema for generate content endpoint
 export const GenerateContentSchema = z.object({
      repoName: z.string()
-          .min(1, 'Repository name is required')
-          .max(100, 'Repository name must be 100 characters or less')
-          .trim(),
-     owner: z.string()
-          .min(1, 'Owner is required')
-          .max(100, 'Owner must be 100 characters or less')
-          .trim(),
-     commitSha: z.string()
-          .regex(/^[a-f0-9]{40}$/i, 'Commit SHA must be a valid 40-character hexadecimal string')
           .trim()
+          .min(1, 'Repository name is required')
+          .max(100, 'Repository name must be 100 characters or less'),
+     owner: z.string()
+          .trim()
+          .min(1, 'Owner is required')
+          .max(100, 'Owner must be 100 characters or less'),
+     commitSha: z.string()
+          .trim()
+          .regex(/^[a-f0-9]{40}$/i, 'Commit SHA must be a valid 40-character hexadecimal string')
 })
 
 // Export TypeScript type inferred from schema
