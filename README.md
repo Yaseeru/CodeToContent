@@ -155,6 +155,8 @@ npx prisma migrate dev
 
 This will create the necessary tables in your database.
 
+For more details on database migrations, see the [Database Migrations](#database-migrations) section below.
+
 #### 5. Start the Development Server
 
 ```bash
@@ -162,6 +164,151 @@ npm run dev
 ```
 
 The application will be available at [http://localhost:3000](http://localhost:3000).
+
+---
+
+## 📦 Database Migrations
+
+CodeToContent uses Prisma for database management and migrations. Migrations are version-controlled changes to your database schema that ensure consistency across development, staging, and production environments.
+
+### Understanding Migrations
+
+Migrations are stored in the `prisma/migrations/` directory. Each migration:
+- Has a timestamp-based folder name (e.g., `20260110130413_initial`)
+- Contains a `migration.sql` file with the SQL commands to apply the changes
+- Is tracked by Prisma to know which migrations have been applied
+
+### Development Workflow
+
+#### Creating a New Migration
+
+When you modify the Prisma schema (`prisma/schema.prisma`), you need to create a migration:
+
+```bash
+npx prisma migrate dev --name descriptive_name
+```
+
+This command will:
+1. Generate a new migration file based on your schema changes
+2. Apply the migration to your development database
+3. Regenerate the Prisma Client with the updated types
+
+**Example:**
+```bash
+# After adding a new field to the User model
+npx prisma migrate dev --name add_user_bio_field
+```
+
+#### Viewing Migration Status
+
+To see which migrations have been applied:
+
+```bash
+npx prisma migrate status
+```
+
+#### Resetting the Database (Development Only)
+
+To reset your development database and reapply all migrations:
+
+```bash
+npx prisma migrate reset
+```
+
+⚠️ **Warning:** This will delete all data in your database!
+
+### Production Deployment
+
+#### Applying Migrations in Production
+
+In production environments, use the `deploy` command instead of `dev`:
+
+```bash
+npx prisma migrate deploy
+```
+
+This command:
+- Applies all pending migrations
+- Does NOT create new migrations
+- Does NOT reset the database
+- Is safe for production use
+
+**Deployment Checklist:**
+1. Commit your migration files to version control
+2. Deploy your application code
+3. Run `npx prisma migrate deploy` on the production server
+4. Restart your application
+
+#### Automated Deployment
+
+You can add migration deployment to your CI/CD pipeline:
+
+```yaml
+# Example for GitHub Actions
+- name: Apply database migrations
+  run: npx prisma migrate deploy
+  env:
+    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+```
+
+#### Schema Verification
+
+The application automatically verifies that the database schema matches the Prisma schema on startup in production mode. If migrations haven't been applied, the application will:
+- Log an error message
+- Exit with a non-zero status code
+- Display a helpful message about running `npx prisma migrate deploy`
+
+This prevents the application from running with an outdated schema.
+
+### Common Migration Scenarios
+
+#### Adding a New Table
+
+1. Add the model to `prisma/schema.prisma`
+2. Run `npx prisma migrate dev --name add_new_table`
+3. Commit the migration files
+
+#### Adding a New Field
+
+1. Add the field to the model in `prisma/schema.prisma`
+2. Run `npx prisma migrate dev --name add_field_name`
+3. Commit the migration files
+
+#### Modifying an Existing Field
+
+1. Update the field in `prisma/schema.prisma`
+2. Run `npx prisma migrate dev --name modify_field_name`
+3. Review the generated SQL to ensure data isn't lost
+4. Commit the migration files
+
+⚠️ **Caution:** Some schema changes (like changing a field type) may require data migration. Review the generated SQL carefully.
+
+#### Rolling Back a Migration
+
+Prisma doesn't have a built-in rollback command. To undo a migration:
+
+1. **Development:** Use `npx prisma migrate reset` to reset and reapply all migrations except the one you want to remove
+2. **Production:** Create a new migration that reverses the changes
+
+**Best Practice:** Test migrations thoroughly in development before deploying to production.
+
+### Troubleshooting Migrations
+
+**"Migration failed to apply"**
+- Check that your database is accessible
+- Verify the SQL in the migration file is valid
+- Check for conflicts with existing data
+
+**"Database schema is out of sync"**
+- Run `npx prisma migrate deploy` to apply pending migrations
+- Check that all migration files are present in `prisma/migrations/`
+
+**"Can't reach database server"**
+- Verify your `DATABASE_URL` is correct
+- Check that your database server is running
+- For Supabase, ensure you're using the direct connection URL (not the pooler) for migrations
+
+---
 
 ### Troubleshooting
 
