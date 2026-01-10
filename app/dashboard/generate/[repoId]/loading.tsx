@@ -24,7 +24,7 @@ export default function Loading() {
                                    </div>
                                    <div className="p-8 space-y-4">
                                         {[...Array(8)].map((_, i) => (
-                                             <div key={i} className={styles.skeletonLine} style={{ width: `${60 + Math.random() * 40}%` }} />
+                                             <div key={i} className={styles.skeletonLine} />
                                         ))}
                                    </div>
                               </Card>

@@ -16,23 +16,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             clientSecret: process.env.GITHUB_SECRET,
             authorization: {
                 params: {
-                    scope: "repo read:user",
+                    scope: "repo read:user user:email",
                 },
+            },
+            profile(profile) {
+                return {
+                    id: profile.id.toString(),
+                    name: profile.name || profile.login,
+                    email: profile.email || `${profile.login}@users.noreply.github.com`,
+                    image: profile.avatar_url,
+                }
             },
         }),
     ],
     callbacks: {
-        async session({ session, token }) {
-            if (session?.user) {
-                session.accessToken = token.accessToken
+        async session({ session, user }) {
+            if (session?.user && user) {
+                // Fetch the account to get the access token
+                const account = await prisma.account.findFirst({
+                    where: {
+                        userId: user.id,
+                        provider: "github",
+                    },
+                })
+
+                if (account?.access_token) {
+                    session.accessToken = account.access_token
+                }
             }
             return session
-        },
-        async jwt({ token, account }) {
-            if (account) {
-                token.accessToken = account.access_token
-            }
-            return token
         },
     },
 })
