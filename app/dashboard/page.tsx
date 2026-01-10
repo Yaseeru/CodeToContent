@@ -10,11 +10,30 @@ import { Repository } from "@/types"
 async function RepositoryList({ accessToken }: { accessToken: string }) {
     const github = new GitHubService(accessToken)
     let repos: Repository[] = []
+    let error: string | null = null
 
     try {
         repos = await github.getRepositories()
     } catch (e) {
+        error = e instanceof Error ? e.message : 'Failed to fetch repositories'
         console.error("Failed to fetch repos", e)
+    }
+
+    if (error) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-red-500 mb-4">Error: {error}</p>
+                <p className="text-foreground-secondary">Please check your GitHub connection and try again.</p>
+            </div>
+        )
+    }
+
+    if (repos.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-foreground-secondary">No repositories found. Make sure you have repositories in your GitHub account.</p>
+            </div>
+        )
     }
 
     return <RepoList repos={repos} />

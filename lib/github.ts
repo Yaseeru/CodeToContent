@@ -6,6 +6,10 @@ import { ExternalAPIError } from "@/lib/errors";
 interface OctokitRepository {
     id: number;
     name: string;
+    full_name: string;
+    owner: {
+        login: string;
+    };
     description: string | null;
     stargazers_count: number;
     updated_at: string;
@@ -58,6 +62,8 @@ export class GitHubService {
                 return {
                     id: String(octokitRepo.id),
                     name: octokitRepo.name,
+                    fullName: octokitRepo.full_name,
+                    owner: octokitRepo.owner.login,
                     description: octokitRepo.description,
                     stars: octokitRepo.stargazers_count,
                     lastUpdated: new Date(octokitRepo.updated_at).toLocaleDateString(),

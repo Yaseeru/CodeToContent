@@ -25,10 +25,8 @@ async function RepositoryContent({ repoId, accessToken }: { repoId: string; acce
         throw new Error(`Repository with id ${repoId} not found`)
     }
 
-    // Parse repository name to get owner and repo
-    // Note: The repository name from GitHub API might need to be split
-    // For now, we'll use the authenticated user's repos
-    const owner = 'owner' // This would come from the session or repo data
+    // Use the owner from the repository data
+    const owner = repository.owner
     const repoName = repository.name
 
     // Fetch commits for the repository

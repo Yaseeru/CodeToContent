@@ -1,6 +1,8 @@
 export interface Repository {
     id: string;
     name: string;
+    fullName: string; // owner/repo format
+    owner: string;
     description: string | null;
     stars: number;
     lastUpdated: string;
