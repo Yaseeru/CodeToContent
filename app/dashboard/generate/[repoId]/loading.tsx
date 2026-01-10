@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { Card } from "@/components/ui/Card"
+import styles from "./loading.module.css"
 
 export default function Loading() {
      return (
@@ -16,14 +17,14 @@ export default function Loading() {
                          </div>
 
                          <div className="flex-1 overflow-hidden">
-                              <Card className="bg-[#1B2236] border-none overflow-hidden h-full">
-                                   <div className="flex items-center justify-between px-4 py-2 bg-[#2A2F4A]/50 border-b border-[#2A2F4A]">
+                              <Card className="bg-background-secondary border-none overflow-hidden h-full">
+                                   <div className="flex items-center justify-between px-4 py-2 bg-background-tertiary/50 border-b border-background-tertiary">
                                         <div className="h-4 w-32 bg-background-secondary/30 rounded animate-pulse" />
                                         <div className="h-4 w-20 bg-background-secondary/30 rounded animate-pulse" />
                                    </div>
                                    <div className="p-8 space-y-4">
                                         {[...Array(8)].map((_, i) => (
-                                             <div key={i} className="h-5 bg-background-secondary/20 rounded animate-pulse" style={{ width: `${60 + Math.random() * 40}%` }} />
+                                             <div key={i} className={styles.skeletonLine} style={{ width: `${60 + Math.random() * 40}%` }} />
                                         ))}
                                    </div>
                               </Card>

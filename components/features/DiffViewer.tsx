@@ -16,8 +16,8 @@ export function DiffViewer({ diff, fileName = "No file selected" }: DiffViewerPr
     // Display empty state when no diff provided
     if (!diff || diff.length === 0) {
         return (
-            <Card className="bg-[#1B2236] border-none overflow-hidden font-mono text-sm leading-relaxed">
-                <div className="flex items-center justify-between px-4 py-2 bg-[#2A2F4A]/50 border-b border-[#2A2F4A]">
+            <Card className="bg-background-secondary border-none overflow-hidden font-mono text-sm leading-relaxed">
+                <div className="flex items-center justify-between px-4 py-2 bg-background-tertiary/50 border-b border-background-tertiary">
                     <span className="text-xs text-foreground-secondary">{fileName}</span>
                     <span className="text-xs text-accent">No changes</span>
                 </div>
@@ -31,8 +31,8 @@ export function DiffViewer({ diff, fileName = "No file selected" }: DiffViewerPr
     }
 
     return (
-        <Card className="bg-[#1B2236] border-none overflow-hidden font-mono text-sm leading-relaxed">
-            <div className="flex items-center justify-between px-4 py-2 bg-[#2A2F4A]/50 border-b border-[#2A2F4A]">
+        <Card className="bg-background-secondary border-none overflow-hidden font-mono text-sm leading-relaxed">
+            <div className="flex items-center justify-between px-4 py-2 bg-background-tertiary/50 border-b border-background-tertiary">
                 <span className="text-xs text-foreground-secondary">{fileName}</span>
                 <span className="text-xs text-accent">Modified</span>
             </div>
@@ -42,18 +42,18 @@ export function DiffViewer({ diff, fileName = "No file selected" }: DiffViewerPr
                         key={idx}
                         className={cn(
                             "flex min-w-full",
-                            line.type === 'add' && "bg-[#29414D]",
-                            line.type === 'del' && "bg-[#4D2C2C]",
+                            line.type === 'add' && "bg-diff-add-bg",
+                            line.type === 'del' && "bg-diff-del-bg",
                         )}
                     >
-                        <div className="w-12 flex-shrink-0 text-right pr-4 select-none text-[#666C87] bg-black/10">
+                        <div className="w-12 flex-shrink-0 text-right pr-4 select-none text-diff-line-number bg-black/10">
                             {line.lineNo}
                         </div>
                         <div className={cn(
                             "pl-4 whitespace-pre",
-                            line.type === 'add' && "text-[#E6E6E6]",
-                            line.type === 'del' && "text-[#A0A0A0] line-through decoration-1 opacity-70",
-                            line.type === 'eq' && "text-[#C7D1FF]"
+                            line.type === 'add' && "text-foreground",
+                            line.type === 'del' && "text-foreground-secondary line-through decoration-1 opacity-70",
+                            line.type === 'eq' && "text-foreground-code"
                         )}>
                             {line.type === 'add' && '+ '}
                             {line.type === 'del' && '- '}

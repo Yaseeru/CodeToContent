@@ -1,21 +1,35 @@
 :root {
   /* Design Tokens from Design Document */
-  --background: #121926;
-  --background-secondary: #1B2236;
-  --background-tertiary: #2A2F4A;
   
-  --foreground: #E6E6E6;
-  --foreground-secondary: #A0A0A0;
-  --foreground-code: #C7D1FF;
+  /* Background Colors */
+  --background: #121926;           /* Primary background - dark blue-gray */
+  --background-secondary: #1B2236; /* Secondary background - lighter blue-gray */
+  --background-tertiary: #2A2F4A;  /* Tertiary background - even lighter */
   
-  --accent: #4DA1FF;
-  --accent-hover: #3390FF;
+  /* Foreground/Text Colors */
+  --foreground: #E6E6E6;           /* Primary text - light gray */
+  --foreground-secondary: #A0A0A0; /* Secondary text - medium gray */
+  --foreground-code: #C7D1FF;      /* Code text - light blue */
   
-  --border: #2A2F4A;
-  --border-focus: #4DA1FF;
+  /* Accent Colors */
+  --accent: #4DA1FF;               /* Primary accent - bright blue */
+  --accent-hover: #3390FF;         /* Accent hover state - darker blue */
   
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Inter', sans-serif;
+  /* Border Colors */
+  --border: #2A2F4A;               /* Default border - matches tertiary background */
+  --border-focus: #4DA1FF;         /* Focus border - matches accent */
+  
+  /* Diff Colors */
+  --diff-add-bg: #29414D;          /* Background for added lines */
+  --diff-del-bg: #4D2C2C;          /* Background for deleted lines */
+  --diff-line-number: #666C87;     /* Line number color */
+  
+  /* UI Component Colors */
+  --button-secondary-hover: #3A4060; /* Secondary button hover state */
+  
+  /* Typography */
+  --font-mono: 'JetBrains Mono', monospace; /* Monospace font for code */
+  --font-sans: 'Inter', sans-serif;         /* Sans-serif font for UI */
 }
 
 html,
