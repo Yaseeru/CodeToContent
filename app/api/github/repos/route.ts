@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { GitHubService } from "@/lib/github"
 import { AuthenticationError, handleAPIError } from "@/lib/errors"
-import { withLogging, getRequestContext } from "@/lib/middleware"
+import { withLogging, withRateLimit, getRequestContext } from "@/lib/middleware"
 import { NextResponse } from "next/server"
 
 async function handler(req: Request) {
@@ -21,4 +21,4 @@ async function handler(req: Request) {
     }
 }
 
-export const GET = withLogging(handler)
+export const GET = withRateLimit(withLogging(handler))

@@ -3,7 +3,7 @@ import { GeminiService } from "@/lib/gemini"
 import { GitHubService } from "@/lib/github"
 import { GenerateContentSchema, validateInput } from "@/lib/validation"
 import { AuthenticationError, handleAPIError } from "@/lib/errors"
-import { withLogging, getRequestContext } from "@/lib/middleware"
+import { withLogging, withRateLimit, getRequestContext } from "@/lib/middleware"
 import { NextResponse } from "next/server"
 
 async function handler(req: Request) {
@@ -39,4 +39,4 @@ async function handler(req: Request) {
     }
 }
 
-export const POST = withLogging(handler)
+export const POST = withRateLimit(withLogging(handler))
