@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Design Tokens from Design Document */
+  /* Design Tokens - Dark Theme (Default) */
   
   /* Background Colors */
   --background: #121926;           /* Primary background - dark blue-gray */
@@ -34,6 +34,36 @@
   --font-sans: 'Inter', sans-serif;         /* Sans-serif font for UI */
 }
 
+.light {
+  /* Design Tokens - Light Theme */
+  
+  /* Background Colors */
+  --background: #FFFFFF;           /* Primary background - white */
+  --background-secondary: #F5F7FA; /* Secondary background - light gray-blue */
+  --background-tertiary: #E8ECF1;  /* Tertiary background - medium gray-blue */
+  
+  /* Foreground/Text Colors */
+  --foreground: #1A1A1A;           /* Primary text - near black */
+  --foreground-secondary: #666666; /* Secondary text - medium gray */
+  --foreground-code: #4A5568;      /* Code text - dark gray-blue */
+  
+  /* Accent Colors */
+  --accent: #2563EB;               /* Primary accent - blue */
+  --accent-hover: #1D4ED8;         /* Accent hover state - darker blue */
+  
+  /* Border Colors */
+  --border: #E8ECF1;               /* Default border - matches tertiary background */
+  --border-focus: #2563EB;         /* Focus border - matches accent */
+  
+  /* Diff Colors */
+  --diff-add-bg: #DBEAFE;          /* Background for added lines - light blue */
+  --diff-del-bg: #FEE2E2;          /* Background for deleted lines - light red */
+  --diff-line-number: #94A3B8;     /* Line number color - slate gray */
+  
+  /* UI Component Colors */
+  --button-secondary-hover: #D1D5DB; /* Secondary button hover state */
+}
+
 html,
 body {
   max-width: 100vw;
@@ -47,6 +77,18 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: color 200ms ease-in-out, background-color 200ms ease-in-out;
+}
+
+/* Disable transitions for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+  }
 }
 
 /* Global Reset */
