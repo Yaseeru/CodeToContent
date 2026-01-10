@@ -1,6 +1,40 @@
 import { Octokit } from "octokit";
 import { Repository, Commit } from "@/types";
 
+// Octokit response type interfaces for the fields we actually use
+interface OctokitRepository {
+    id: number;
+    name: string;
+    description: string | null;
+    stargazers_count: number;
+    updated_at: string;
+    language: string | null;
+}
+
+interface OctokitCommitAuthor {
+    name?: string;
+    date?: string;
+}
+
+interface OctokitCommitData {
+    message: string;
+    author?: OctokitCommitAuthor;
+}
+
+interface OctokitCommit {
+    sha: string;
+    commit: OctokitCommitData;
+}
+
+interface OctokitCommitFile {
+    filename: string;
+    patch?: string;
+}
+
+interface OctokitCommitDetail {
+    files?: OctokitCommitFile[];
+}
+
 export class GitHubService {
     private octokit: Octokit;
 
@@ -17,16 +51,17 @@ export class GitHubService {
             type: "owner",
         });
 
-        // @ts-expect-error: Octokit types mismatch
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return data.map((repo: any) => ({
-            id: String(repo.id),
-            name: repo.name,
-            description: repo.description,
-            stars: repo.stargazers_count,
-            lastUpdated: new Date(repo.updated_at).toLocaleDateString(),
-            language: repo.language || "Unknown",
-        }));
+        return data.map((repo) => {
+            const octokitRepo = repo as unknown as OctokitRepository;
+            return {
+                id: String(octokitRepo.id),
+                name: octokitRepo.name,
+                description: octokitRepo.description,
+                stars: octokitRepo.stargazers_count,
+                lastUpdated: new Date(octokitRepo.updated_at).toLocaleDateString(),
+                language: octokitRepo.language || "Unknown",
+            };
+        });
     }
 
     async getCommits(owner: string, repo: string): Promise<Commit[]> {
@@ -36,14 +71,16 @@ export class GitHubService {
             per_page: 10,
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return data.map((commit: any) => ({
-            id: commit.sha,
-            message: commit.commit.message,
-            author: commit.commit.author?.name || "Unknown",
-            date: new Date(commit.commit.author?.date || "").toLocaleDateString(),
-            filesChanged: 0, // Requires detailed fetch, simplified for list
-        }));
+        return data.map((commit) => {
+            const octokitCommit = commit as unknown as OctokitCommit;
+            return {
+                id: octokitCommit.sha,
+                message: octokitCommit.commit.message,
+                author: octokitCommit.commit.author?.name || "Unknown",
+                date: new Date(octokitCommit.commit.author?.date || "").toLocaleDateString(),
+                filesChanged: 0, // Requires detailed fetch, simplified for list
+            };
+        });
     }
 
     async getCommitDiff(owner: string, repo: string, ref: string): Promise<string> {
@@ -53,10 +90,11 @@ export class GitHubService {
             ref,
         });
 
-        // Find patches
-        // @ts-expect-error: Octokit types mismatch
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const patches = (data as any).files?.map((f: any) => `File: ${f.filename}\n${f.patch}`).join("\n\n") || "";
+        // Extract patches from commit detail
+        const commitDetail = data as unknown as OctokitCommitDetail;
+        const patches = commitDetail.files
+            ?.map((f) => `File: ${f.filename}\n${f.patch || ""}`)
+            .join("\n\n") || "";
         return patches;
     }
 }

@@ -13,7 +13,10 @@ export default async function DashboardPage() {
         redirect("/")
     }
 
-    // @ts-expect-error: Custom session property
+    if (!session.accessToken) {
+        redirect("/")
+    }
+
     const github = new GitHubService(session.accessToken)
     let repos: Repository[] = []
 

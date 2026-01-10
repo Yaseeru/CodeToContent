@@ -24,7 +24,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     callbacks: {
         async session({ session, token }) {
             if (session?.user) {
-                // @ts-expect-error: Extending session type
                 session.accessToken = token.accessToken
             }
             return session

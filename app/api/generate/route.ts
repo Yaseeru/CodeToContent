@@ -6,7 +6,6 @@ import { NextResponse } from "next/server"
 export async function POST(req: Request) {
     const session = await auth()
 
-    // @ts-expect-error: Custom session property
     if (!session?.accessToken) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -19,7 +18,6 @@ export async function POST(req: Request) {
 
     try {
         // 1. Fetch Diff
-        // @ts-expect-error: Custom session property
         const github = new GitHubService(session.accessToken)
         const diff = await github.getCommitDiff(owner, repoName, commitSha)
 
