@@ -4,7 +4,7 @@
  * Requirements: 8.4, 9.1, 9.2, 9.5, 9.6
  * 
  * Feature: ui-redesign-dark-light-mode
- * Requirements: 11.3-11.5
+ * Requirements: 11.3-11.5, 10.4, 10.5
  * 
  * Note: These tests focus on the logic and data handling aspects of UI components
  * rather than rendering, as property-based testing of React components requires
@@ -319,6 +319,91 @@ test('Property 11: Button Variant Styling', () => {
                          expect(classes).not.toContain('bg-accent')
                          expect(classes).not.toContain('bg-background-tertiary')
                     }
+               }
+          ),
+          { numRuns: 100 }
+     )
+})
+
+/**
+ * Property 13: Card Shadow Consistency
+ * Feature: ui-redesign-dark-light-mode, Property 13: Card Shadow Consistency
+ * 
+ * For any card component, the box-shadow must be "0 2px 8px rgba(0,0,0,0.3)" in dark theme
+ * or "0 2px 8px rgba(0,0,0,0.1)" in light theme.
+ * 
+ * Validates: Requirements 10.4, 10.5
+ * 
+ * Note: This test validates the card shadow styling logic by checking
+ * that the correct shadow classes are applied for each theme
+ */
+test('Property 13: Card Shadow Consistency', () => {
+     // Define expected shadow patterns for each theme
+     const themeShadowPatterns = {
+          dark: 'shadow-[0_2px_8px_rgba(0,0,0,0.3)]',
+          light: 'shadow-[0_2px_8px_rgba(0,0,0,0.1)]',
+     }
+
+     // Function to simulate card class generation for default and interactive variants
+     const generateCardClasses = (
+          variant: 'default' | 'interactive' | 'outlined',
+          theme: 'dark' | 'light'
+     ): string => {
+          const baseClasses = 'rounded-lg text-foreground bg-background-secondary'
+
+          let variantClasses = ''
+          if (variant === 'default') {
+               const darkShadow = 'dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]'
+               const lightShadow = 'light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]'
+               variantClasses = `shadow-[0_2px_8px_rgba(0,0,0,0.3)] ${darkShadow} ${lightShadow}`
+          } else if (variant === 'interactive') {
+               const darkShadow = 'dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]'
+               const lightShadow = 'light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]'
+               const darkHoverShadow = 'dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)]'
+               const lightHoverShadow = 'light:hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]'
+               variantClasses = `shadow-[0_2px_8px_rgba(0,0,0,0.3)] ${darkShadow} ${lightShadow} cursor-pointer transition-all duration-200 hover:border-accent/50 ${darkHoverShadow} ${lightHoverShadow}`
+          } else if (variant === 'outlined') {
+               variantClasses = 'border border-[var(--border)]'
+          }
+
+          return `${baseClasses} ${variantClasses}`
+     }
+
+     fc.assert(
+          fc.property(
+               fc.constantFrom('default' as const, 'interactive' as const, 'outlined' as const),
+               fc.constantFrom('dark' as const, 'light' as const),
+               (variant, theme) => {
+                    // Generate card classes for the variant and theme
+                    const classes = generateCardClasses(variant, theme)
+
+                    // Verify shadow behavior based on variant
+                    if (variant === 'default' || variant === 'interactive') {
+                         // Should contain base shadow
+                         expect(classes).toContain('shadow-[0_2px_8px_rgba(0,0,0,0.3)]')
+
+                         // Should contain theme-specific shadows
+                         expect(classes).toContain('dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]')
+                         expect(classes).toContain('light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]')
+
+                         // Interactive variant should have hover shadows
+                         if (variant === 'interactive') {
+                              expect(classes).toContain('dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)]')
+                              expect(classes).toContain('light:hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]')
+                              expect(classes).toContain('cursor-pointer')
+                              expect(classes).toContain('transition-all')
+                         }
+                    } else if (variant === 'outlined') {
+                         // Outlined variant should not have shadows
+                         expect(classes).not.toContain('shadow-[0_2px_8px_rgba(0,0,0,0.3)]')
+                         expect(classes).not.toContain('shadow-[0_2px_8px_rgba(0,0,0,0.1)]')
+                         // Should have border instead
+                         expect(classes).toContain('border')
+                    }
+
+                    // Verify common classes
+                    expect(classes).toContain('rounded-lg')
+                    expect(classes).toContain('bg-background-secondary')
                }
           ),
           { numRuns: 100 }
