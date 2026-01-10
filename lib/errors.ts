@@ -1,4 +1,5 @@
 // Custom error classes for the application
+import { logger, LogContext } from './logger'
 
 export class AppError extends Error {
      constructor(
@@ -38,11 +39,23 @@ export class DatabaseError extends AppError {
 }
 
 // Error handler function for API routes
-export function handleAPIError(error: unknown): Response {
+export function handleAPIError(error: unknown, requestContext?: LogContext): Response {
      const isDevelopment = process.env.NODE_ENV === 'development'
 
      // Handle known AppError instances
      if (error instanceof AppError) {
+          // Log full error details with stack trace and request context
+          logger.error(
+               `API Error: ${error.message}`,
+               error,
+               {
+                    ...requestContext,
+                    errorCode: error.code,
+                    statusCode: error.statusCode,
+                    details: error.details,
+               }
+          )
+
           const responseBody: {
                error: string
                code: string
@@ -69,6 +82,19 @@ export function handleAPIError(error: unknown): Response {
 
      // Handle unknown errors
      const statusCode = 500
+     const errorInstance = error instanceof Error ? error : new Error(String(error))
+
+     // Log full error details with stack trace and request context
+     logger.error(
+          `Unexpected API Error: ${errorInstance.message}`,
+          errorInstance,
+          {
+               ...requestContext,
+               errorCode: 'INTERNAL_ERROR',
+               statusCode,
+          }
+     )
+
      const responseBody: {
           error: string
           code: string
@@ -77,19 +103,19 @@ export function handleAPIError(error: unknown): Response {
           stack?: string
      } = {
           error: isDevelopment
-               ? (error instanceof Error ? error.message : 'An unexpected error occurred')
+               ? errorInstance.message
                : 'An error occurred while processing your request',
           code: 'INTERNAL_ERROR',
           timestamp: new Date().toISOString()
      }
 
      // Include details and stack trace in development
-     if (isDevelopment && error instanceof Error) {
+     if (isDevelopment) {
           responseBody.details = {
-               name: error.name,
-               message: error.message
+               name: errorInstance.name,
+               message: errorInstance.message
           }
-          responseBody.stack = error.stack
+          responseBody.stack = errorInstance.stack
      }
 
      return new Response(JSON.stringify(responseBody), {

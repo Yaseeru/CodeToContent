@@ -3,9 +3,10 @@ import { GeminiService } from "@/lib/gemini"
 import { GitHubService } from "@/lib/github"
 import { GenerateContentSchema, validateInput } from "@/lib/validation"
 import { AuthenticationError, handleAPIError } from "@/lib/errors"
+import { withLogging, getRequestContext } from "@/lib/middleware"
 import { NextResponse } from "next/server"
 
-export async function POST(req: Request) {
+async function handler(req: Request) {
     try {
         const session = await auth()
 
@@ -33,6 +34,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ drafts })
     } catch (error) {
-        return handleAPIError(error)
+        const requestContext = await getRequestContext(req)
+        return handleAPIError(error, requestContext)
     }
 }
+
+export const POST = withLogging(handler)

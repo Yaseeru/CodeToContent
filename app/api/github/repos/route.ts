@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth"
 import { GitHubService } from "@/lib/github"
 import { AuthenticationError, handleAPIError } from "@/lib/errors"
+import { withLogging, getRequestContext } from "@/lib/middleware"
 import { NextResponse } from "next/server"
 
-export async function GET() {
+async function handler(req: Request) {
     try {
         const session = await auth()
 
@@ -15,6 +16,9 @@ export async function GET() {
         const repos = await github.getRepositories()
         return NextResponse.json(repos)
     } catch (error) {
-        return handleAPIError(error)
+        const requestContext = await getRequestContext(req)
+        return handleAPIError(error, requestContext)
     }
 }
+
+export const GET = withLogging(handler)
