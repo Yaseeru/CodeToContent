@@ -36,3 +36,64 @@ export class DatabaseError extends AppError {
           super(message, 500, 'DATABASE_ERROR', details)
      }
 }
+
+// Error handler function for API routes
+export function handleAPIError(error: unknown): Response {
+     const isDevelopment = process.env.NODE_ENV === 'development'
+
+     // Handle known AppError instances
+     if (error instanceof AppError) {
+          const responseBody: {
+               error: string
+               code: string
+               timestamp: string
+               details?: unknown
+               stack?: string
+          } = {
+               error: error.message,
+               code: error.code,
+               timestamp: new Date().toISOString()
+          }
+
+          // Include details and stack trace in development
+          if (isDevelopment) {
+               responseBody.details = error.details
+               responseBody.stack = error.stack
+          }
+
+          return new Response(JSON.stringify(responseBody), {
+               status: error.statusCode,
+               headers: { 'Content-Type': 'application/json' }
+          })
+     }
+
+     // Handle unknown errors
+     const statusCode = 500
+     const responseBody: {
+          error: string
+          code: string
+          timestamp: string
+          details?: unknown
+          stack?: string
+     } = {
+          error: isDevelopment
+               ? (error instanceof Error ? error.message : 'An unexpected error occurred')
+               : 'An error occurred while processing your request',
+          code: 'INTERNAL_ERROR',
+          timestamp: new Date().toISOString()
+     }
+
+     // Include details and stack trace in development
+     if (isDevelopment && error instanceof Error) {
+          responseBody.details = {
+               name: error.name,
+               message: error.message
+          }
+          responseBody.stack = error.stack
+     }
+
+     return new Response(JSON.stringify(responseBody), {
+          status: statusCode,
+          headers: { 'Content-Type': 'application/json' }
+     })
+}

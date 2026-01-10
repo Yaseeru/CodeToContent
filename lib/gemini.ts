@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ContentDraft } from "@/types";
+import { ExternalAPIError } from "@/lib/errors";
 
 export class GeminiService {
     private genAI: GoogleGenerativeAI;
@@ -37,8 +38,11 @@ export class GeminiService {
             const text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
             return JSON.parse(text);
         } catch (error) {
-            console.error("Gemini generation error:", error);
-            throw new Error("Failed to generate content");
+            throw new ExternalAPIError("Failed to generate content with Gemini", {
+                api: "Gemini",
+                endpoint: "generateContent",
+                error: error instanceof Error ? error.message : String(error)
+            });
         }
     }
 }

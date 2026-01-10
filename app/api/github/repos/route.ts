@@ -1,19 +1,20 @@
 import { auth } from "@/lib/auth"
 import { GitHubService } from "@/lib/github"
+import { AuthenticationError, handleAPIError } from "@/lib/errors"
 import { NextResponse } from "next/server"
 
 export async function GET() {
-    const session = await auth()
-
-    if (!session?.accessToken) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     try {
+        const session = await auth()
+
+        if (!session?.accessToken) {
+            throw new AuthenticationError("Unauthorized")
+        }
+
         const github = new GitHubService(session.accessToken)
         const repos = await github.getRepositories()
         return NextResponse.json(repos)
-    } catch {
-        return NextResponse.json({ error: "Failed to fetch repos" }, { status: 500 })
+    } catch (error) {
+        return handleAPIError(error)
     }
 }
