@@ -32,6 +32,15 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Kiro IDE files
+.kiro/
 
 # vercel
 .vercel
@@ -39,3 +48,31 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+*.der
+*.p7b
+*.p7c
+*.spc
+*.csr
+
+# Database files (if using SQLite locally)
+*.db
+*.sqlite
+*.sqlite3
+dev.db
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini

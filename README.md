@@ -54,6 +54,132 @@ The heart of CodeToContent is **Gemini 3**. Standard LLMs struggle with the nuan
 *   **AI**: Google Gemini 3 API
 *   **Auth**: Auth.js (GitHub Provider)
 
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+*   Node.js 18+ installed
+*   A GitHub account
+*   A Google account (for Gemini API access)
+*   PostgreSQL database (or SQLite for local development)
+
+### Environment Setup
+
+CodeToContent requires several environment variables to function. Follow these steps to configure your environment:
+
+#### 1. Copy the Environment Template
+
+```bash
+cp .env.example .env
+```
+
+#### 2. Configure Required Variables
+
+Open the `.env` file and fill in the following values:
+
+##### **AUTH_SECRET**
+A secret key used by NextAuth for session encryption.
+
+Generate a secure random string:
+```bash
+openssl rand -base64 32
+```
+
+Copy the output and set it as your `AUTH_SECRET`.
+
+##### **GITHUB_ID and GITHUB_SECRET**
+OAuth credentials for GitHub authentication.
+
+**To obtain these:**
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click **"New OAuth App"**
+3. Fill in the application details:
+   - **Application name**: CodeToContent (or your preferred name)
+   - **Homepage URL**: `http://localhost:3000` (for local development)
+   - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
+4. Click **"Register application"**
+5. Copy the **Client ID** and set it as `GITHUB_ID`
+6. Click **"Generate a new client secret"**
+7. Copy the **Client Secret** and set it as `GITHUB_SECRET`
+
+**Important:** Keep your client secret secure and never commit it to version control.
+
+##### **GEMINI_API_KEY**
+API key for Google's Gemini AI service.
+
+**To obtain this:**
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click **"Create API Key"**
+4. Select a Google Cloud project (or create a new one)
+5. Copy the generated API key and set it as `GEMINI_API_KEY`
+
+**Note:** Gemini API usage may incur costs depending on your usage tier. Check [Google's pricing](https://ai.google.dev/pricing) for details.
+
+##### **DATABASE_URL**
+Connection string for your database.
+
+**For PostgreSQL (Production):**
+```
+DATABASE_URL="postgresql://username:password@host:port/database"
+```
+
+**For SQLite (Local Development):**
+```
+DATABASE_URL="file:./dev.db"
+```
+
+If you're using a hosted PostgreSQL service (like Supabase, Railway, or Neon), copy the connection string from your database provider's dashboard.
+
+##### **NODE_ENV**
+The application environment. Set to:
+- `development` for local development
+- `production` for production deployments
+- `test` for running tests
+
+#### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+#### 4. Set Up the Database
+
+Run Prisma migrations to create the database schema:
+
+```bash
+npx prisma migrate dev
+```
+
+This will create the necessary tables in your database.
+
+#### 5. Start the Development Server
+
+```bash
+npm run dev
+```
+
+The application will be available at [http://localhost:3000](http://localhost:3000).
+
+### Troubleshooting
+
+**Environment validation errors:**
+If you see an error about missing environment variables on startup, ensure all required variables in `.env` are set and non-empty.
+
+**Database connection errors:**
+- Verify your `DATABASE_URL` is correct
+- For PostgreSQL, ensure the database server is running and accessible
+- For SQLite, ensure the application has write permissions in the project directory
+
+**GitHub OAuth errors:**
+- Verify your callback URL matches exactly: `http://localhost:3000/api/auth/callback/github`
+- Ensure your GitHub OAuth app is not suspended
+- Check that `GITHUB_ID` and `GITHUB_SECRET` are correct
+
+---
+
 ## 🔮 Roadmap
 
 *   [ ] **MVP**: GitHub connection + Single Repo Analysis + Content Generation.

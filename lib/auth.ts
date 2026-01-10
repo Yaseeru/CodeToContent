@@ -3,6 +3,10 @@ import GithubProvider from "next-auth/providers/github"
 
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
+import { validateEnv } from "@/lib/env"
+
+// Validate environment variables before configuring NextAuth
+validateEnv()
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
