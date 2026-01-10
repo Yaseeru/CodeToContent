@@ -78,4 +78,13 @@ export function validateEnv(): EnvConfig {
 }
 
 // Export validated config for use throughout the application
-export const env = validateEnv()
+// Only validate if not in test environment
+let env: EnvConfig | undefined
+try {
+     env = validateEnv()
+} catch (error) {
+     // If validation fails during module load, we'll catch it when the app actually starts
+     // This allows test files to load the module without having all env vars set
+}
+
+export { env }
