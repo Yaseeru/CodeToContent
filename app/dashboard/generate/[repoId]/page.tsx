@@ -4,7 +4,7 @@ import { GitHubService } from "@/lib/github"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { DiffViewer } from "@/components/features/DiffViewer"
 import { GenerateClient } from "./GenerateClient"
-import { parseDiffPatch } from "@/types"
+import { parseDiffPatch, DiffLine } from "@/types"
 import { redirect } from "next/navigation"
 
 interface PageProps {
@@ -38,7 +38,7 @@ async function RepositoryContent({ repoId, accessToken }: { repoId: string; acce
     const latestCommit = commits[0]
 
     // Fetch diff for the latest commit
-    let diffLines = []
+    let diffLines: DiffLine[] = []
     let fileName = "No file selected"
 
     if (latestCommit) {
