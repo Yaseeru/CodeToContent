@@ -4,6 +4,7 @@ import { GitHubService } from "@/lib/github"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { DiffViewer } from "@/components/features/DiffViewer"
 import { GenerateClient } from "./GenerateClient"
+import { Spinner } from "@/components/ui/icons/Spinner"
 import { parseDiffPatch, DiffLine } from "@/types"
 import { redirect } from "next/navigation"
 
@@ -98,13 +99,9 @@ export default async function GeneratePage({ params }: PageProps) {
                 {/* Left Panel: Code Context (50% on desktop) */}
                 <div className="flex-1 flex flex-col gap-4 overflow-hidden lg:w-1/2">
                     <Suspense fallback={
-                        <div className="flex-1 flex items-center justify-center">
+                        <div className="flex-1 flex items-center justify-center" role="status" aria-live="polite">
                             <div className="text-center space-y-4">
-                                <div className="animate-spin">
-                                    <svg className="w-8 h-8 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                                    </svg>
-                                </div>
+                                <Spinner size="lg" className="mx-auto text-accent" aria-hidden="true" />
                                 <p className="text-foreground-secondary">Loading repository data...</p>
                             </div>
                         </div>

@@ -39,7 +39,7 @@ export default function Loading() {
                               <div className="h-4 w-48 bg-background-secondary/30 rounded animate-pulse" />
                          </div>
 
-                         <div className="flex-1 flex items-center justify-center">
+                         <div className="flex-1 flex items-center justify-center" role="status" aria-live="polite">
                               <div className="text-center space-y-4">
                                    <Spinner size="lg" className="mx-auto text-accent" aria-hidden="true" />
                                    <p className="text-foreground-secondary">Loading repository data...</p>

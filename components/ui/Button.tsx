@@ -55,6 +55,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                     },
                     className
                 )}
+                aria-live={loading ? "polite" : undefined}
+                aria-busy={loading}
                 {...props}
             >
                 {loading && <Spinner size="sm" />}
