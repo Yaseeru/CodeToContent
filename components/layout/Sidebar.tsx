@@ -1,50 +1,214 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { Repository } from "@/components/ui/icons/Repository"
+import { Settings } from "@/components/ui/icons/Settings"
+import { ChevronLeft } from "@/components/ui/icons/ChevronLeft"
+import { ChevronRight } from "@/components/ui/icons/ChevronRight"
 
 const navItems = [
-    { href: "/dashboard", label: "Repositories", icon: "📚" },
-    { href: "/dashboard/settings", label: "Settings", icon: "⚙️" },
+    { href: "/dashboard", label: "Repositories", icon: Repository },
+    { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
-export function Sidebar() {
-    const pathname = usePathname()
+const STORAGE_KEY = "sidebar-collapsed"
 
+interface SidebarProps {
+    isOpen?: boolean
+    onClose?: () => void
+}
+
+export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
+    const pathname = usePathname()
+    const [isCollapsed, setIsCollapsed] = useState(false)
+    const [isMounted, setIsMounted] = useState(false)
+    const [windowWidth, setWindowWidth] = useState(0)
+
+    // Load collapsed state from localStorage on mount
+    useEffect(() => {
+        setIsMounted(true)
+        setWindowWidth(window.innerWidth)
+
+        const stored = localStorage.getItem(STORAGE_KEY)
+        if (stored !== null) {
+            setIsCollapsed(stored === "true")
+        } else {
+            // Set default collapsed state based on screen size
+            if (window.innerWidth >= 768 && window.innerWidth < 1024) {
+                // Tablet: collapsed by default
+                setIsCollapsed(true)
+            } else if (window.innerWidth >= 1024) {
+                // Desktop: expanded by default
+                setIsCollapsed(false)
+            }
+        }
+
+        // Handle window resize
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth)
+        }
+
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
+
+    // Save collapsed state to localStorage
+    const toggleCollapsed = () => {
+        const newState = !isCollapsed
+        setIsCollapsed(newState)
+        localStorage.setItem(STORAGE_KEY, String(newState))
+    }
+
+    // Determine if we're in mobile mode
+    const isMobile = windowWidth > 0 && windowWidth < 768
+
+    // Prevent hydration mismatch by not rendering dynamic content until mounted
+    if (!isMounted) {
+        return (
+            <aside className="hidden md:flex w-60 border-r border-border bg-background-secondary h-screen sticky top-0 flex-col">
+                <div className="p-6">
+                    <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
+                </div>
+            </aside>
+        )
+    }
+
+    // Mobile: render as overlay drawer
+    if (isMobile) {
+        return (
+            <>
+                {/* Backdrop */}
+                {isOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                        onClick={onClose}
+                        aria-hidden="true"
+                    />
+                )}
+
+                {/* Drawer */}
+                <aside
+                    className={cn(
+                        "fixed top-0 left-0 h-screen w-60 border-r border-border bg-background-secondary z-50 flex flex-col transition-transform duration-200 ease-in-out md:hidden",
+                        isOpen ? "translate-x-0" : "-translate-x-full"
+                    )}
+                >
+                    {/* Header */}
+                    <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+                        <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
+                    </div>
+
+                    {/* Navigation */}
+                    <nav className="flex-1 px-2 py-4 space-y-2">
+                        {navItems.map((item) => {
+                            const IconComponent = item.icon
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    onClick={onClose}
+                                    className={cn(
+                                        "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                                        pathname === item.href
+                                            ? "bg-accent/10 text-accent"
+                                            : "text-foreground-secondary hover:text-foreground hover:bg-background-tertiary"
+                                    )}
+                                >
+                                    <IconComponent size="sm" />
+                                    <span>{item.label}</span>
+                                </Link>
+                            )
+                        })}
+                    </nav>
+
+                    {/* Footer */}
+                    <div className="p-4 border-t border-border">
+                        <div className="flex items-center gap-3 px-3 py-2">
+                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-mono flex-shrink-0">
+                                US
+                            </div>
+                            <div className="text-sm overflow-hidden">
+                                <p className="font-medium text-foreground truncate">User</p>
+                                <p className="text-xs text-foreground-secondary truncate">Indie Dev</p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </>
+        )
+    }
+
+    // Tablet and Desktop: render as sidebar
     return (
-        <aside className="w-64 border-r border-border bg-background-secondary h-screen sticky top-0 flex flex-col">
-            <div className="p-6">
-                <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
+        <aside
+            className={cn(
+                "hidden md:flex border-r border-border bg-background-secondary h-screen sticky top-0 flex-col transition-all duration-200 ease-in-out",
+                isCollapsed ? "w-16" : "w-60"
+            )}
+        >
+            {/* Header with toggle button */}
+            <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+                {!isCollapsed && (
+                    <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
+                )}
+                <button
+                    onClick={toggleCollapsed}
+                    className={cn(
+                        "p-2 rounded-md hover:bg-background-tertiary transition-colors",
+                        isCollapsed && "mx-auto"
+                    )}
+                    aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                    {isCollapsed ? (
+                        <ChevronRight size="sm" />
+                    ) : (
+                        <ChevronLeft size="sm" />
+                    )}
+                </button>
             </div>
 
-            <nav className="flex-1 px-4 py-4 space-y-2">
-                {navItems.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                            "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                            pathname === item.href
-                                ? "bg-accent/10 text-accent"
-                                : "text-foreground-secondary hover:text-foreground hover:bg-background-tertiary"
-                        )}
-                    >
-                        <span>{item.icon}</span>
-                        {item.label}
-                    </Link>
-                ))}
+            {/* Navigation */}
+            <nav className="flex-1 px-2 py-4 space-y-2">
+                {navItems.map((item) => {
+                    const IconComponent = item.icon
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                                pathname === item.href
+                                    ? "bg-accent/10 text-accent"
+                                    : "text-foreground-secondary hover:text-foreground hover:bg-background-tertiary",
+                                isCollapsed && "justify-center"
+                            )}
+                            title={isCollapsed ? item.label : undefined}
+                        >
+                            <IconComponent size="sm" aria-hidden={!isCollapsed} />
+                            {!isCollapsed && <span>{item.label}</span>}
+                        </Link>
+                    )
+                })}
             </nav>
 
+            {/* Footer */}
             <div className="p-4 border-t border-border">
-                <div className="flex items-center gap-3 px-3 py-2">
-                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-mono">
+                <div className={cn(
+                    "flex items-center gap-3 px-3 py-2",
+                    isCollapsed && "justify-center"
+                )}>
+                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-mono flex-shrink-0">
                         US
                     </div>
-                    <div className="text-sm">
-                        <p className="font-medium text-foreground">User</p>
-                        <p className="text-xs text-foreground-secondary">Indie Dev</p>
-                    </div>
+                    {!isCollapsed && (
+                        <div className="text-sm overflow-hidden">
+                            <p className="font-medium text-foreground truncate">User</p>
+                            <p className="text-xs text-foreground-secondary truncate">Indie Dev</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </aside>
