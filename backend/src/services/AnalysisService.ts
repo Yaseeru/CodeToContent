@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import { GoogleGenAI } from '@google/genai';
 import mongoose from 'mongoose';
 import { GitHubService, GitHubCommit, GitHubPullRequest, GitHubContent } from './GitHubService';
 import { Analysis, IAnalysis, IRawSignals } from '../models/Analysis';
@@ -23,17 +23,12 @@ export interface RepositorySignals {
 }
 
 export class AnalysisService {
-     private geminiClient: AxiosInstance;
+     private ai: GoogleGenAI;
      private apiKey: string;
 
      constructor(apiKey: string) {
           this.apiKey = apiKey;
-          this.geminiClient = axios.create({
-               baseURL: 'https://generativelanguage.googleapis.com/v1beta',
-               headers: {
-                    'Content-Type': 'application/json',
-               },
-          });
+          this.ai = new GoogleGenAI({ apiKey });
      }
 
      /**
@@ -198,41 +193,20 @@ Respond ONLY with valid JSON. Do not include any markdown formatting or code blo
       */
      private async callGeminiAPI(prompt: string): Promise<string> {
           try {
-               const response = await this.geminiClient.post(
-                    `/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`,
-                    {
-                         contents: [
-                              {
-                                   parts: [
-                                        {
-                                             text: prompt,
-                                        },
-                                   ],
-                              },
-                         ],
-                         generationConfig: {
-                              temperature: 0.7,
-                              topK: 40,
-                              topP: 0.95,
-                              maxOutputTokens: 2048,
-                         },
-                    }
-               );
+               const response = await this.ai.models.generateContent({
+                    model: 'gemini-2.0-flash-exp',
+                    contents: prompt,
+               });
 
-               // Extract text from Gemini response
-               const generatedText = response.data.candidates[0].content.parts[0].text;
-               return generatedText;
-          } catch (error) {
-               if (axios.isAxiosError(error)) {
-                    if (error.response?.status === 429) {
-                         throw new Error('Gemini API rate limit exceeded. Please try again later.');
-                    }
-                    if (error.response?.status === 401) {
-                         throw new Error('Invalid Gemini API key.');
-                    }
-                    throw new Error(`Gemini API error: ${error.message}`);
+               return response.text;
+          } catch (error: any) {
+               if (error.message?.includes('429')) {
+                    throw new Error('Gemini API rate limit exceeded. Please try again later.');
                }
-               throw error;
+               if (error.message?.includes('401') || error.message?.includes('API key')) {
+                    throw new Error('Invalid Gemini API key.');
+               }
+               throw new Error(`Gemini API error: ${error.message || 'Unknown error'}`);
           }
      }
 

@@ -5,13 +5,14 @@ const router = Router();
 const authService = new AuthService();
 
 /**
- * POST /api/auth/github
- * Initiates GitHub OAuth flow
+ * GET /api/auth/github
+ * Initiates GitHub OAuth flow by redirecting to GitHub
  */
-router.post('/github', (req: Request, res: Response) => {
+router.get('/github', (req: Request, res: Response) => {
      try {
           const authUrl = authService.generateAuthUrl();
-          res.json({ url: authUrl });
+          // Redirect directly to GitHub OAuth page
+          res.redirect(authUrl);
      } catch (error) {
           console.error('Error initiating OAuth:', error);
           res.status(500).json({
@@ -31,54 +32,30 @@ router.get('/callback', async (req: Request, res: Response) => {
 
           // Handle OAuth errors (user denied permission, etc.)
           if (error) {
-               return res.status(400).json({
-                    error: 'OAuth authentication failed',
-                    message: error_description || error,
-               });
+               // Redirect to frontend with error
+               const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+               return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(error_description?.toString() || error.toString())}`);
           }
 
           // Validate code parameter
           if (!code || typeof code !== 'string') {
-               return res.status(400).json({
-                    error: 'Invalid request',
-                    message: 'Authorization code is required',
-               });
+               const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+               return res.redirect(`${frontendUrl}/?error=${encodeURIComponent('Authorization code is required')}`);
           }
 
           // Complete OAuth flow
           const { user, token } = await authService.handleOAuthCallback(code);
 
-          // Return JWT and user information
-          res.json({
-               token,
-               user: {
-                    id: user._id,
-                    githubId: user.githubId,
-                    username: user.username,
-                    avatarUrl: user.avatarUrl,
-               },
-          });
+          // Redirect to frontend with token
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+          res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
      } catch (error) {
           console.error('Error handling OAuth callback:', error);
 
-          // Determine appropriate status code based on error type
-          let statusCode = 500;
-          let errorMessage = 'Authentication failed';
-
-          if (error instanceof Error) {
-               if (error.message.includes('OAuth') || error.message.includes('GitHub')) {
-                    statusCode = 401;
-                    errorMessage = 'GitHub authentication failed';
-               } else if (error.message.includes('network') || error.message.includes('timeout')) {
-                    statusCode = 503;
-                    errorMessage = 'Service temporarily unavailable';
-               }
-          }
-
-          res.status(statusCode).json({
-               error: errorMessage,
-               message: error instanceof Error ? error.message : 'Unknown error',
-          });
+          // Redirect to frontend with error
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+          const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+          res.redirect(`${frontendUrl}/?error=${encodeURIComponent(errorMessage)}`);
      }
 });
 

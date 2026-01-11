@@ -9,25 +9,21 @@ const AuthCallback: React.FC = () => {
 
      useEffect(() => {
           const handleCallback = async () => {
-               const code = searchParams.get('code');
+               const token = searchParams.get('token');
                const errorParam = searchParams.get('error');
 
                // Handle OAuth errors (user denied permission, etc.)
                if (errorParam) {
-                    setError('Authentication failed. Please try again.');
+                    setError(errorParam);
                     return;
                }
 
-               if (!code) {
-                    setError('No authorization code received. Please try again.');
+               if (!token) {
+                    setError('No authentication token received. Please try again.');
                     return;
                }
 
                try {
-                    // Exchange code for JWT
-                    const response = await apiClient.get(`/api/auth/callback?code=${code}`);
-                    const { token } = response.data;
-
                     // Store JWT in localStorage
                     localStorage.setItem('jwt', token);
 
