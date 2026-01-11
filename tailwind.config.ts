@@ -1,5 +1,54 @@
 import type { Config } from "tailwindcss";
-import { designTokens } from "./lib/design-tokens";
+
+// Inline design tokens to avoid module resolution issues with Turbopack
+const designTokens = {
+     spacing: {
+          xs: '4px',
+          sm: '8px',
+          md: '12px',
+          lg: '16px',
+          xl: '24px',
+          xxl: '32px'
+     },
+     typography: {
+          fontSize: {
+               xs: '12px',
+               sm: '13px',
+               base: '14px',
+               md: '16px',
+               lg: '18px'
+          },
+          fontWeight: {
+               regular: 400,
+               medium: 500,
+               semibold: 600
+          },
+          lineHeight: {
+               tight: 1.4,
+               normal: 1.5,
+               relaxed: 1.6
+          },
+          fontFamily: {
+               primary: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+               mono: 'SF Mono, Monaco, "Cascadia Code", "Roboto Mono", monospace'
+          }
+     },
+     button: {
+          borderRadius: '4px'
+     },
+     input: {
+          borderRadius: '4px'
+     },
+     panel: {
+          borderRadius: '8px'
+     },
+     list: {
+          itemBorderRadius: '4px'
+     },
+     modal: {
+          borderRadius: '8px'
+     }
+};
 
 const config: Config = {
      darkMode: 'class',
