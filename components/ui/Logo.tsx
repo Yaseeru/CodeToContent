@@ -20,33 +20,29 @@ export const Logo = React.forwardRef<SVGSVGElement, LogoProps>(
                     ref={ref}
                     width={pixelSize}
                     height={pixelSize}
-                    viewBox="0 0 32 32"
+                    viewBox="0 0 200 200"
                     fill="none"
                     className={className}
                     {...props}
                >
-                    {/* Minimal line-based logo design: C2C (CodeToContent) */}
-                    {/* Left C */}
+                    {/* Chevron/Arrow logo design */}
+                    <defs>
+                         <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#5DADE2" />
+                              <stop offset="100%" stopColor="#1E88E5" />
+                         </linearGradient>
+                    </defs>
+
+                    {/* Left chevron */}
                     <path
-                         d="M 10 8 A 6 6 0 0 0 10 24"
-                         stroke="currentColor"
-                         strokeWidth="2"
-                         strokeLinecap="round"
+                         d="M 40 50 L 90 100 L 40 150 L 40 120 L 65 100 L 40 80 Z"
+                         fill="url(#logoGradient)"
                     />
-                    {/* Center 2 */}
+
+                    {/* Right rounded shape */}
                     <path
-                         d="M 14 20 L 18 20 A 4 4 0 0 0 18 12 L 14 12"
-                         stroke="currentColor"
-                         strokeWidth="2"
-                         strokeLinecap="round"
-                         strokeLinejoin="round"
-                    />
-                    {/* Right C */}
-                    <path
-                         d="M 28 8 A 6 6 0 0 0 28 24"
-                         stroke="currentColor"
-                         strokeWidth="2"
-                         strokeLinecap="round"
+                         d="M 100 50 L 160 50 Q 180 50 180 70 L 180 130 Q 180 150 160 150 L 100 150 L 100 120 L 150 120 Q 155 120 155 115 L 155 85 Q 155 80 150 80 L 100 80 Z"
+                         fill="url(#logoGradient)"
                     />
                </svg>
           );
