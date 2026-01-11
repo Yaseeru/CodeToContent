@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { createOptimizedResizeObserver } from "@/lib/performance"
 import { Repository } from "@/components/ui/icons/Repository"
 import { Settings } from "@/components/ui/icons/Settings"
 import { ChevronLeft } from "@/components/ui/icons/ChevronLeft"
@@ -47,13 +48,22 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             }
         }
 
-        // Handle window resize
-        const handleResize = () => {
-            setWindowWidth(window.innerWidth)
-        }
+        // Use optimized ResizeObserver instead of resize event listener
+        const resizeObserver = createOptimizedResizeObserver((width) => {
+            setWindowWidth(width)
+        }, 150)
 
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
+        if (resizeObserver) {
+            resizeObserver.observe(document.body)
+            return () => resizeObserver.disconnect()
+        } else {
+            // Fallback to resize event listener if ResizeObserver is not supported
+            const handleResize = () => {
+                setWindowWidth(window.innerWidth)
+            }
+            window.addEventListener('resize', handleResize)
+            return () => window.removeEventListener('resize', handleResize)
+        }
     }, [])
 
     // Save collapsed state to localStorage
@@ -69,8 +79,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     // Prevent hydration mismatch by not rendering dynamic content until mounted
     if (!isMounted) {
         return (
-            <aside className="hidden md:flex w-60 border-r border-border bg-background-secondary h-screen sticky top-0 flex-col">
-                <div className="p-6 flex items-center gap-3">
+            <aside
+                className="hidden md:flex w-60 border-r border-border bg-background-secondary h-screen sticky top-0 flex-col"
+                style={{ minWidth: '240px' }}
+            >
+                <div className="p-6 flex items-center gap-3" style={{ height: '64px' }}>
                     <Logo size="md" className="text-accent" aria-hidden="true" />
                     <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
                 </div>
@@ -154,9 +167,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     return (
         <aside
             className={cn(
-                "hidden md:flex border-r border-border bg-background-secondary h-screen sticky top-0 flex-col transition-all duration-200 ease-in-out",
+                "hidden md:flex border-r border-border bg-background-secondary h-screen sticky top-0 flex-col sidebar-transition transition-all duration-200 ease-in-out",
                 isCollapsed ? "w-16" : "w-60"
             )}
+            style={{ minWidth: isCollapsed ? '64px' : '240px' }}
             role="navigation"
             aria-label="Main navigation"
         >

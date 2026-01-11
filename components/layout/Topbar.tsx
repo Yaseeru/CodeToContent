@@ -47,7 +47,10 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
      }, [isDropdownOpen]);
 
      return (
-          <header className="sticky top-0 z-40 h-16 w-full bg-[var(--background-secondary)] border-b border-[var(--border)]">
+          <header
+               className="sticky top-0 z-40 h-16 w-full bg-[var(--background-secondary)] border-b border-[var(--border)]"
+               style={{ minHeight: '64px' }}
+          >
                <div className="h-full flex items-center justify-between px-4 md:px-6">
                     {/* Left section - Mobile hamburger menu */}
                     <div className="md:hidden">

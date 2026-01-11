@@ -20,7 +20,7 @@ export function ThemeProvider({
                defaultTheme={defaultTheme}
                enableSystem
                storageKey={storageKey}
-               disableTransitionOnChange={false}
+               disableTransitionOnChange={true}
           >
                {children}
           </NextThemesProvider>

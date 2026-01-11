@@ -80,6 +80,55 @@ body {
   transition: color 200ms ease-in-out, background-color 200ms ease-in-out;
 }
 
+/* Performance optimizations */
+/* Prevent layout shifts by containing layout changes */
+aside,
+header,
+main {
+  contain: layout style;
+}
+
+/* Optimize animations with will-change for frequently animated elements */
+.sidebar-transition {
+  will-change: width;
+}
+
+.theme-transition {
+  will-change: background-color, color;
+}
+
+/* Disable all transitions temporarily during theme changes */
+.disable-transitions,
+.disable-transitions *,
+.disable-transitions *::before,
+.disable-transitions *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Optimize icon rendering */
+svg {
+  shape-rendering: geometricPrecision;
+}
+
+/* Prevent font loading layout shift */
+body {
+  font-display: swap;
+}
+
+/* Content visibility optimization for off-screen content */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
 /* Disable transitions for users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
