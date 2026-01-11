@@ -107,7 +107,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 {/* Drawer */}
                 <aside
                     className={cn(
-                        "fixed top-0 left-0 h-screen w-60 border-r border-border bg-background-secondary z-50 flex flex-col transition-transform duration-200 ease-in-out md:hidden",
+                        "fixed top-0 left-0 h-screen w-60 border-r border-border bg-background-secondary z-50 flex flex-col transition-none md:hidden",
                         isOpen ? "translate-x-0" : "-translate-x-full"
                     )}
                     role="navigation"
@@ -132,7 +132,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                     href={item.href}
                                     onClick={onClose}
                                     className={cn(
-                                        "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                                        "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-none",
                                         isActive
                                             ? "bg-accent/10 text-accent"
                                             : "text-foreground-secondary hover:text-foreground hover:bg-background-tertiary"
@@ -167,7 +167,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     return (
         <aside
             className={cn(
-                "hidden md:flex border-r border-border bg-background-secondary h-screen sticky top-0 flex-col sidebar-transition transition-all duration-200 ease-in-out",
+                "hidden md:flex border-r border-border bg-background-secondary h-screen sticky top-0 flex-col sidebar-transition transition-none",
                 isCollapsed ? "w-16" : "w-60"
             )}
             style={{ minWidth: isCollapsed ? '64px' : '240px' }}
@@ -188,7 +188,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <button
                     onClick={toggleCollapsed}
                     className={cn(
-                        "p-2 rounded-md hover:bg-background-tertiary transition-colors focus:outline-none focus:ring-2 focus:ring-accent",
+                        "p-2 rounded-md hover:bg-background-tertiary transition-none focus:outline-none focus:ring-2 focus:ring-accent",
                         isCollapsed && "absolute right-2"
                     )}
                     aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -213,7 +213,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-accent",
+                                "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-none focus:outline-none focus:ring-2 focus:ring-accent",
                                 isActive
                                     ? "bg-accent/10 text-accent"
                                     : "text-foreground-secondary hover:text-foreground hover:bg-background-tertiary",

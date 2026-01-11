@@ -12,6 +12,20 @@ interface GenerateClientProps {
      commitMessage: string;
 }
 
+/**
+ * Generate Client Component
+ * 
+ * Client-side component for generating content from code.
+ * Provides interface for triggering content generation and displaying results.
+ * 
+ * Requirements:
+ * - 2.1: Spacing scale compliance
+ * - 3.1-3.7: Typography system
+ * - 4.1-4.13, 5.1-5.11: Theme-appropriate colors
+ * - 12.1-12.4: Detail pane with editor-like experience
+ * - 13.1-13.8: Visual design constraints
+ * - 14.1-14.5: Keyboard accessibility
+ */
 export function GenerateClient({ repoName, commitMessage }: GenerateClientProps) {
      const [isGenerating, setIsGenerating] = React.useState(false)
      const [drafts, setDrafts] = React.useState<ContentDraft[]>([])
@@ -39,12 +53,12 @@ export function GenerateClient({ repoName, commitMessage }: GenerateClientProps)
      }
 
      return (
-          <div className="flex flex-col gap-4 h-full">
+          <div className="flex flex-col gap-lg h-full">
                {/* Header with Generate Button */}
                <div className="flex items-center justify-between">
                     <div>
-                         <h2 className="text-h2 font-semibold">Drafts</h2>
-                         <p className="text-caption text-foreground-secondary">
+                         <h2 className="text-md font-semibold text-text-primary">Drafts</h2>
+                         <p className="text-sm text-text-secondary">
                               AI-generated content based on the selected code
                          </p>
                     </div>
@@ -52,7 +66,6 @@ export function GenerateClient({ repoName, commitMessage }: GenerateClientProps)
                          onClick={handleGenerate}
                          disabled={isGenerating}
                          variant="primary"
-                         size="lg"
                          loading={isGenerating}
                          aria-label={isGenerating ? "Generating content, please wait" : "Generate content from code"}
                     >
@@ -71,9 +84,9 @@ export function GenerateClient({ repoName, commitMessage }: GenerateClientProps)
                     {drafts.length > 0 ? (
                          <ContentPreview drafts={drafts} />
                     ) : (
-                         <div className="h-full flex flex-col items-center justify-center text-foreground-secondary" role="status">
-                              <FileText size="lg" className="mb-4 opacity-50" aria-hidden="true" />
-                              <p className="text-body">Select code and click Generate</p>
+                         <div className="h-full flex flex-col items-center justify-center text-text-secondary" role="status">
+                              <FileText size="lg" className="mb-lg text-text-muted" aria-hidden="true" />
+                              <p className="text-sm">Select code and click Generate</p>
                          </div>
                     )}
                </div>

@@ -1,199 +1,190 @@
 /**
  * Unit Tests for Card Component
- * Feature: ui-redesign-dark-light-mode
- * Requirements: 10.6, 10.7
+ * Feature: developer-focused-ui-redesign
+ * Requirements: 2.4, 4.2, 4.3, 5.2, 5.3
  */
 
 // Mock the Card component behavior for testing
 describe('Card Component - Unit Tests', () => {
      // Helper to simulate card class generation
      const generateCardClasses = (options: {
-          variant?: 'default' | 'interactive' | 'outlined';
+          variant?: 'default' | 'interactive' | 'elevated';
           padding?: 'none' | 'sm' | 'default' | 'lg';
      }) => {
           const { variant = 'default', padding = 'default' } = options;
 
           const classes: string[] = [
-               'rounded-lg',
-               'text-foreground',
-               'bg-background-secondary',
+               'rounded-panel',
+               'text-text-primary',
           ];
 
-          // Padding classes
+          // Padding classes using design token spacing scale
+          // Minimum 16px (lg) for default panels per Requirements 2.4
           if (padding === 'none') {
                // No padding
           } else if (padding === 'sm') {
-               classes.push('p-2');
+               classes.push('p-sm'); // 8px
           } else if (padding === 'default') {
-               classes.push('p-4');
+               classes.push('p-lg'); // 16px - minimum panel padding
           } else if (padding === 'lg') {
-               classes.push('p-6');
+               classes.push('p-xl'); // 24px
           }
 
-          // Variant classes
+          // Variant classes following developer-focused UI redesign
+          // - Use theme-appropriate background colors (Requirements 4.2, 4.3, 5.2, 5.3)
+          // - Apply subtle borders with theme colors
+          // - Remove shadows, gradients, and decorative elements
           if (variant === 'default') {
-               classes.push(
-                    'shadow-[0_2px_8px_rgba(0,0,0,0.3)]',
-                    'dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]',
-                    'light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]'
-               );
+               classes.push('bg-bg-panel', 'border', 'border-border-subtle');
           } else if (variant === 'interactive') {
                classes.push(
-                    'shadow-[0_2px_8px_rgba(0,0,0,0.3)]',
-                    'dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]',
-                    'light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]',
+                    'bg-bg-panel',
+                    'border',
+                    'border-border-subtle',
                     'cursor-pointer',
-                    'transition-all',
-                    'duration-200',
-                    'hover:border-accent/50',
-                    'hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)]',
-                    'dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)]',
-                    'light:hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]'
+                    'hover:border-accent-neutral'
                );
-          } else if (variant === 'outlined') {
-               classes.push('border', 'border-[var(--border)]');
+          } else if (variant === 'elevated') {
+               classes.push('bg-bg-elevated', 'border', 'border-border-subtle');
           }
 
           return classes.join(' ');
      };
 
      /**
-      * Test default variant has correct shadow
-      * Validates: Requirement 10.6
+      * Test default variant has correct styling
+      * Validates: Requirements 2.4, 4.2, 5.2
       */
-     test('should apply correct shadow for default variant', () => {
+     test('should apply correct styling for default variant', () => {
           const classes = generateCardClasses({ variant: 'default' });
 
-          expect(classes).toContain('shadow-[0_2px_8px_rgba(0,0,0,0.3)]');
-          expect(classes).toContain('dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]');
-          expect(classes).toContain('light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]');
+          expect(classes).toContain('bg-bg-panel');
+          expect(classes).toContain('border');
+          expect(classes).toContain('border-border-subtle');
+          expect(classes).not.toContain('shadow');
      });
 
      /**
       * Test interactive variant has hover effects
-      * Validates: Requirement 10.7
+      * Validates: Requirements 2.4, 4.2, 5.2
       */
      test('should apply hover effects for interactive variant', () => {
           const classes = generateCardClasses({ variant: 'interactive' });
 
           expect(classes).toContain('cursor-pointer');
-          expect(classes).toContain('transition-all');
-          expect(classes).toContain('hover:border-accent/50');
-          expect(classes).toContain('hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)]');
-          expect(classes).toContain('dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)]');
-          expect(classes).toContain('light:hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]');
+          expect(classes).toContain('hover:border-accent-neutral');
+          expect(classes).not.toContain('shadow');
      });
 
      /**
-      * Test interactive variant has base shadow
-      * Validates: Requirement 10.6
+      * Test elevated variant uses elevated background
+      * Validates: Requirements 4.3, 5.3
       */
-     test('should apply base shadow for interactive variant', () => {
-          const classes = generateCardClasses({ variant: 'interactive' });
+     test('should use elevated background for elevated variant', () => {
+          const classes = generateCardClasses({ variant: 'elevated' });
 
-          expect(classes).toContain('shadow-[0_2px_8px_rgba(0,0,0,0.3)]');
-          expect(classes).toContain('dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]');
-          expect(classes).toContain('light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]');
-     });
-
-     /**
-      * Test outlined variant has border instead of shadow
-      * Validates: Requirement 10.7
-      */
-     test('should apply border for outlined variant', () => {
-          const classes = generateCardClasses({ variant: 'outlined' });
-
+          expect(classes).toContain('bg-bg-elevated');
           expect(classes).toContain('border');
-          expect(classes).toContain('border-[var(--border)]');
-          expect(classes).not.toContain('shadow-[0_2px_8px_rgba(0,0,0,0.3)]');
+          expect(classes).toContain('border-border-subtle');
+          expect(classes).not.toContain('shadow');
      });
 
      /**
       * Test all variants have common base classes
-      * Validates: Requirements 10.1, 10.2
+      * Validates: Requirements 2.4
       */
      test('should apply common base classes for all variants', () => {
-          const variants: Array<'default' | 'interactive' | 'outlined'> = ['default', 'interactive', 'outlined'];
+          const variants: Array<'default' | 'interactive' | 'elevated'> = ['default', 'interactive', 'elevated'];
 
           variants.forEach(variant => {
                const classes = generateCardClasses({ variant });
 
-               expect(classes).toContain('rounded-lg');
-               expect(classes).toContain('bg-background-secondary');
-               expect(classes).toContain('text-foreground');
+               expect(classes).toContain('rounded-panel');
+               expect(classes).toContain('text-text-primary');
+               expect(classes).toContain('border');
+               expect(classes).toContain('border-border-subtle');
           });
      });
 
      /**
-      * Test padding variants
-      * Validates: Requirement 10.3
+      * Test padding variants use design token spacing scale
+      * Validates: Requirement 2.4
       */
      test('should apply correct padding for none variant', () => {
           const classes = generateCardClasses({ padding: 'none' });
-          expect(classes).not.toContain('p-2');
-          expect(classes).not.toContain('p-4');
-          expect(classes).not.toContain('p-6');
+          expect(classes).not.toContain('p-sm');
+          expect(classes).not.toContain('p-lg');
+          expect(classes).not.toContain('p-xl');
      });
 
-     test('should apply correct padding for sm variant', () => {
+     test('should apply correct padding for sm variant (8px)', () => {
           const classes = generateCardClasses({ padding: 'sm' });
-          expect(classes).toContain('p-2');
+          expect(classes).toContain('p-sm');
      });
 
-     test('should apply correct padding for default variant', () => {
+     test('should apply correct padding for default variant (16px minimum)', () => {
           const classes = generateCardClasses({ padding: 'default' });
-          expect(classes).toContain('p-4');
+          expect(classes).toContain('p-lg');
      });
 
-     test('should apply correct padding for lg variant', () => {
+     test('should apply correct padding for lg variant (24px)', () => {
           const classes = generateCardClasses({ padding: 'lg' });
-          expect(classes).toContain('p-6');
+          expect(classes).toContain('p-xl');
      });
 
      /**
-      * Test interactive variant has transition with 200ms duration
-      * Validates: Requirement 10.7
+      * Test no shadows, gradients, or decorative elements
+      * Validates: Requirements 2.4, 4.2, 4.3, 5.2, 5.3
       */
-     test('should include transition classes for interactive variant', () => {
-          const classes = generateCardClasses({ variant: 'interactive' });
+     test('should not include shadow classes for any variant', () => {
+          const variants: Array<'default' | 'interactive' | 'elevated'> = ['default', 'interactive', 'elevated'];
 
-          expect(classes).toContain('transition-all');
-          expect(classes).toContain('duration-200');
+          variants.forEach(variant => {
+               const classes = generateCardClasses({ variant });
+               expect(classes).not.toContain('shadow');
+          });
+     });
+
+     test('should not include transition or animation classes', () => {
+          const variants: Array<'default' | 'interactive' | 'elevated'> = ['default', 'interactive', 'elevated'];
+
+          variants.forEach(variant => {
+               const classes = generateCardClasses({ variant });
+               expect(classes).not.toContain('transition');
+               expect(classes).not.toContain('duration');
+          });
      });
 
      /**
       * Test default variant does not have interactive classes
-      * Validates: Requirement 10.6
+      * Validates: Requirements 2.4, 4.2, 5.2
       */
      test('should not include interactive classes for default variant', () => {
           const classes = generateCardClasses({ variant: 'default' });
 
           expect(classes).not.toContain('cursor-pointer');
-          expect(classes).not.toContain('hover:border-accent/50');
-     });
-
-     /**
-      * Test outlined variant does not have shadow classes
-      * Validates: Requirement 10.7
-      */
-     test('should not include shadow classes for outlined variant', () => {
-          const classes = generateCardClasses({ variant: 'outlined' });
-
-          expect(classes).not.toContain('shadow-[0_2px_8px_rgba(0,0,0,0.3)]');
-          expect(classes).not.toContain('dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]');
-          expect(classes).not.toContain('light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]');
+          expect(classes).not.toContain('hover:border-accent-neutral');
      });
 
      /**
       * Test border radius is consistent across all variants
-      * Validates: Requirement 10.2
+      * Validates: Requirement 2.4
       */
-     test('should have 8px border radius (rounded-lg) for all variants', () => {
-          const variants: Array<'default' | 'interactive' | 'outlined'> = ['default', 'interactive', 'outlined'];
+     test('should have panel border radius (rounded-panel) for all variants', () => {
+          const variants: Array<'default' | 'interactive' | 'elevated'> = ['default', 'interactive', 'elevated'];
 
           variants.forEach(variant => {
                const classes = generateCardClasses({ variant });
-               expect(classes).toContain('rounded-lg');
+               expect(classes).toContain('rounded-panel');
           });
+     });
+
+     /**
+      * Test minimum 16px padding for default panels
+      * Validates: Requirement 2.4
+      */
+     test('should use minimum 16px padding (p-lg) for default padding', () => {
+          const classes = generateCardClasses({ padding: 'default' });
+          expect(classes).toContain('p-lg');
      });
 });

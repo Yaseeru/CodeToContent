@@ -104,7 +104,7 @@ describe('ThemeToggle Component - Unit Tests', () => {
       * Validates: Requirement 4.6
       */
      test('should have hover state that changes background color', () => {
-          const buttonClasses = 'hover:bg-[var(--background-tertiary)] transition-colors duration-200';
+          const buttonClasses = 'hover:bg-[var(--background-tertiary)]';
 
           expect(hasHoverClasses(buttonClasses)).toBe(true);
      });
@@ -142,13 +142,15 @@ describe('ThemeToggle Component - Unit Tests', () => {
      });
 
      /**
-      * Test transition duration
-      * Validates: Requirement 4.6 (smooth transitions)
+      * Test instant theme toggle (no transitions)
+      * Validates: Requirement 6.1, 6.5 (instant theme switching)
       */
-     test('should have 200ms transition duration', () => {
-          const buttonClasses = 'transition-colors duration-200';
+     test('should have no transition duration for instant theme switching', () => {
+          const buttonClasses = 'w-10 h-10 rounded-lg flex items-center justify-center hover:bg-[var(--background-tertiary)]';
 
-          expect(buttonClasses).toContain('duration-200');
+          // Should NOT contain transition classes
+          expect(buttonClasses).not.toContain('transition');
+          expect(buttonClasses).not.toContain('duration');
      });
 
      /**

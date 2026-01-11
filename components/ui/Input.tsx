@@ -10,7 +10,30 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             <input
                 type={type}
                 className={cn(
-                    "flex h-10 w-full rounded-lg border border-border bg-background-tertiary px-3 py-2 text-base text-foreground placeholder:text-[#666C87] file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:border-2 focus-visible:border-border-focus disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200",
+                    // Base styles with design token compliance
+                    "flex w-full",
+                    // Padding: 10px vertical, 12px horizontal (Requirements 2.3)
+                    "py-[10px] px-md",
+                    // Border radius: max 4px (Requirements 8.1)
+                    "rounded-input",
+                    // Border with theme-appropriate colors
+                    "border border-border-subtle",
+                    // Background using theme colors
+                    "bg-bg-panel",
+                    // Typography
+                    "text-sm font-regular text-text-primary",
+                    // Placeholder styling with muted colors (Requirements 8.3)
+                    "placeholder:text-text-muted",
+                    // Clear focus ring with theme-appropriate colors (Requirements 8.2)
+                    "focus-visible:outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-border-focus",
+                    // File input styling
+                    "file:border-0 file:bg-transparent file:text-sm file:font-medium",
+                    // Disabled state
+                    "disabled:cursor-not-allowed disabled:opacity-50",
+                    // Remove transitions (Requirements 13.4)
+                    "transition-none",
+                    // Remove inner shadows and gradients (Requirements 8.1)
+                    "shadow-none",
                     className
                 )}
                 ref={ref}

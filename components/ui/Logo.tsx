@@ -25,24 +25,19 @@ export const Logo = React.forwardRef<SVGSVGElement, LogoProps>(
                     className={className}
                     {...props}
                >
-                    {/* Chevron/Arrow logo design */}
-                    <defs>
-                         <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                              <stop offset="0%" stopColor="#5DADE2" />
-                              <stop offset="100%" stopColor="#1E88E5" />
-                         </linearGradient>
-                    </defs>
-
+                    {/* Chevron/Arrow logo design - flat color, no gradients */}
                     {/* Left chevron */}
                     <path
                          d="M 40 50 L 90 100 L 40 150 L 40 120 L 65 100 L 40 80 Z"
-                         fill="url(#logoGradient)"
+                         fill="currentColor"
+                         className="text-text-primary"
                     />
 
                     {/* Right rounded shape */}
                     <path
                          d="M 100 50 L 160 50 Q 180 50 180 70 L 180 130 Q 180 150 160 150 L 100 150 L 100 120 L 150 120 Q 155 120 155 115 L 155 85 Q 155 80 150 80 L 100 80 Z"
-                         fill="url(#logoGradient)"
+                         fill="currentColor"
+                         className="text-text-primary"
                     />
                </svg>
           );

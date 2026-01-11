@@ -5,7 +5,6 @@ import { Spinner } from "./icons/Spinner"
 export interface ButtonProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: "primary" | "secondary" | "ghost"
-    size?: "default" | "sm" | "lg"
     loading?: boolean
     icon?: React.ReactNode
     iconPosition?: "left" | "right"
@@ -15,7 +14,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ({
         className,
         variant = "primary",
-        size = "default",
         loading = false,
         icon,
         iconPosition = "left",
@@ -39,19 +37,27 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 ref={ref}
                 disabled={isDisabled}
                 className={cn(
-                    "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 ease-in-out",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-0",
+                    // Base styles - flat design with no gradients
+                    "inline-flex items-center justify-center gap-2",
+                    // Padding: 8px vertical, 12px horizontal (from design tokens)
+                    "py-sm px-md",
+                    // Border radius: max 4px
+                    "rounded-button",
+                    // Typography
+                    "text-sm font-medium",
+                    // Remove all transitions and animations (0ms)
+                    "transition-none",
+                    // Focus state: elevation with box-shadow only
+                    "focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--border-focus)]",
+                    // Disabled state
                     "disabled:pointer-events-none disabled:opacity-50",
                     {
-                        // Variant styles
-                        "bg-accent text-white hover:bg-accent-hover": variant === "primary",
-                        "bg-background-tertiary text-foreground hover:bg-opacity-80": variant === "secondary",
-                        "bg-transparent text-foreground hover:bg-background-secondary": variant === "ghost",
-
-                        // Size styles - matching requirements (sm: 36px, default: 40px, lg: 44px)
-                        "h-10 px-4": size === "default",
-                        "h-9 px-3": size === "sm",
-                        "h-11 px-6": size === "lg",
+                        // Primary variant: neutral accent background
+                        "bg-accent-neutral text-text-primary hover:bg-accent-hover": variant === "primary",
+                        // Secondary variant: transparent with subtle hover
+                        "bg-transparent text-text-secondary border border-border-subtle hover:bg-[rgba(110,110,128,0.05)]": variant === "secondary",
+                        // Ghost variant: transparent with subtle hover
+                        "bg-transparent text-text-muted hover:text-text-secondary hover:bg-[rgba(110,110,128,0.05)]": variant === "ghost",
                     },
                     className
                 )}

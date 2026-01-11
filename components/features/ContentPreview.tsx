@@ -67,7 +67,6 @@ export function ContentPreview({ drafts }: ContentPreviewProps) {
                         </CardTitle>
                         <Button
                             variant="ghost"
-                            size="sm"
                             icon={copiedId === draft.id ? <Check size="sm" aria-hidden="true" /> : <Copy size="sm" aria-hidden="true" />}
                             onClick={() => handleCopy(draft)}
                             aria-label={copiedId === draft.id ? "Copied to clipboard" : `Copy ${getContentTypeLabel(draft.type)} to clipboard`}

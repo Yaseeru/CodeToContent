@@ -25,9 +25,9 @@ describe('Feature: ui-redesign-dark-light-mode, Property 18: Keyboard Navigation
           const focusableRoles = ['button', 'link', 'textbox', 'checkbox', 'radio', 'menuitem'];
           const isFocusable =
                (element.tabIndex !== undefined && element.tabIndex >= 0) ||
-               (element.role && focusableRoles.includes(element.role));
+               (element.role !== undefined && focusableRoles.includes(element.role));
 
-          return isFocusable;
+          return Boolean(isFocusable);
      };
 
      /**

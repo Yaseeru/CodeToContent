@@ -7,7 +7,8 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: 'swap',
-  preload: true
+  preload: true,
+  weight: ['400', '500', '600'] // Restrict to regular, medium, semibold only
 });
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],

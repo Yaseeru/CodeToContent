@@ -4,7 +4,7 @@ Welcome to the CodeToContent design system documentation. This directory contain
 
 ---
 
-## 📚 Documentation Index
+## Documentation Index
 
 ### [Design System Guide](DESIGN_SYSTEM.md)
 **Complete design system documentation**
@@ -74,7 +74,7 @@ Step-by-step migration instructions for:
 
 ---
 
-## 🚀 Quick Links
+## Quick Links
 
 ### Getting Started
 1. Read the [Design System Guide](DESIGN_SYSTEM.md) overview
@@ -98,7 +98,7 @@ Step-by-step migration instructions for:
 
 ---
 
-## 🎨 Design System Overview
+## Design System Overview
 
 ### Theme System
 - **Dark/Light Mode**: Automatic theme switching with persistence
@@ -132,7 +132,7 @@ WCAG AA compliant:
 
 ---
 
-## 📖 Documentation Structure
+## Documentation Structure
 
 ```
 docs/
@@ -145,7 +145,7 @@ docs/
 
 ---
 
-## 🎯 Best Practices
+## Best Practices
 
 ### Do's ✅
 - Use design tokens for colors
@@ -166,7 +166,7 @@ docs/
 
 ---
 
-## 🔍 Finding What You Need
+## Finding What You Need
 
 ### "How do I...?"
 
@@ -207,7 +207,7 @@ docs/
 
 ---
 
-## 💡 Examples
+## Examples
 
 ### Complete Component Example
 
@@ -275,7 +275,7 @@ More examples in each guide!
 
 ---
 
-## 🆘 Support
+## Support
 
 ### Getting Help
 
@@ -299,7 +299,7 @@ More examples in each guide!
 
 ---
 
-## 📝 Contributing
+## Contributing
 
 When adding new components or patterns:
 
@@ -314,7 +314,7 @@ When adding new components or patterns:
 
 ---
 
-## 🎓 Learning Path
+## Learning Path
 
 ### Beginner
 1. Read [Design System Guide - Overview](DESIGN_SYSTEM.md#overview)
@@ -336,7 +336,7 @@ When adding new components or patterns:
 
 ---
 
-## 📊 Design System Stats
+## Design System Stats
 
 - **Components**: 8+ reusable components
 - **Icons**: 17+ professional line icons
@@ -348,7 +348,7 @@ When adding new components or patterns:
 
 ---
 
-## 🔗 Related Resources
+## Related Resources
 
 - **Main README**: [../README.md](../README.md)
 - **Design Spec**: [../.kiro/specs/ui-redesign-dark-light-mode/design.md](../.kiro/specs/ui-redesign-dark-light-mode/design.md)
@@ -357,4 +357,4 @@ When adding new components or patterns:
 
 ---
 
-**Happy coding! 🚀**
+**Happy coding!**

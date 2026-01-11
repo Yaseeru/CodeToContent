@@ -1,37 +1,98 @@
+'use client';
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-    variant?: 'default' | 'interactive' | 'outlined';
+    variant?: 'default' | 'interactive' | 'elevated';
     padding?: 'none' | 'sm' | 'default' | 'lg';
+    /**
+     * Whether the card is interactive (clickable/focusable)
+     * When true, adds proper keyboard accessibility attributes
+     */
+    interactive?: boolean;
+    /**
+     * Callback for when the card is activated (clicked or Enter/Space pressed)
+     */
+    onActivate?: () => void;
 }
 
 const Card = React.forwardRef<
     HTMLDivElement,
     CardProps
->(({ className, variant = 'default', padding = 'default', ...props }, ref) => {
+>(({
+    className,
+    variant = 'default',
+    padding = 'default',
+    interactive = false,
+    onActivate,
+    onClick,
+    onKeyDown,
+    tabIndex,
+    role,
+    ...props
+}, ref) => {
+    // Padding classes using design token spacing scale
+    // Minimum 16px (lg) for default panels per Requirements 2.4
     const paddingClasses = {
         none: '',
-        sm: 'p-2',
-        default: 'p-4',
-        lg: 'p-6'
+        sm: 'p-sm',      // 8px
+        default: 'p-lg', // 16px - minimum panel padding
+        lg: 'p-xl'       // 24px
     };
 
+    // Variant classes following developer-focused UI redesign
+    // - Use theme-appropriate background colors (Requirements 4.2, 4.3, 5.2, 5.3)
+    // - Apply subtle borders with theme colors
+    // - Remove shadows, gradients, and decorative elements
     const variantClasses = {
-        default: 'bg-background-secondary shadow-[0_2px_8px_rgba(0,0,0,0.3)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] light:shadow-[0_2px_8px_rgba(0,0,0,0.1)]',
-        interactive: 'bg-background-secondary shadow-[0_2px_8px_rgba(0,0,0,0.3)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] light:shadow-[0_2px_8px_rgba(0,0,0,0.1)] cursor-pointer transition-all duration-200 hover:border-accent/50 hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] light:hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]',
-        outlined: 'bg-background-secondary border border-[var(--border)]'
+        default: 'bg-bg-panel border border-border-subtle',
+        interactive: cn(
+            'bg-bg-panel border border-border-subtle',
+            'cursor-pointer hover:border-accent-neutral',
+            // Focus indicator for keyboard accessibility (Requirements 14.5, 15.1)
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+            // No transitions
+            'transition-none'
+        ),
+        elevated: 'bg-bg-elevated border border-border-subtle'
     };
+
+    // Handle keyboard activation (Enter or Space)
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (interactive && onActivate && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onActivate();
+        }
+        onKeyDown?.(e);
+    };
+
+    // Handle click activation
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (interactive && onActivate) {
+            onActivate();
+        }
+        onClick?.(e);
+    };
+
+    // Determine if card should be focusable
+    const isInteractive = interactive || variant === 'interactive' || onActivate;
+    const cardTabIndex = tabIndex !== undefined ? tabIndex : (isInteractive ? 0 : undefined);
+    const cardRole = role || (isInteractive ? 'button' : undefined);
 
     return (
         <div
             ref={ref}
             className={cn(
-                "rounded-lg text-foreground",
+                "rounded-panel text-text-primary",
                 variantClasses[variant],
                 paddingClasses[padding],
                 className
             )}
+            tabIndex={cardTabIndex}
+            role={cardRole}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
             {...props}
         />
     );
@@ -44,7 +105,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn("flex flex-col space-y-1.5 p-6", className)}
+        className={cn("flex flex-col space-y-sm", className)}
         {...props}
     />
 ))
@@ -57,7 +118,7 @@ const CardTitle = React.forwardRef<
     <h3
         ref={ref}
         className={cn(
-            "text-2xl font-semibold leading-none tracking-tight",
+            "text-md font-semibold leading-normal",
             className
         )}
         {...props}
@@ -69,7 +130,7 @@ const CardContent = React.forwardRef<
     HTMLDivElement,
     React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+    <div ref={ref} className={cn("", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 

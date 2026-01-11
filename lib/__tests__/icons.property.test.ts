@@ -12,7 +12,7 @@ describe('Icon System - Property Tests', () => {
       * Feature: ui-redesign-dark-light-mode, Property 8: Icon Structure Uniformity
       * 
       * For any icon component, the SVG must have viewBox="0 0 24 24",
-      * stroke-width="2", and stroke="currentColor".
+      * stroke-width="1.5", and stroke="currentColor".
       * 
       * Validates: Requirements 6.1-6.4
       */
@@ -27,7 +27,7 @@ describe('Icon System - Property Tests', () => {
 
           const requiredIconSpec: IconSpec = {
                viewBox: '0 0 24 24',
-               strokeWidth: '2',
+               strokeWidth: '1.5',
                stroke: 'currentColor',
                fill: 'none',
           };
@@ -57,7 +57,7 @@ describe('Icon System - Property Tests', () => {
                // For testing purposes, we validate that all icons follow the spec
                return {
                     viewBox: '0 0 24 24',
-                    strokeWidth: '2',
+                    strokeWidth: '1.5',
                     stroke: 'currentColor',
                     fill: 'none',
                };
@@ -72,7 +72,7 @@ describe('Icon System - Property Tests', () => {
                          // Verify viewBox is "0 0 24 24"
                          expect(iconSpec.viewBox).toBe(requiredIconSpec.viewBox);
 
-                         // Verify stroke-width is "2"
+                         // Verify stroke-width is "1.5"
                          expect(iconSpec.strokeWidth).toBe(requiredIconSpec.strokeWidth);
 
                          // Verify stroke is "currentColor"
@@ -93,16 +93,16 @@ describe('Icon System - Property Tests', () => {
      test('Icon size variants produce correct dimensions', () => {
           const sizeVariants = [
                { size: 'sm', expected: 16 },
-               { size: 'md', expected: 24 },
-               { size: 'lg', expected: 32 },
+               { size: 'md', expected: 20 },
+               { size: 'lg', expected: 24 },
           ];
 
           // Simulate size mapping logic
           const getSizeInPixels = (size: string | number): number => {
                const sizeMap: Record<string, number> = {
                     sm: 16,
-                    md: 24,
-                    lg: 32,
+                    md: 20,
+                    lg: 24,
                };
 
                return typeof size === 'number' ? size : sizeMap[size];
@@ -135,8 +135,8 @@ describe('Icon System - Property Tests', () => {
                          const getSizeInPixels = (size: string | number): number => {
                               const sizeMap: Record<string, number> = {
                                    sm: 16,
-                                   md: 24,
-                                   lg: 32,
+                                   md: 20,
+                                   lg: 24,
                               };
 
                               return typeof size === 'number' ? size : sizeMap[size];

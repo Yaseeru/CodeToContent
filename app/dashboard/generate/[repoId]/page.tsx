@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { auth } from "@/lib/auth"
 import { GitHubService } from "@/lib/github"
-import { DashboardShell } from "@/components/layout/DashboardShell"
+import { AppShell } from "@/components/layout/AppShell"
 import { DiffViewer } from "@/components/features/DiffViewer"
 import { GenerateClient } from "./GenerateClient"
 import { Spinner } from "@/components/ui/icons/Spinner"
@@ -14,6 +14,12 @@ interface PageProps {
     }>;
 }
 
+/**
+ * Repository Content Component
+ * 
+ * Fetches repository details, commits, and diff data.
+ * Handles data fetching and error states.
+ */
 async function RepositoryContent({ repoId, accessToken }: { repoId: string; accessToken: string }) {
     // Initialize GitHub service
     const githubService = new GitHubService(accessToken)
@@ -56,32 +62,71 @@ async function RepositoryContent({ repoId, accessToken }: { repoId: string; acce
         }
     }
 
-    return (
-        <>
-            {/* Code Context Section */}
-            <div className="flex flex-col gap-4">
-                <div>
-                    <h2 className="text-h2 font-semibold">Code Context</h2>
-                    <p className="text-caption text-foreground-secondary">
-                        Selected commit: <span className="font-mono text-accent">{latestCommit?.message || 'No commits'}</span>
-                    </p>
-                </div>
-                <div className="flex-1 overflow-auto">
-                    <DiffViewer diff={diffLines} fileName={fileName} />
-                </div>
-            </div>
+    return {
+        repository,
+        latestCommit,
+        diffLines,
+        fileName
+    }
+}
 
-            {/* Right Panel: Content Generation */}
-            <div className="flex-1 flex flex-col gap-4 overflow-hidden lg:w-1/2">
+/**
+ * Generate Page Content Component
+ * 
+ * Displays code context and content generation interface.
+ * Uses AppShell layout with DiffViewer and GenerateClient.
+ * 
+ * Requirements:
+ * - 1.1-1.6: Global layout structure with AppShell
+ * - 2.1: Spacing scale compliance
+ * - 3.1-3.7: Typography system
+ * - 4.1-4.13, 5.1-5.11: Theme-appropriate colors
+ * - 12.1-12.4: Detail pane with editor-like experience
+ * - 13.1-13.8: Visual design constraints
+ */
+async function GeneratePageContent({ repoId, accessToken, user }: { repoId: string; accessToken: string; user: any }) {
+    const data = await RepositoryContent({ repoId, accessToken })
+
+    return (
+        <AppShell
+            user={user}
+            listView={
+                <div className="flex flex-col gap-lg h-full">
+                    {/* Header section */}
+                    <div>
+                        <h2 className="text-md font-semibold text-text-primary mb-sm">Code Context</h2>
+                        <p className="text-sm text-text-secondary">
+                            Selected commit: <span className="font-mono text-xs text-accent-neutral">{data.latestCommit?.message || 'No commits'}</span>
+                        </p>
+                    </div>
+
+                    {/* Diff viewer with scroll */}
+                    <div className="flex-1 overflow-auto">
+                        <DiffViewer diff={data.diffLines} fileName={data.fileName} />
+                    </div>
+                </div>
+            }
+            detailPane={
                 <GenerateClient
-                    repoName={repository.name}
-                    commitMessage={latestCommit?.message || 'No commits'}
+                    repoName={data.repository.name}
+                    commitMessage={data.latestCommit?.message || 'No commits'}
                 />
-            </div>
-        </>
+            }
+        />
     )
 }
 
+/**
+ * Generate Page
+ * 
+ * Main page for generating content from code commits.
+ * Handles authentication and loading states.
+ * 
+ * Requirements:
+ * - 1.1-1.6: Global layout structure
+ * - 2.1: Spacing scale compliance
+ * - 3.1-3.7: Typography system
+ */
 export default async function GeneratePage({ params }: PageProps) {
     // Get session for authentication
     const session = await auth()
@@ -94,22 +139,20 @@ export default async function GeneratePage({ params }: PageProps) {
     const { repoId } = await params
 
     return (
-        <DashboardShell user={session.user}>
-            <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-8rem)]">
-                {/* Left Panel: Code Context (50% on desktop) */}
-                <div className="flex-1 flex flex-col gap-4 overflow-hidden lg:w-1/2">
-                    <Suspense fallback={
-                        <div className="flex-1 flex items-center justify-center" role="status" aria-live="polite">
-                            <div className="text-center space-y-4">
-                                <Spinner size="lg" className="mx-auto text-accent" aria-hidden="true" />
-                                <p className="text-foreground-secondary">Loading repository data...</p>
-                            </div>
+        <Suspense fallback={
+            <AppShell
+                user={session.user}
+                listView={
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center space-y-lg">
+                            <Spinner size="lg" className="mx-auto text-accent-neutral" aria-hidden="true" />
+                            <p className="text-sm text-text-secondary">Loading repository data...</p>
                         </div>
-                    }>
-                        <RepositoryContent repoId={repoId} accessToken={session.accessToken} />
-                    </Suspense>
-                </div>
-            </div>
-        </DashboardShell>
+                    </div>
+                }
+            />
+        }>
+            <GeneratePageContent repoId={repoId} accessToken={session.accessToken} user={session.user} />
+        </Suspense>
     )
 }

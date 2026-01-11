@@ -11,14 +11,14 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({
      children,
-     defaultTheme = 'system',
+     defaultTheme = 'dark',
      storageKey = 'theme-preference'
 }: ThemeProviderProps) {
      return (
           <NextThemesProvider
                attribute="class"
                defaultTheme={defaultTheme}
-               enableSystem
+               enableSystem={false}
                storageKey={storageKey}
                disableTransitionOnChange={true}
           >

@@ -1,7 +1,7 @@
 /**
  * Unit Tests for Button Component
- * Feature: ui-redesign-dark-light-mode
- * Requirements: 11.6-11.9
+ * Feature: developer-focused-ui-redesign
+ * Requirements: 2.2, 7.1, 7.2, 7.3, 7.4
  */
 
 // Mock the Button component behavior for testing
@@ -9,46 +9,39 @@ describe('Button Component - Unit Tests', () => {
      // Helper to simulate button class generation
      const generateButtonClasses = (options: {
           variant?: 'primary' | 'secondary' | 'ghost';
-          size?: 'sm' | 'default' | 'lg';
           disabled?: boolean;
           loading?: boolean;
      }) => {
-          const { variant = 'primary', size = 'default', disabled = false, loading = false } = options;
+          const { variant = 'primary', disabled = false, loading = false } = options;
 
           const classes: string[] = [
                'inline-flex',
                'items-center',
                'justify-center',
                'gap-2',
-               'rounded-lg',
+               // Padding: 8px vertical (py-sm), 12px horizontal (px-md)
+               'py-sm',
+               'px-md',
+               // Border radius: max 4px
+               'rounded-button',
+               'text-sm',
                'font-medium',
-               'transition-all',
-               'duration-200',
-               'ease-in-out',
+               // No transitions (0ms)
+               'transition-none',
+               // Focus: elevation with box-shadow only
                'focus-visible:outline-none',
-               'focus-visible:ring-2',
-               'focus-visible:ring-accent',
-               'focus-visible:ring-offset-0',
+               'focus-visible:shadow-[0_0_0_2px_var(--border-focus)]',
                'disabled:pointer-events-none',
                'disabled:opacity-50',
           ];
 
           // Variant classes
           if (variant === 'primary') {
-               classes.push('bg-accent', 'text-white', 'hover:bg-accent-hover');
+               classes.push('bg-accent-neutral', 'text-text-primary', 'hover:bg-accent-hover');
           } else if (variant === 'secondary') {
-               classes.push('bg-background-tertiary', 'text-foreground', 'hover:bg-opacity-80');
+               classes.push('bg-transparent', 'text-text-secondary', 'border', 'border-border-subtle', 'hover:bg-[rgba(110,110,128,0.05)]');
           } else if (variant === 'ghost') {
-               classes.push('bg-transparent', 'text-foreground', 'hover:bg-background-secondary');
-          }
-
-          // Size classes
-          if (size === 'sm') {
-               classes.push('h-9', 'px-3');
-          } else if (size === 'default') {
-               classes.push('h-10', 'px-4');
-          } else if (size === 'lg') {
-               classes.push('h-11', 'px-6');
+               classes.push('bg-transparent', 'text-text-muted', 'hover:text-text-secondary', 'hover:bg-[rgba(110,110,128,0.05)]');
           }
 
           return classes.join(' ');
@@ -65,34 +58,88 @@ describe('Button Component - Unit Tests', () => {
      };
 
      /**
-      * Test hover state classes
-      * Validates: Requirement 11.6
+      * Test flat styling with no gradients
+      * Validates: Requirement 7.1
       */
-     test('should include hover classes for all variants', () => {
+     test('should have flat styling with no gradient classes', () => {
+          const classes = generateButtonClasses({ variant: 'primary' });
+
+          // Should not contain gradient-related classes
+          expect(classes).not.toContain('bg-gradient');
+          expect(classes).not.toContain('from-');
+          expect(classes).not.toContain('to-');
+     });
+
+     /**
+      * Test padding: 8px vertical, 12px horizontal
+      * Validates: Requirement 2.2
+      */
+     test('should have correct padding (8px vertical, 12px horizontal)', () => {
+          const classes = generateButtonClasses({ variant: 'primary' });
+
+          expect(classes).toContain('py-sm');  // 8px
+          expect(classes).toContain('px-md');  // 12px
+     });
+
+     /**
+      * Test border-radius max 4px
+      * Validates: Requirement 7.3
+      */
+     test('should have border-radius max 4px', () => {
+          const classes = generateButtonClasses({ variant: 'primary' });
+
+          expect(classes).toContain('rounded-button');  // 4px from design tokens
+     });
+
+     /**
+      * Test subtle hover states
+      * Validates: Requirement 7.2
+      */
+     test('should include subtle hover classes for all variants', () => {
           const primaryClasses = generateButtonClasses({ variant: 'primary' });
           expect(primaryClasses).toContain('hover:bg-accent-hover');
 
           const secondaryClasses = generateButtonClasses({ variant: 'secondary' });
-          expect(secondaryClasses).toContain('hover:bg-opacity-80');
+          expect(secondaryClasses).toContain('hover:bg-[rgba(110,110,128,0.05)]');
 
           const ghostClasses = generateButtonClasses({ variant: 'ghost' });
-          expect(ghostClasses).toContain('hover:bg-background-secondary');
+          expect(ghostClasses).toContain('hover:bg-[rgba(110,110,128,0.05)]');
      });
 
      /**
-      * Test focus state with 2px border
-      * Validates: Requirement 11.7
+      * Test elevation only on focus (box-shadow)
+      * Validates: Requirement 7.4
       */
-     test('should include 2px focus ring classes', () => {
+     test('should apply elevation only on focus state', () => {
           const classes = generateButtonClasses({ variant: 'primary' });
 
-          expect(classes).toContain('focus-visible:ring-2');
-          expect(classes).toContain('focus-visible:ring-accent');
+          // Should have focus shadow
+          expect(classes).toContain('focus-visible:shadow-[0_0_0_2px_var(--border-focus)]');
+
+          // Should not have default shadow (elevation only on focus)
+          // Check that shadow classes only appear with focus-visible prefix
+          const classArray = classes.split(' ');
+          const shadowClasses = classArray.filter(c => c.includes('shadow-'));
+          const nonFocusShadowClasses = shadowClasses.filter(c => !c.startsWith('focus-visible:'));
+
+          expect(nonFocusShadowClasses.length).toBe(0);
+     });
+
+     /**
+      * Test no transitions or animations (0ms)
+      * Validates: Requirement 13.4 (via task requirements)
+      */
+     test('should have no transitions (transition-none)', () => {
+          const classes = generateButtonClasses({ variant: 'primary' });
+
+          expect(classes).toContain('transition-none');
+          expect(classes).not.toContain('transition-all');
+          expect(classes).not.toContain('duration-');
      });
 
      /**
       * Test disabled state with 50% opacity
-      * Validates: Requirement 11.8
+      * Validates: General button behavior
       */
      test('should include disabled classes with 50% opacity', () => {
           const classes = generateButtonClasses({ disabled: true });
@@ -103,7 +150,7 @@ describe('Button Component - Unit Tests', () => {
 
      /**
       * Test loading state disables button
-      * Validates: Requirement 11.9
+      * Validates: General button behavior
       */
      test('should be disabled when loading', () => {
           const disabled = isButtonDisabled(false, true);
@@ -111,17 +158,8 @@ describe('Button Component - Unit Tests', () => {
      });
 
      /**
-      * Test loading state with explicit disabled
-      * Validates: Requirement 11.9
-      */
-     test('should be disabled when both loading and disabled are true', () => {
-          const disabled = isButtonDisabled(true, true);
-          expect(disabled).toBe(true);
-     });
-
-     /**
       * Test emoji removal
-      * Validates: Requirement 11.10
+      * Validates: Requirement 13.1 (no emojis)
       */
      test('should remove emoji characters from button text', () => {
           const textWithEmojis = 'Click Me 🚀 Now 😊';
@@ -133,80 +171,37 @@ describe('Button Component - Unit Tests', () => {
      });
 
      /**
-      * Test emoji removal with various emoji types
-      * Validates: Requirement 11.10
-      */
-     test('should remove various types of emojis', () => {
-          const textWithEmojis = 'Test 🎉 🔥 ⚡ 🌟 Text';
-          const sanitized = sanitizeText(textWithEmojis);
-
-          expect(sanitized).not.toContain('🎉');
-          expect(sanitized).not.toContain('🔥');
-          expect(sanitized).not.toContain('⚡');
-          expect(sanitized).not.toContain('🌟');
-     });
-
-     /**
       * Test all button variants have correct classes
-      * Validates: Requirements 11.3-11.5
+      * Validates: Requirements 7.1, 7.2
       */
      test('should apply correct classes for primary variant', () => {
           const classes = generateButtonClasses({ variant: 'primary' });
 
-          expect(classes).toContain('bg-accent');
-          expect(classes).toContain('text-white');
+          expect(classes).toContain('bg-accent-neutral');
+          expect(classes).toContain('text-text-primary');
           expect(classes).toContain('hover:bg-accent-hover');
      });
 
      test('should apply correct classes for secondary variant', () => {
           const classes = generateButtonClasses({ variant: 'secondary' });
 
-          expect(classes).toContain('bg-background-tertiary');
-          expect(classes).toContain('text-foreground');
+          expect(classes).toContain('bg-transparent');
+          expect(classes).toContain('text-text-secondary');
+          expect(classes).toContain('border');
+          expect(classes).toContain('border-border-subtle');
      });
 
      test('should apply correct classes for ghost variant', () => {
           const classes = generateButtonClasses({ variant: 'ghost' });
 
           expect(classes).toContain('bg-transparent');
-          expect(classes).toContain('text-foreground');
-          expect(classes).toContain('hover:bg-background-secondary');
-     });
-
-     /**
-      * Test button sizes match requirements
-      * Validates: Requirement 11.2 (sm: 36px, default: 40px, lg: 44px)
-      */
-     test('should apply correct height for sm size (36px = h-9)', () => {
-          const classes = generateButtonClasses({ size: 'sm' });
-          expect(classes).toContain('h-9');
-     });
-
-     test('should apply correct height for default size (40px = h-10)', () => {
-          const classes = generateButtonClasses({ size: 'default' });
-          expect(classes).toContain('h-10');
-     });
-
-     test('should apply correct height for lg size (44px = h-11)', () => {
-          const classes = generateButtonClasses({ size: 'lg' });
-          expect(classes).toContain('h-11');
-     });
-
-     /**
-      * Test transition classes
-      * Validates: Requirement 11.6 (200ms transition)
-      */
-     test('should include transition classes with 200ms duration', () => {
-          const classes = generateButtonClasses({ variant: 'primary' });
-
-          expect(classes).toContain('transition-all');
-          expect(classes).toContain('duration-200');
-          expect(classes).toContain('ease-in-out');
+          expect(classes).toContain('text-text-muted');
+          expect(classes).toContain('hover:text-text-secondary');
      });
 
      /**
       * Test icon positioning logic
-      * Validates: Requirement 11.1 (icon support)
+      * Validates: Icon support
       */
      test('should support icon positioning', () => {
           // Test that icon can be positioned left or right
@@ -219,7 +214,7 @@ describe('Button Component - Unit Tests', () => {
 
      /**
       * Test that loading state takes precedence over disabled
-      * Validates: Requirement 11.9
+      * Validates: General button behavior
       */
      test('should be disabled when loading regardless of disabled prop', () => {
           expect(isButtonDisabled(false, true)).toBe(true);

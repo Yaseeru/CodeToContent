@@ -9,7 +9,7 @@ Unlike generic AI writers, CodeToContent adheres to one core principle:
 
 ---
 
-## ⚡ The Problem
+## The Problem
 
 Developers create immense value daily in the form of code, architectural decisions, and problem-solving. However, most of that value remains locked inside GitHub repositories.
 
@@ -17,7 +17,7 @@ Developers create immense value daily in the form of code, architectural decisio
 *   **Content creation is high-friction:** Translating diffs to English requires time and storytelling skills.
 *   **Inconsistency:** Developers want to build a personal brand but struggle to post regularly.
 
-## 🚀 Core Functionality
+## Core Functionality
 
 CodeToContent automates the pipeline from `git push` to "Published":
 
@@ -31,7 +31,7 @@ CodeToContent automates the pipeline from `git push` to "Published":
 
 ---
 
-## 🧠 The Secret Sauce: Gemini 3 Integration
+## The Secret Sauce: Gemini 3 Integration
 
 The heart of CodeToContent is **Gemini 3**. Standard LLMs struggle with the nuance of software development because they lack the context window to see the "whole picture."
 
@@ -46,7 +46,7 @@ The heart of CodeToContent is **Gemini 3**. Standard LLMs struggle with the nuan
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 *   **Framework**: Next.js 16 (App Router)
 *   **Language**: TypeScript 5
@@ -60,7 +60,7 @@ The heart of CodeToContent is **Gemini 3**. Standard LLMs struggle with the nuan
 
 ---
 
-## 🎨 Design System
+## Design System
 
 CodeToContent features a comprehensive design system with:
 
@@ -108,7 +108,7 @@ All colors, typography, and spacing are defined as CSS variables that automatica
 - Semantic HTML throughout
 - Respects `prefers-reduced-motion`
 
-**📚 Full Documentation**: See [Design System Guide](docs/DESIGN_SYSTEM.md) for complete usage instructions.
+**Full Documentation**: See [Design System Guide](docs/DESIGN_SYSTEM.md) for complete usage instructions.
 
 ### Documentation
 
@@ -119,7 +119,7 @@ All colors, typography, and spacing are defined as CSS variables that automatica
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -230,7 +230,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 ---
 
-## 📦 Database Migrations
+## Database Migrations
 
 CodeToContent uses Prisma for database management and migrations. Migrations are version-controlled changes to your database schema that ensure consistency across development, staging, and production environments.
 
@@ -390,7 +390,7 @@ If you see an error about missing environment variables on startup, ensure all r
 
 ---
 
-## 🔮 Roadmap
+## Roadmap
 
 *   [ ] **MVP**: GitHub connection + Single Repo Analysis + Content Generation.
 *   [ ] **V2**: User activity dashboard & History.

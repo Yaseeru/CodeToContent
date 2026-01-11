@@ -9,8 +9,8 @@ export const Icon = React.forwardRef<SVGSVGElement, IconProps>(
      ({ size = 'md', className = '', ...props }, ref) => {
           const sizeMap = {
                sm: 16,
-               md: 24,
-               lg: 32,
+               md: 20,
+               lg: 24,
           };
 
           const pixelSize = typeof size === 'number' ? size : sizeMap[size];
@@ -23,7 +23,7 @@ export const Icon = React.forwardRef<SVGSVGElement, IconProps>(
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     className={className}

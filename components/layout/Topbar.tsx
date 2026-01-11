@@ -56,7 +56,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
                     <div className="md:hidden">
                          <button
                               onClick={onMenuClick}
-                              className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-200 hover:bg-[var(--background-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                              className="w-10 h-10 rounded-lg flex items-center justify-center transition-none hover:bg-[var(--background-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                               aria-label="Open navigation menu"
                               type="button"
                          >
@@ -75,7 +75,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
                               <div className="relative" ref={dropdownRef}>
                                    <button
                                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                        className="flex items-center gap-2 h-10 px-3 rounded-lg transition-colors duration-200 hover:bg-[var(--background-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                                        className="flex items-center gap-2 h-10 px-3 rounded-lg transition-none hover:bg-[var(--background-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                                         aria-label="User menu"
                                         aria-expanded={isDropdownOpen}
                                         aria-haspopup="true"
@@ -115,7 +115,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
                                              <div className="py-1" role="none">
                                                   <a
                                                        href="/dashboard/settings"
-                                                       className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--foreground)] transition-colors duration-200 hover:bg-[var(--background-tertiary)] focus:outline-none focus:bg-[var(--background-tertiary)]"
+                                                       className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--foreground)] transition-none hover:bg-[var(--background-tertiary)] focus:outline-none focus:bg-[var(--background-tertiary)]"
                                                        role="menuitem"
                                                   >
                                                        <Settings size="sm" aria-hidden="true" />
@@ -126,7 +126,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
                                                        onClick={() => {
                                                             window.location.href = '/api/auth/signout';
                                                        }}
-                                                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--foreground)] transition-colors duration-200 hover:bg-[var(--background-tertiary)] focus:outline-none focus:bg-[var(--background-tertiary)]"
+                                                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--foreground)] transition-none hover:bg-[var(--background-tertiary)] focus:outline-none focus:bg-[var(--background-tertiary)]"
                                                        type="button"
                                                        role="menuitem"
                                                   >

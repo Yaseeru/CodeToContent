@@ -25,3 +25,6 @@ export { Star } from './Star';
 
 // Status icons
 export { AlertTriangle } from './AlertTriangle';
+
+// Search icon
+export { Search } from './Search';
