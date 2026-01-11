@@ -57,13 +57,25 @@ async function RepositoryContent({ repoId, accessToken }: { repoId: string; acce
 
     return (
         <>
-            <GenerateClient
-                repoName={repository.name}
-                commitMessage={latestCommit?.message || 'No commits'}
-            />
+            {/* Code Context Section */}
+            <div className="flex flex-col gap-4">
+                <div>
+                    <h2 className="text-h2 font-semibold">Code Context</h2>
+                    <p className="text-caption text-foreground-secondary">
+                        Selected commit: <span className="font-mono text-accent">{latestCommit?.message || 'No commits'}</span>
+                    </p>
+                </div>
+                <div className="flex-1 overflow-auto">
+                    <DiffViewer diff={diffLines} fileName={fileName} />
+                </div>
+            </div>
 
-            <div className="flex-1 overflow-auto pr-2">
-                <DiffViewer diff={diffLines} fileName={fileName} />
+            {/* Right Panel: Content Generation */}
+            <div className="flex-1 flex flex-col gap-4 overflow-hidden lg:w-1/2">
+                <GenerateClient
+                    repoName={repository.name}
+                    commitMessage={latestCommit?.message || 'No commits'}
+                />
             </div>
         </>
     )
@@ -82,13 +94,17 @@ export default async function GeneratePage({ params }: PageProps) {
 
     return (
         <DashboardShell user={session.user}>
-            <div className="flex flex-col gap-8 lg:flex-row h-[calc(100vh-8rem)]">
-                {/* Left Panel: Context & Selection */}
-                <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-8rem)]">
+                {/* Left Panel: Code Context (50% on desktop) */}
+                <div className="flex-1 flex flex-col gap-4 overflow-hidden lg:w-1/2">
                     <Suspense fallback={
                         <div className="flex-1 flex items-center justify-center">
                             <div className="text-center space-y-4">
-                                <div className="text-4xl animate-pulse">⏳</div>
+                                <div className="animate-spin">
+                                    <svg className="w-8 h-8 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                                    </svg>
+                                </div>
                                 <p className="text-foreground-secondary">Loading repository data...</p>
                             </div>
                         </div>

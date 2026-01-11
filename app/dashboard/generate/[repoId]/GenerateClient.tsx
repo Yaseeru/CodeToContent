@@ -4,6 +4,8 @@ import * as React from "react"
 import { Button } from "@/components/ui/Button"
 import { ContentPreview } from "@/components/features/ContentPreview"
 import { ContentDraft } from "@/types"
+import { Spinner } from "@/components/ui/icons/Spinner"
+import { FileText } from "@/components/ui/icons/FileText"
 
 interface GenerateClientProps {
      repoName: string;
@@ -23,7 +25,7 @@ export function GenerateClient({ repoName, commitMessage }: GenerateClientProps)
                          id: '1',
                          type: 'twitter',
                          tone: 'casual',
-                         content: `Just upgraded our AI model to Gemini 1.5 Pro! 🚀\n\nThe reasoning capabilities are insane. We were hitting limits with complex code diffs, but the larger context window changes everything.\n\nCheck out the diff below 👇 #BuildInPublic #AI`
+                         content: `Just upgraded our AI model to Gemini 1.5 Pro!\n\nThe reasoning capabilities are insane. We were hitting limits with complex code diffs, but the larger context window changes everything.\n\nCheck out the diff below #BuildInPublic #AI`
                     },
                     {
                          id: '2',
@@ -37,43 +39,37 @@ export function GenerateClient({ repoName, commitMessage }: GenerateClientProps)
      }
 
      return (
-          <>
+          <div className="flex flex-col gap-4 h-full">
+               {/* Header with Generate Button */}
                <div className="flex items-center justify-between">
                     <div>
-                         <h2 className="text-2xl font-bold">Code Context</h2>
-                         <p className="text-sm text-foreground-secondary">
-                              Selected commit: <span className="font-mono text-accent">{commitMessage}</span>
+                         <h2 className="text-h2 font-semibold">Drafts</h2>
+                         <p className="text-caption text-foreground-secondary">
+                              AI-generated content based on the selected code
                          </p>
                     </div>
                     <Button
                          onClick={handleGenerate}
                          disabled={isGenerating}
+                         variant="primary"
                          size="lg"
+                         loading={isGenerating}
                     >
-                         {isGenerating ? "Analyzing..." : "Generate Content ✨"}
+                         {isGenerating ? "Analyzing..." : "Generate Content"}
                     </Button>
                </div>
 
-               {/* Right Panel: Output */}
-               <div className="flex-1 flex flex-col gap-6 bg-background-secondary/30 rounded-xl p-6 border border-dashed border-border">
-                    <div>
-                         <h2 className="text-2xl font-bold">Drafts</h2>
-                         <p className="text-sm text-foreground-secondary">
-                              AI-generated content based on the selected code.
-                         </p>
-                    </div>
-
-                    <div className="flex-1 overflow-auto">
-                         {drafts.length > 0 ? (
-                              <ContentPreview drafts={drafts} />
-                         ) : (
-                              <div className="h-full flex flex-col items-center justify-center text-foreground-secondary opacity-50">
-                                   <div className="text-4xl mb-4">🪄</div>
-                                   <p>Select code and click Generate</p>
-                              </div>
-                         )}
-                    </div>
+               {/* Content Area */}
+               <div className="flex-1 overflow-auto">
+                    {drafts.length > 0 ? (
+                         <ContentPreview drafts={drafts} />
+                    ) : (
+                         <div className="h-full flex flex-col items-center justify-center text-foreground-secondary">
+                              <FileText size="lg" className="mb-4 opacity-50" />
+                              <p className="text-body">Select code and click Generate</p>
+                         </div>
+                    )}
                </div>
-          </>
+          </div>
      )
 }
