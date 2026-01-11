@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDatabase } from './config/database';
+import authRoutes from './routes/auth';
 
 // Load environment variables
 dotenv.config();
@@ -20,6 +21,9 @@ app.use(express.json());
 app.get('/health', (req, res) => {
      res.json({ status: 'ok', message: 'CodeToContent API is running' });
 });
+
+// Routes
+app.use('/api/auth', authRoutes);
 
 // Start server
 const startServer = async () => {
