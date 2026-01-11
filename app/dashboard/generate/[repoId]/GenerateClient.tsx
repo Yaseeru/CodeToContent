@@ -54,9 +54,16 @@ export function GenerateClient({ repoName, commitMessage }: GenerateClientProps)
                          variant="primary"
                          size="lg"
                          loading={isGenerating}
+                         aria-label={isGenerating ? "Generating content, please wait" : "Generate content from code"}
                     >
                          {isGenerating ? "Analyzing..." : "Generate Content"}
                     </Button>
+               </div>
+
+               {/* Screen reader announcement for generation status */}
+               <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                    {isGenerating && "Generating content, please wait..."}
+                    {!isGenerating && drafts.length > 0 && `Generated ${drafts.length} content drafts`}
                </div>
 
                {/* Content Area */}
@@ -64,8 +71,8 @@ export function GenerateClient({ repoName, commitMessage }: GenerateClientProps)
                     {drafts.length > 0 ? (
                          <ContentPreview drafts={drafts} />
                     ) : (
-                         <div className="h-full flex flex-col items-center justify-center text-foreground-secondary">
-                              <FileText size="lg" className="mb-4 opacity-50" />
+                         <div className="h-full flex flex-col items-center justify-center text-foreground-secondary" role="status">
+                              <FileText size="lg" className="mb-4 opacity-50" aria-hidden="true" />
                               <p className="text-body">Select code and click Generate</p>
                          </div>
                     )}

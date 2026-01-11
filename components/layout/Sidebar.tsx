@@ -95,6 +95,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                         "fixed top-0 left-0 h-screen w-60 border-r border-border bg-background-secondary z-50 flex flex-col transition-transform duration-200 ease-in-out md:hidden",
                         isOpen ? "translate-x-0" : "-translate-x-full"
                     )}
+                    role="navigation"
+                    aria-label="Main navigation"
                 >
                     {/* Header */}
                     <div className="h-16 flex items-center justify-between px-4 border-b border-border">
@@ -102,9 +104,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 px-2 py-4 space-y-2">
+                    <nav className="flex-1 px-2 py-4 space-y-2" aria-label="Primary navigation">
                         {navItems.map((item) => {
                             const IconComponent = item.icon
+                            const isActive = pathname === item.href
                             return (
                                 <Link
                                     key={item.href}
@@ -112,12 +115,13 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                     onClick={onClose}
                                     className={cn(
                                         "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                                        pathname === item.href
+                                        isActive
                                             ? "bg-accent/10 text-accent"
                                             : "text-foreground-secondary hover:text-foreground hover:bg-background-tertiary"
                                     )}
+                                    aria-current={isActive ? "page" : undefined}
                                 >
-                                    <IconComponent size="sm" />
+                                    <IconComponent size="sm" aria-hidden="true" />
                                     <span>{item.label}</span>
                                 </Link>
                             )
@@ -126,8 +130,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
                     {/* Footer */}
                     <div className="p-4 border-t border-border">
-                        <div className="flex items-center gap-3 px-3 py-2">
-                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-mono flex-shrink-0">
+                        <div className="flex items-center gap-3 px-3 py-2" role="region" aria-label="User profile">
+                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-mono flex-shrink-0" aria-hidden="true">
                                 US
                             </div>
                             <div className="text-sm overflow-hidden">
@@ -148,6 +152,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 "hidden md:flex border-r border-border bg-background-secondary h-screen sticky top-0 flex-col transition-all duration-200 ease-in-out",
                 isCollapsed ? "w-16" : "w-60"
             )}
+            role="navigation"
+            aria-label="Main navigation"
         >
             {/* Header with toggle button */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-border">
@@ -157,37 +163,42 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <button
                     onClick={toggleCollapsed}
                     className={cn(
-                        "p-2 rounded-md hover:bg-background-tertiary transition-colors",
+                        "p-2 rounded-md hover:bg-background-tertiary transition-colors focus:outline-none focus:ring-2 focus:ring-accent",
                         isCollapsed && "mx-auto"
                     )}
                     aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    aria-expanded={!isCollapsed}
+                    type="button"
                 >
                     {isCollapsed ? (
-                        <ChevronRight size="sm" />
+                        <ChevronRight size="sm" aria-hidden="true" />
                     ) : (
-                        <ChevronLeft size="sm" />
+                        <ChevronLeft size="sm" aria-hidden="true" />
                     )}
                 </button>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-2 py-4 space-y-2">
+            <nav className="flex-1 px-2 py-4 space-y-2" aria-label="Primary navigation">
                 {navItems.map((item) => {
                     const IconComponent = item.icon
+                    const isActive = pathname === item.href
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                                pathname === item.href
+                                "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-accent",
+                                isActive
                                     ? "bg-accent/10 text-accent"
                                     : "text-foreground-secondary hover:text-foreground hover:bg-background-tertiary",
                                 isCollapsed && "justify-center"
                             )}
                             title={isCollapsed ? item.label : undefined}
+                            aria-label={isCollapsed ? item.label : undefined}
+                            aria-current={isActive ? "page" : undefined}
                         >
-                            <IconComponent size="sm" aria-hidden={!isCollapsed} />
+                            <IconComponent size="sm" aria-hidden="true" />
                             {!isCollapsed && <span>{item.label}</span>}
                         </Link>
                     )
@@ -199,8 +210,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <div className={cn(
                     "flex items-center gap-3 px-3 py-2",
                     isCollapsed && "justify-center"
-                )}>
-                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-mono flex-shrink-0">
+                )} role="region" aria-label="User profile">
+                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-mono flex-shrink-0" aria-hidden="true">
                         US
                     </div>
                     {!isCollapsed && (

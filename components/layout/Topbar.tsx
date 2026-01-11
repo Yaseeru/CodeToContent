@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Menu } from '@/components/ui/icons/Menu';
 import { User } from '@/components/ui/icons/User';
@@ -18,6 +18,33 @@ interface TopbarProps {
 
 export function Topbar({ user, onMenuClick }: TopbarProps) {
      const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+     const dropdownRef = useRef<HTMLDivElement>(null);
+
+     // Handle Escape key to close dropdown
+     useEffect(() => {
+          const handleEscape = (e: KeyboardEvent) => {
+               if (e.key === 'Escape' && isDropdownOpen) {
+                    setIsDropdownOpen(false);
+               }
+          };
+
+          document.addEventListener('keydown', handleEscape);
+          return () => document.removeEventListener('keydown', handleEscape);
+     }, [isDropdownOpen]);
+
+     // Handle click outside to close dropdown
+     useEffect(() => {
+          const handleClickOutside = (e: MouseEvent) => {
+               if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                    setIsDropdownOpen(false);
+               }
+          };
+
+          if (isDropdownOpen) {
+               document.addEventListener('mousedown', handleClickOutside);
+               return () => document.removeEventListener('mousedown', handleClickOutside);
+          }
+     }, [isDropdownOpen]);
 
      return (
           <header className="sticky top-0 z-40 h-16 w-full bg-[var(--background-secondary)] border-b border-[var(--border)]">
@@ -27,7 +54,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
                          <button
                               onClick={onMenuClick}
                               className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-200 hover:bg-[var(--background-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                              aria-label="Open menu"
+                              aria-label="Open navigation menu"
                               type="button"
                          >
                               <Menu size="md" aria-hidden="true" />
@@ -42,7 +69,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
                          <ThemeToggle />
 
                          {user && (
-                              <div className="relative">
+                              <div className="relative" ref={dropdownRef}>
                                    <button
                                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                         className="flex items-center gap-2 h-10 px-3 rounded-lg transition-colors duration-200 hover:bg-[var(--background-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
@@ -67,47 +94,44 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
 
                                    {/* Dropdown menu */}
                                    {isDropdownOpen && (
-                                        <>
-                                             {/* Backdrop to close dropdown when clicking outside */}
-                                             <div
-                                                  className="fixed inset-0 z-40"
-                                                  onClick={() => setIsDropdownOpen(false)}
-                                                  aria-hidden="true"
-                                             />
-
-                                             <div className="absolute right-0 mt-2 w-56 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg shadow-lg z-50">
-                                                  <div className="p-3 border-b border-[var(--border)]">
-                                                       <p className="text-sm font-medium text-[var(--foreground)]">
-                                                            {user.name}
-                                                       </p>
-                                                       <p className="text-xs text-[var(--foreground-secondary)] truncate">
-                                                            {user.email}
-                                                       </p>
-                                                  </div>
-
-                                                  <div className="py-1">
-                                                       <a
-                                                            href="/dashboard/settings"
-                                                            className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--foreground)] transition-colors duration-200 hover:bg-[var(--background-tertiary)]"
-                                                       >
-                                                            <Settings size="sm" aria-hidden="true" />
-                                                            Settings
-                                                       </a>
-
-                                                       <button
-                                                            onClick={() => {
-                                                                 // Sign out functionality will be handled by the parent
-                                                                 window.location.href = '/api/auth/signout';
-                                                            }}
-                                                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--foreground)] transition-colors duration-200 hover:bg-[var(--background-tertiary)]"
-                                                            type="button"
-                                                       >
-                                                            <LogOut size="sm" aria-hidden="true" />
-                                                            Sign Out
-                                                       </button>
-                                                  </div>
+                                        <div
+                                             className="absolute right-0 mt-2 w-56 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg shadow-lg z-50"
+                                             role="menu"
+                                             aria-orientation="vertical"
+                                             aria-labelledby="user-menu-button"
+                                        >
+                                             <div className="p-3 border-b border-[var(--border)]">
+                                                  <p className="text-sm font-medium text-[var(--foreground)]">
+                                                       {user.name}
+                                                  </p>
+                                                  <p className="text-xs text-[var(--foreground-secondary)] truncate">
+                                                       {user.email}
+                                                  </p>
                                              </div>
-                                        </>
+
+                                             <div className="py-1" role="none">
+                                                  <a
+                                                       href="/dashboard/settings"
+                                                       className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--foreground)] transition-colors duration-200 hover:bg-[var(--background-tertiary)] focus:outline-none focus:bg-[var(--background-tertiary)]"
+                                                       role="menuitem"
+                                                  >
+                                                       <Settings size="sm" aria-hidden="true" />
+                                                       Settings
+                                                  </a>
+
+                                                  <button
+                                                       onClick={() => {
+                                                            window.location.href = '/api/auth/signout';
+                                                       }}
+                                                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--foreground)] transition-colors duration-200 hover:bg-[var(--background-tertiary)] focus:outline-none focus:bg-[var(--background-tertiary)]"
+                                                       type="button"
+                                                       role="menuitem"
+                                                  >
+                                                       <LogOut size="sm" aria-hidden="true" />
+                                                       Sign Out
+                                                  </button>
+                                             </div>
+                                        </div>
                                    )}
                               </div>
                          )}

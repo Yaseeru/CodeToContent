@@ -26,11 +26,11 @@ export function ContentPreview({ drafts }: ContentPreviewProps) {
     const getContentTypeIcon = (type: ContentDraft['type']) => {
         switch (type) {
             case 'twitter':
-                return <Code size="sm" className="text-accent" />
+                return <Code size="sm" className="text-accent" aria-hidden="true" />
             case 'linkedin':
-                return <FileText size="sm" className="text-accent" />
+                return <FileText size="sm" className="text-accent" aria-hidden="true" />
             case 'blog':
-                return <FileText size="sm" className="text-accent" />
+                return <FileText size="sm" className="text-accent" aria-hidden="true" />
         }
     }
 
@@ -47,8 +47,8 @@ export function ContentPreview({ drafts }: ContentPreviewProps) {
 
     if (drafts.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-                <FileText size="lg" className="text-foreground-secondary mb-4" />
+            <div className="flex flex-col items-center justify-center py-12 text-center" role="status" aria-live="polite">
+                <FileText size="lg" className="text-foreground-secondary mb-4" aria-hidden="true" />
                 <p className="text-body text-foreground-secondary">
                     No content drafts available
                 </p>
@@ -57,7 +57,7 @@ export function ContentPreview({ drafts }: ContentPreviewProps) {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6" role="region" aria-label="Generated content drafts">
             {drafts.map((draft) => (
                 <Card key={draft.id} variant="default">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -68,15 +68,15 @@ export function ContentPreview({ drafts }: ContentPreviewProps) {
                         <Button
                             variant="ghost"
                             size="sm"
-                            icon={copiedId === draft.id ? <Check size="sm" /> : <Copy size="sm" />}
+                            icon={copiedId === draft.id ? <Check size="sm" aria-hidden="true" /> : <Copy size="sm" aria-hidden="true" />}
                             onClick={() => handleCopy(draft)}
-                            aria-label={copiedId === draft.id ? "Copied to clipboard" : "Copy to clipboard"}
+                            aria-label={copiedId === draft.id ? "Copied to clipboard" : `Copy ${getContentTypeLabel(draft.type)} to clipboard`}
                         >
                             {copiedId === draft.id ? 'Copied' : 'Copy'}
                         </Button>
                     </CardHeader>
                     <CardContent>
-                        <div className="whitespace-pre-wrap text-body text-foreground leading-relaxed">
+                        <div className="whitespace-pre-wrap text-body text-foreground leading-relaxed" role="article" aria-label={`${getContentTypeLabel(draft.type)} content`}>
                             {draft.content}
                         </div>
                     </CardContent>

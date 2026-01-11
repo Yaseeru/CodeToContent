@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { RepoList } from "@/components/features/RepoList"
+import { Spinner } from "@/components/ui/icons/Spinner"
 import { auth } from "@/lib/auth"
 import { GitHubService } from "@/lib/github"
 import { redirect } from "next/navigation"
@@ -21,7 +22,7 @@ async function RepositoryList({ accessToken }: { accessToken: string }) {
 
     if (error) {
         return (
-            <div className="text-center py-12">
+            <div className="text-center py-12" role="alert" aria-live="assertive">
                 <p className="text-red-500 mb-4">Error: {error}</p>
                 <p className="text-foreground-secondary">Please check your GitHub connection and try again.</p>
             </div>
@@ -30,7 +31,7 @@ async function RepositoryList({ accessToken }: { accessToken: string }) {
 
     if (repos.length === 0) {
         return (
-            <div className="text-center py-12">
+            <div className="text-center py-12" role="status" aria-live="polite">
                 <p className="text-foreground-secondary">No repositories found. Make sure you have repositories in your GitHub account.</p>
             </div>
         )
@@ -61,9 +62,9 @@ export default async function DashboardPage() {
                 </div>
 
                 <Suspense fallback={
-                    <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center justify-center py-12" role="status" aria-live="polite">
                         <div className="text-center space-y-4">
-                            <div className="text-4xl animate-pulse">⏳</div>
+                            <Spinner size="lg" className="mx-auto text-accent" aria-hidden="true" />
                             <p className="text-foreground-secondary">Loading repositories...</p>
                         </div>
                     </div>
