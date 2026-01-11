@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
+import { AlertTriangle } from "@/components/ui/icons"
 import { logger } from "@/lib/logger"
 
 export default function Error({
@@ -24,10 +25,12 @@ export default function Error({
      return (
           <DashboardShell>
                <div className="flex items-center justify-center min-h-[60vh]">
-                    <Card className="max-w-lg w-full p-8 text-center space-y-6">
-                         <div className="text-6xl">⚠️</div>
+                    <Card className="max-w-lg w-full p-8 text-center space-y-6 border-2 border-red-500">
+                         <div className="flex justify-center" aria-hidden="true">
+                              <AlertTriangle size="lg" className="text-red-500" />
+                         </div>
 
-                         <div className="space-y-2">
+                         <div className="space-y-2" role="alert" aria-live="assertive">
                               <h2 className="text-2xl font-bold text-foreground">
                                    Unable to load dashboard
                               </h2>

@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
+import { AlertTriangle } from "@/components/ui/icons"
 
 export default function Error({
      error,
@@ -21,10 +22,12 @@ export default function Error({
           <DashboardShell>
                <div className="flex flex-col gap-8 lg:flex-row h-[calc(100vh-8rem)]">
                     <div className="flex-1 flex items-center justify-center">
-                         <Card className="max-w-md w-full p-8 text-center space-y-6">
-                              <div className="text-6xl">⚠️</div>
+                         <Card className="max-w-md w-full p-8 text-center space-y-6 border-2 border-red-500">
+                              <div className="flex justify-center" aria-hidden="true">
+                                   <AlertTriangle size="lg" className="text-red-500" />
+                              </div>
 
-                              <div className="space-y-2">
+                              <div className="space-y-2" role="alert" aria-live="assertive">
                                    <h2 className="text-2xl font-bold text-foreground">
                                         Something went wrong
                                    </h2>

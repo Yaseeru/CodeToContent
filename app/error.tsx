@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
+import { AlertTriangle } from "@/components/ui/icons"
 import { logger } from "@/lib/logger"
 
 export default function Error({
@@ -22,10 +23,12 @@ export default function Error({
 
      return (
           <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-               <Card className="max-w-lg w-full p-8 text-center space-y-6">
-                    <div className="text-6xl">⚠️</div>
+               <Card className="max-w-lg w-full p-8 text-center space-y-6 border-2 border-red-500">
+                    <div className="flex justify-center" aria-hidden="true">
+                         <AlertTriangle size="lg" className="text-red-500" />
+                    </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2" role="alert" aria-live="assertive">
                          <h1 className="text-3xl font-bold text-foreground">
                               Something went wrong
                          </h1>
