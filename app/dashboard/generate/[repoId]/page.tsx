@@ -81,7 +81,7 @@ export default async function GeneratePage({ params }: PageProps) {
     const { repoId } = await params
 
     return (
-        <DashboardShell>
+        <DashboardShell user={session.user}>
             <div className="flex flex-col gap-8 lg:flex-row h-[calc(100vh-8rem)]">
                 {/* Left Panel: Context & Selection */}
                 <div className="flex-1 flex flex-col gap-6 overflow-hidden">

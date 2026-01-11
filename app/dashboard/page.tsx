@@ -51,7 +51,7 @@ export default async function DashboardPage() {
     }
 
     return (
-        <DashboardShell>
+        <DashboardShell user={session.user}>
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight mb-2">Repositories</h1>
