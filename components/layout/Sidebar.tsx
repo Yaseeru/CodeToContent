@@ -8,6 +8,7 @@ import { Repository } from "@/components/ui/icons/Repository"
 import { Settings } from "@/components/ui/icons/Settings"
 import { ChevronLeft } from "@/components/ui/icons/ChevronLeft"
 import { ChevronRight } from "@/components/ui/icons/ChevronRight"
+import { Logo } from "@/components/ui/Logo"
 
 const navItems = [
     { href: "/dashboard", label: "Repositories", icon: Repository },
@@ -69,7 +70,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     if (!isMounted) {
         return (
             <aside className="hidden md:flex w-60 border-r border-border bg-background-secondary h-screen sticky top-0 flex-col">
-                <div className="p-6">
+                <div className="p-6 flex items-center gap-3">
+                    <Logo size="md" className="text-accent" aria-hidden="true" />
                     <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
                 </div>
             </aside>
@@ -100,7 +102,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 >
                     {/* Header */}
                     <div className="h-16 flex items-center justify-between px-4 border-b border-border">
-                        <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
+                        <div className="flex items-center gap-3">
+                            <Logo size="md" className="text-accent" aria-hidden="true" />
+                            <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
+                        </div>
                     </div>
 
                     {/* Navigation */}
@@ -158,13 +163,19 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             {/* Header with toggle button */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-border">
                 {!isCollapsed && (
-                    <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
+                    <div className="flex items-center gap-3">
+                        <Logo size="md" className="text-accent" aria-hidden="true" />
+                        <h1 className="text-xl font-bold text-accent font-mono">CodeToContent</h1>
+                    </div>
+                )}
+                {isCollapsed && (
+                    <Logo size="sm" className="text-accent mx-auto" aria-hidden="true" />
                 )}
                 <button
                     onClick={toggleCollapsed}
                     className={cn(
                         "p-2 rounded-md hover:bg-background-tertiary transition-colors focus:outline-none focus:ring-2 focus:ring-accent",
-                        isCollapsed && "mx-auto"
+                        isCollapsed && "absolute right-2"
                     )}
                     aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     aria-expanded={!isCollapsed}
