@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Code, FileText, Copy, Check } from "@/components/ui/icons"
 import { ContentDraft } from "@/types"
 
 interface ContentPreviewProps {
@@ -22,26 +23,60 @@ export function ContentPreview({ drafts }: ContentPreviewProps) {
         }
     }
 
+    const getContentTypeIcon = (type: ContentDraft['type']) => {
+        switch (type) {
+            case 'twitter':
+                return <Code size="sm" className="text-accent" />
+            case 'linkedin':
+                return <FileText size="sm" className="text-accent" />
+            case 'blog':
+                return <FileText size="sm" className="text-accent" />
+        }
+    }
+
+    const getContentTypeLabel = (type: ContentDraft['type']) => {
+        switch (type) {
+            case 'twitter':
+                return 'X Thread'
+            case 'linkedin':
+                return 'LinkedIn Post'
+            case 'blog':
+                return 'Blog Outline'
+        }
+    }
+
+    if (drafts.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+                <FileText size="lg" className="text-foreground-secondary mb-4" />
+                <p className="text-body text-foreground-secondary">
+                    No content drafts available
+                </p>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-6">
             {drafts.map((draft) => (
-                <Card key={draft.id} className="border border-border/50">
+                <Card key={draft.id} variant="default">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                        <CardTitle className="text-base font-medium text-accent">
-                            {draft.type === 'twitter' ? '🐦 X Thread' :
-                                draft.type === 'linkedin' ? '💼 LinkedIn Post' : '📝 Blog Outline'}
+                        <CardTitle className="flex items-center gap-2 text-h3 font-medium text-accent">
+                            {getContentTypeIcon(draft.type)}
+                            {getContentTypeLabel(draft.type)}
                         </CardTitle>
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8"
+                            icon={copiedId === draft.id ? <Check size="sm" /> : <Copy size="sm" />}
                             onClick={() => handleCopy(draft)}
+                            aria-label={copiedId === draft.id ? "Copied to clipboard" : "Copy to clipboard"}
                         >
-                            {copiedId === draft.id ? '✓ Copied' : 'Copy'}
+                            {copiedId === draft.id ? 'Copied' : 'Copy'}
                         </Button>
                     </CardHeader>
                     <CardContent>
-                        <div className="whitespace-pre-wrap text-sm text-foreground/90 font-sans leading-relaxed">
+                        <div className="whitespace-pre-wrap text-body text-foreground leading-relaxed">
                             {draft.content}
                         </div>
                     </CardContent>
