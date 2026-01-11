@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { Card } from "@/components/ui/Card"
+import { Spinner } from "@/components/ui/icons/Spinner"
 import styles from "./loading.module.css"
 
 export default function Loading() {
@@ -40,7 +41,7 @@ export default function Loading() {
 
                          <div className="flex-1 flex items-center justify-center">
                               <div className="text-center space-y-4">
-                                   <div className="text-4xl animate-pulse">⏳</div>
+                                   <Spinner size="lg" className="mx-auto text-accent" aria-hidden="true" />
                                    <p className="text-foreground-secondary">Loading repository data...</p>
                               </div>
                          </div>

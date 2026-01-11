@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { RepoList } from "@/components/features/RepoList"
 import { Spinner } from "@/components/ui/icons/Spinner"
+import { Repository as RepoIcon } from "@/components/ui/icons/Repository"
 import { auth } from "@/lib/auth"
 import { GitHubService } from "@/lib/github"
 import { redirect } from "next/navigation"
@@ -31,8 +32,10 @@ async function RepositoryList({ accessToken }: { accessToken: string }) {
 
     if (repos.length === 0) {
         return (
-            <div className="text-center py-12" role="status" aria-live="polite">
-                <p className="text-foreground-secondary">No repositories found. Make sure you have repositories in your GitHub account.</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center" role="status" aria-live="polite">
+                <RepoIcon size="lg" className="text-foreground-secondary mb-4" aria-hidden="true" />
+                <p className="text-body text-foreground-secondary">No repositories found</p>
+                <p className="text-caption text-foreground-secondary mt-2 opacity-70">Make sure you have repositories in your GitHub account</p>
             </div>
         )
     }
