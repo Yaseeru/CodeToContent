@@ -40,10 +40,41 @@ code {
   transition-duration: 0s !important;
 }
 
-/* Override for necessary loading spinners only */
+/* Override for necessary loading spinners and error notifications */
 .spinner,
-.animate-spin {
+.animate-spin,
+.animate-slide-in {
   animation-duration: 1s !important;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Slide-in animation for error notifications */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards !important;
 }
 
 /* Remove focus outline glow, use simple border instead */

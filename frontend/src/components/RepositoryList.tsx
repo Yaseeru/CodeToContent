@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient, getErrorMessage } from '../utils/apiClient';
+import ErrorNotification from './ErrorNotification';
 
 interface Repository {
      id: string;
@@ -22,48 +23,38 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
      const [repositories, setRepositories] = useState<Repository[]>([]);
      const [loading, setLoading] = useState<boolean>(true);
      const [error, setError] = useState<string | null>(null);
+     const [showErrorNotification, setShowErrorNotification] = useState<boolean>(false);
 
      useEffect(() => {
-          const fetchRepositories = async () => {
-               try {
-                    setLoading(true);
-                    setError(null);
-
-                    const token = localStorage.getItem('token');
-                    if (!token) {
-                         throw new Error('No authentication token found');
-                    }
-
-                    const response = await axios.get('/api/repositories', {
-                         headers: {
-                              Authorization: `Bearer ${token}`,
-                         },
-                    });
-
-                    setRepositories(response.data.repositories);
-               } catch (err) {
-                    console.error('Error fetching repositories:', err);
-                    if (axios.isAxiosError(err)) {
-                         if (err.response?.status === 401) {
-                              setError('Authentication failed. Please log in again.');
-                              // Clear invalid token
-                              localStorage.removeItem('token');
-                              window.location.href = '/';
-                         } else if (err.response?.status === 429) {
-                              setError('GitHub API rate limit exceeded. Please try again later.');
-                         } else {
-                              setError(err.response?.data?.message || 'Failed to fetch repositories');
-                         }
-                    } else {
-                         setError('An unexpected error occurred');
-                    }
-               } finally {
-                    setLoading(false);
-               }
-          };
-
           fetchRepositories();
      }, []);
+
+     const fetchRepositories = async () => {
+          try {
+               setLoading(true);
+               setError(null);
+               setShowErrorNotification(false);
+
+               const response = await apiClient.get('/api/repositories');
+               setRepositories(response.data.repositories);
+          } catch (err) {
+               console.error('Error fetching repositories:', err);
+               const errorMessage = getErrorMessage(err);
+               setError(errorMessage);
+               setShowErrorNotification(true);
+          } finally {
+               setLoading(false);
+          }
+     };
+
+     const handleRetryFetch = () => {
+          setShowErrorNotification(false);
+          fetchRepositories();
+     };
+
+     const handleCloseErrorNotification = () => {
+          setShowErrorNotification(false);
+     };
 
      const handleRepositoryClick = async (repositoryId: string) => {
           if (onRepositoryClick) {
@@ -92,9 +83,24 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
 
      if (error) {
           return (
-               <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
-                    <p className="text-dark-error text-sm">{error}</p>
-               </div>
+               <>
+                    {showErrorNotification && (
+                         <ErrorNotification
+                              message={error}
+                              onClose={handleCloseErrorNotification}
+                              onRetry={handleRetryFetch}
+                         />
+                    )}
+                    <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
+                         <p className="text-dark-error text-sm mb-3">{error}</p>
+                         <button
+                              onClick={handleRetryFetch}
+                              className="px-4 py-2 bg-dark-error text-white text-sm font-medium rounded-lg hover:bg-dark-error-hover"
+                         >
+                              Retry
+                         </button>
+                    </div>
+               </>
           );
      }
 

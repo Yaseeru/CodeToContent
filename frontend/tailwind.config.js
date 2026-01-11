@@ -19,6 +19,7 @@ export default {
                     'dark-accent-hover': '#4a7dd9',
                     'dark-error': '#ef4444',
                     'dark-error-bg': '#2d1f1f',
+                    'dark-error-hover': '#dc2626',
                     'dark-success': '#10b981',
                },
                fontFamily: {

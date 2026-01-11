@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient, getErrorMessage } from '../utils/apiClient';
+import ErrorNotification from './ErrorNotification';
 
 interface Analysis {
      id: string;
@@ -26,68 +27,58 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
      const [analysis, setAnalysis] = useState<Analysis | null>(null);
      const [loading, setLoading] = useState<boolean>(false);
      const [error, setError] = useState<string | null>(null);
+     const [showErrorNotification, setShowErrorNotification] = useState<boolean>(false);
 
      useEffect(() => {
           if (!repositoryId) {
                setAnalysis(null);
                setLoading(false);
                setError(null);
+               setShowErrorNotification(false);
                return;
           }
 
-          const analyzeRepository = async () => {
-               try {
-                    setLoading(true);
-                    setError(null);
-
-                    const token = localStorage.getItem('token');
-                    if (!token) {
-                         throw new Error('No authentication token found');
-                    }
-
-                    // Trigger analysis
-                    const response = await axios.post(
-                         `/api/repositories/${repositoryId}/analyze`,
-                         {},
-                         {
-                              headers: {
-                                   Authorization: `Bearer ${token}`,
-                              },
-                         }
-                    );
-
-                    const analysisData = response.data.analysis;
-                    setAnalysis(analysisData);
-
-                    if (onAnalysisComplete) {
-                         onAnalysisComplete(analysisData);
-                    }
-               } catch (err) {
-                    console.error('Error analyzing repository:', err);
-                    if (axios.isAxiosError(err)) {
-                         if (err.response?.status === 401) {
-                              setError('Authentication failed. Please log in again.');
-                              localStorage.removeItem('token');
-                              window.location.href = '/';
-                         } else if (err.response?.status === 404) {
-                              setError('Repository not found.');
-                         } else if (err.response?.status === 429) {
-                              setError('API rate limit exceeded. Please try again later.');
-                         } else if (err.response?.status === 503) {
-                              setError('AI service temporarily unavailable. Please try again later.');
-                         } else {
-                              setError(err.response?.data?.message || 'Failed to analyze repository');
-                         }
-                    } else {
-                         setError('An unexpected error occurred');
-                    }
-               } finally {
-                    setLoading(false);
-               }
-          };
-
           analyzeRepository();
-     }, [repositoryId, onAnalysisComplete]);
+     }, [repositoryId]);
+
+     const analyzeRepository = async () => {
+          if (!repositoryId) return;
+
+          try {
+               setLoading(true);
+               setError(null);
+               setShowErrorNotification(false);
+
+               // Trigger analysis
+               const response = await apiClient.post(
+                    `/api/repositories/${repositoryId}/analyze`,
+                    {}
+               );
+
+               const analysisData = response.data.analysis;
+               setAnalysis(analysisData);
+
+               if (onAnalysisComplete) {
+                    onAnalysisComplete(analysisData);
+               }
+          } catch (err) {
+               console.error('Error analyzing repository:', err);
+               const errorMessage = getErrorMessage(err);
+               setError(errorMessage);
+               setShowErrorNotification(true);
+          } finally {
+               setLoading(false);
+          }
+     };
+
+     const handleRetryAnalysis = () => {
+          setShowErrorNotification(false);
+          analyzeRepository();
+     };
+
+     const handleCloseErrorNotification = () => {
+          setShowErrorNotification(false);
+     };
 
      if (!repositoryId) {
           return (
@@ -113,10 +104,25 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
 
      if (error) {
           return (
-               <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
-                    <p className="text-dark-error font-medium mb-2">Analysis Failed</p>
-                    <p className="text-dark-error text-sm">{error}</p>
-               </div>
+               <>
+                    {showErrorNotification && (
+                         <ErrorNotification
+                              message={error}
+                              onClose={handleCloseErrorNotification}
+                              onRetry={handleRetryAnalysis}
+                         />
+                    )}
+                    <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
+                         <p className="text-dark-error font-medium mb-2">Analysis Failed</p>
+                         <p className="text-dark-error text-sm mb-3">{error}</p>
+                         <button
+                              onClick={handleRetryAnalysis}
+                              className="px-4 py-2 bg-dark-error text-white text-sm font-medium rounded-lg hover:bg-dark-error-hover"
+                         >
+                              Retry Analysis
+                         </button>
+                    </div>
+               </>
           );
      }
 

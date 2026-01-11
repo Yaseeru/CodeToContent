@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient, getErrorMessage } from '../utils/apiClient';
 
 const AuthCallback: React.FC = () => {
      const [searchParams] = useSearchParams();
@@ -25,7 +25,7 @@ const AuthCallback: React.FC = () => {
 
                try {
                     // Exchange code for JWT
-                    const response = await axios.get(`/api/auth/callback?code=${code}`);
+                    const response = await apiClient.get(`/api/auth/callback?code=${code}`);
                     const { token } = response.data;
 
                     // Store JWT in localStorage
@@ -35,10 +35,7 @@ const AuthCallback: React.FC = () => {
                     navigate('/dashboard');
                } catch (err: any) {
                     console.error('Authentication error:', err);
-                    setError(
-                         err.response?.data?.message ||
-                         'Authentication failed. Please try again.'
-                    );
+                    setError(getErrorMessage(err));
                }
           };
 

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useRef } from 'react';
+import { apiClient, getErrorMessage } from '../utils/apiClient';
+import ErrorNotification from './ErrorNotification';
 
 interface ContentGeneratorProps {
      analysisId: string;
@@ -25,58 +26,58 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
           x: false,
      });
      const [error, setError] = useState<string | null>(null);
+     const [showErrorNotification, setShowErrorNotification] = useState<boolean>(false);
+     const lastPlatform = useRef<'linkedin' | 'x' | null>(null);
 
      const generateContent = async (platform: 'linkedin' | 'x') => {
           try {
                setLoading((prev) => ({ ...prev, [platform]: true }));
                setError(null);
+               setShowErrorNotification(false);
+               lastPlatform.current = platform;
 
-               const token = localStorage.getItem('token');
-               if (!token) {
-                    throw new Error('No authentication token found');
-               }
-
-               const response = await axios.post(
+               const response = await apiClient.post(
                     '/api/content/generate',
                     {
                          analysisId,
                          tone,
                          platform,
-                    },
-                    {
-                         headers: {
-                              Authorization: `Bearer ${token}`,
-                         },
                     }
                );
 
                onContentGenerated(response.data.content);
           } catch (err) {
                console.error('Error generating content:', err);
-               if (axios.isAxiosError(err)) {
-                    if (err.response?.status === 401) {
-                         setError('Authentication failed. Please log in again.');
-                         localStorage.removeItem('token');
-                         window.location.href = '/';
-                    } else if (err.response?.status === 404) {
-                         setError('Analysis not found.');
-                    } else if (err.response?.status === 429) {
-                         setError('API rate limit exceeded. Please try again later.');
-                    } else if (err.response?.status === 503) {
-                         setError('AI service temporarily unavailable. Please try again later.');
-                    } else {
-                         setError(err.response?.data?.message || 'Failed to generate content');
-                    }
-               } else {
-                    setError('An unexpected error occurred');
-               }
+               const errorMessage = getErrorMessage(err);
+               setError(errorMessage);
+               setShowErrorNotification(true);
           } finally {
                setLoading((prev) => ({ ...prev, [platform]: false }));
           }
      };
 
+     const handleRetryGenerate = () => {
+          if (lastPlatform.current) {
+               setShowErrorNotification(false);
+               generateContent(lastPlatform.current);
+          }
+     };
+
+     const handleCloseErrorNotification = () => {
+          setShowErrorNotification(false);
+          setError(null);
+     };
+
      return (
           <div className="space-y-4">
+               {showErrorNotification && error && (
+                    <ErrorNotification
+                         message={error}
+                         onClose={handleCloseErrorNotification}
+                         onRetry={handleRetryGenerate}
+                    />
+               )}
+
                <div>
                     <h3 className="text-base font-medium text-dark-text mb-2">
                          Generate Content
@@ -86,17 +87,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                     </p>
                </div>
 
-               {error && (
-                    <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
-                         <p className="text-dark-error text-sm">{error}</p>
-                    </div>
-               )}
-
                <div className="flex gap-3">
                     <button
                          onClick={() => generateContent('linkedin')}
                          disabled={loading.linkedin || loading.x}
-                         className="flex-1 px-6 py-3 bg-dark-accent text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                         className="flex-1 px-6 py-3 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                          {loading.linkedin ? (
                               <span className="flex items-center justify-center">
@@ -111,7 +106,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                     <button
                          onClick={() => generateContent('x')}
                          disabled={loading.linkedin || loading.x}
-                         className="flex-1 px-6 py-3 bg-dark-accent text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                         className="flex-1 px-6 py-3 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                          {loading.x ? (
                               <span className="flex items-center justify-center">
