@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDatabase } from './config/database';
 import authRoutes from './routes/auth';
+import repositoryRoutes from './routes/repositories';
+import contentRoutes from './routes/content';
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +26,8 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/repositories', repositoryRoutes);
+app.use('/api/content', contentRoutes);
 
 // Start server
 const startServer = async () => {
