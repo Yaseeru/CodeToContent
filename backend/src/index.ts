@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { connectDatabase } from './config/database';
 import authRoutes from './routes/auth';
 import repositoryRoutes from './routes/repositories';
@@ -24,10 +25,21 @@ app.get('/health', (req, res) => {
      res.json({ status: 'ok', message: 'CodeToContent API is running' });
 });
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/repositories', repositoryRoutes);
 app.use('/api/content', contentRoutes);
+
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+     const frontendPath = path.join(__dirname, '../../frontend/dist');
+     app.use(express.static(frontendPath));
+
+     // Serve index.html for all other routes (SPA fallback)
+     app.get('*', (req, res) => {
+          res.sendFile(path.join(frontendPath, 'index.html'));
+     });
+}
 
 // Start server
 const startServer = async () => {
