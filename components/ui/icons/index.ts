@@ -21,3 +21,4 @@ export { User } from './User';
 export { LogOut } from './LogOut';
 export { Code } from './Code';
 export { FileText } from './FileText';
+export { Star } from './Star';
