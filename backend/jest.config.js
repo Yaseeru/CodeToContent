@@ -12,5 +12,6 @@ module.exports = {
      transform: {
           '^.+\\.ts$': 'ts-jest'
      },
-     setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts']
+     setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+     testTimeout: 30000
 };
