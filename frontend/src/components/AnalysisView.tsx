@@ -91,8 +91,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
 
      if (!repositoryId) {
           return (
-               <div className="text-center py-12">
-                    <p className="text-dark-text-secondary">
+               <div className="text-center py-16">
+                    <p className="text-base text-dark-text-secondary">
                          Select a repository to analyze
                     </p>
                </div>
@@ -101,10 +101,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
 
      if (loading) {
           return (
-               <div className="flex flex-col items-center justify-center py-12">
-                    <div className="w-12 h-12 border-4 border-dark-border border-t-dark-accent rounded-full animate-spin mb-4"></div>
-                    <p className="text-dark-text-secondary">Analyzing repository...</p>
-                    <p className="text-dark-text-secondary text-sm mt-2">
+               <div className="flex flex-col items-center justify-center py-16">
+                    <div className="w-10 h-10 border-3 border-dark-border border-t-dark-accent rounded-full spinner mb-4"></div>
+                    <p className="text-base text-dark-text-secondary">Analyzing repository...</p>
+                    <p className="text-sm text-dark-text-tertiary mt-2">
                          This may take a few moments
                     </p>
                </div>
@@ -113,9 +113,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
 
      if (error) {
           return (
-               <div className="bg-dark-surface border border-red-500 rounded-lg p-4">
-                    <p className="text-red-400 font-semibold mb-2">Analysis Failed</p>
-                    <p className="text-red-400">{error}</p>
+               <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
+                    <p className="text-dark-error font-medium mb-2">Analysis Failed</p>
+                    <p className="text-dark-error text-sm">{error}</p>
                </div>
           );
      }
@@ -127,27 +127,27 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
      return (
           <div className="bg-dark-surface border border-dark-border rounded-lg p-6 space-y-6">
                <div>
-                    <h2 className="text-2xl font-bold text-dark-text mb-4">Analysis Results</h2>
-                    <p className="text-dark-text-secondary text-sm">
+                    <h2 className="text-2xl font-semibold text-dark-text mb-2">Analysis Results</h2>
+                    <p className="text-sm text-dark-text-tertiary">
                          Analyzed on {new Date(analysis.createdAt).toLocaleString()}
                     </p>
                </div>
 
                <div>
-                    <h3 className="text-lg font-semibold text-dark-text mb-2">Problem Statement</h3>
-                    <p className="text-dark-text-secondary">{analysis.problemStatement}</p>
+                    <h3 className="text-base font-medium text-dark-text mb-2">Problem Statement</h3>
+                    <p className="text-sm text-dark-text-secondary leading-relaxed">{analysis.problemStatement}</p>
                </div>
 
                <div>
-                    <h3 className="text-lg font-semibold text-dark-text mb-2">Target Audience</h3>
-                    <p className="text-dark-text-secondary">{analysis.targetAudience}</p>
+                    <h3 className="text-base font-medium text-dark-text mb-2">Target Audience</h3>
+                    <p className="text-sm text-dark-text-secondary leading-relaxed">{analysis.targetAudience}</p>
                </div>
 
                <div>
-                    <h3 className="text-lg font-semibold text-dark-text mb-2">Core Functionality</h3>
+                    <h3 className="text-base font-medium text-dark-text mb-2">Core Functionality</h3>
                     <ul className="list-disc list-inside space-y-1">
                          {analysis.coreFunctionality.map((item, index) => (
-                              <li key={index} className="text-dark-text-secondary">
+                              <li key={index} className="text-sm text-dark-text-secondary leading-relaxed">
                                    {item}
                               </li>
                          ))}
@@ -156,10 +156,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
 
                {analysis.notableFeatures.length > 0 && (
                     <div>
-                         <h3 className="text-lg font-semibold text-dark-text mb-2">Notable Features</h3>
+                         <h3 className="text-base font-medium text-dark-text mb-2">Notable Features</h3>
                          <ul className="list-disc list-inside space-y-1">
                               {analysis.notableFeatures.map((item, index) => (
-                                   <li key={index} className="text-dark-text-secondary">
+                                   <li key={index} className="text-sm text-dark-text-secondary leading-relaxed">
                                         {item}
                                    </li>
                               ))}
@@ -169,10 +169,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
 
                {analysis.recentChanges.length > 0 && (
                     <div>
-                         <h3 className="text-lg font-semibold text-dark-text mb-2">Recent Changes</h3>
+                         <h3 className="text-base font-medium text-dark-text mb-2">Recent Changes</h3>
                          <ul className="list-disc list-inside space-y-1">
                               {analysis.recentChanges.map((item, index) => (
-                                   <li key={index} className="text-dark-text-secondary">
+                                   <li key={index} className="text-sm text-dark-text-secondary leading-relaxed">
                                         {item}
                                    </li>
                               ))}
@@ -182,10 +182,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
 
                {analysis.integrations.length > 0 && (
                     <div>
-                         <h3 className="text-lg font-semibold text-dark-text mb-2">Integrations</h3>
+                         <h3 className="text-base font-medium text-dark-text mb-2">Integrations</h3>
                          <ul className="list-disc list-inside space-y-1">
                               {analysis.integrations.map((item, index) => (
-                                   <li key={index} className="text-dark-text-secondary">
+                                   <li key={index} className="text-sm text-dark-text-secondary leading-relaxed">
                                         {item}
                                    </li>
                               ))}
@@ -194,8 +194,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
                )}
 
                <div>
-                    <h3 className="text-lg font-semibold text-dark-text mb-2">Value Proposition</h3>
-                    <p className="text-dark-text-secondary">{analysis.valueProposition}</p>
+                    <h3 className="text-base font-medium text-dark-text mb-2">Value Proposition</h3>
+                    <p className="text-sm text-dark-text-secondary leading-relaxed">{analysis.valueProposition}</p>
                </div>
           </div>
      );

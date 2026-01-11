@@ -51,15 +51,15 @@ const AuthCallback: React.FC = () => {
 
      if (error) {
           return (
-               <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+               <div className="min-h-screen bg-dark-bg flex items-center justify-center px-4">
                     <div className="text-center max-w-md">
-                         <h2 className="text-2xl font-bold text-dark-text mb-4">
+                         <h2 className="text-2xl font-semibold text-dark-text mb-3">
                               Authentication Error
                          </h2>
-                         <p className="text-dark-text-secondary mb-6">{error}</p>
+                         <p className="text-base text-dark-text-secondary mb-6 leading-relaxed">{error}</p>
                          <button
                               onClick={handleRetry}
-                              className="bg-dark-accent hover:bg-opacity-90 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                              className="bg-dark-accent text-white font-medium py-3 px-8 rounded-lg"
                          >
                               Try Again
                          </button>
@@ -69,12 +69,12 @@ const AuthCallback: React.FC = () => {
      }
 
      return (
-          <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+          <div className="min-h-screen bg-dark-bg flex items-center justify-center px-4">
                <div className="text-center">
-                    <h2 className="text-2xl font-bold text-dark-text mb-4">
+                    <h2 className="text-2xl font-semibold text-dark-text mb-3">
                          Authenticating...
                     </h2>
-                    <p className="text-dark-text-secondary">
+                    <p className="text-base text-dark-text-secondary">
                          Please wait while we complete your authentication.
                     </p>
                </div>

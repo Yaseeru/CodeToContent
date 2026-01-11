@@ -7,17 +7,17 @@ const LandingPage: React.FC = () => {
      };
 
      return (
-          <div className="min-h-screen bg-dark-bg flex items-center justify-center">
-               <div className="text-center">
-                    <h1 className="text-4xl font-bold text-dark-text mb-4">
+          <div className="min-h-screen bg-dark-bg flex items-center justify-center px-4">
+               <div className="text-center max-w-lg">
+                    <h1 className="text-4xl font-semibold text-dark-text mb-3">
                          CodeToContent
                     </h1>
-                    <p className="text-dark-text-secondary mb-8 max-w-md">
+                    <p className="text-base text-dark-text-secondary mb-8 leading-relaxed">
                          Transform your GitHub repositories into compelling content for LinkedIn and X
                     </p>
                     <button
                          onClick={handleGitHubLogin}
-                         className="bg-dark-accent hover:bg-opacity-90 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                         className="bg-dark-accent text-white font-medium py-3 px-8 rounded-lg"
                     >
                          Continue with GitHub
                     </button>

@@ -38,7 +38,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
      return (
           <div className="space-y-4">
                <div>
-                    <label className="block text-sm font-medium text-dark-text mb-2">
+                    <label className="block text-sm font-medium text-dark-text mb-3">
                          Select Tone
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -46,9 +46,9 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
                               <button
                                    key={tone}
                                    onClick={() => handlePredefinedToneSelect(tone)}
-                                   className={`px-4 py-2 rounded-lg border transition-colors ${selectedTone === tone && !isCustom
-                                             ? 'bg-dark-accent border-dark-accent text-white'
-                                             : 'bg-dark-surface border-dark-border text-dark-text hover:border-dark-accent'
+                                   className={`px-4 py-2 rounded-lg border text-sm font-medium ${selectedTone === tone && !isCustom
+                                        ? 'bg-dark-accent border-dark-accent text-white'
+                                        : 'bg-dark-surface border-dark-border text-dark-text'
                                         }`}
                               >
                                    {tone}
@@ -70,7 +70,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
                          value={customTone}
                          onChange={handleCustomToneChange}
                          placeholder="e.g., Inspirational and motivating"
-                         className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg text-dark-text placeholder-dark-text-secondary focus:outline-none focus:border-dark-accent"
+                         className="w-full px-4 py-2 bg-dark-surface border border-dark-border rounded-lg text-base text-dark-text placeholder-dark-text-tertiary focus:border-dark-accent"
                     />
                     {isCustom && customTone && (
                          <p className="mt-2 text-sm text-dark-text-secondary">

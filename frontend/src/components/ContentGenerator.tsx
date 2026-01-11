@@ -78,29 +78,29 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
      return (
           <div className="space-y-4">
                <div>
-                    <h3 className="text-lg font-semibold text-dark-text mb-4">
+                    <h3 className="text-base font-medium text-dark-text mb-2">
                          Generate Content
                     </h3>
-                    <p className="text-sm text-dark-text-secondary mb-4">
+                    <p className="text-sm text-dark-text-secondary leading-relaxed">
                          Select a platform to generate content with the selected tone
                     </p>
                </div>
 
                {error && (
-                    <div className="bg-dark-surface border border-red-500 rounded-lg p-4">
-                         <p className="text-red-400">{error}</p>
+                    <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
+                         <p className="text-dark-error text-sm">{error}</p>
                     </div>
                )}
 
-               <div className="flex gap-4">
+               <div className="flex gap-3">
                     <button
                          onClick={() => generateContent('linkedin')}
                          disabled={loading.linkedin || loading.x}
-                         className="flex-1 px-6 py-3 bg-dark-accent text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                         className="flex-1 px-6 py-3 bg-dark-accent text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                          {loading.linkedin ? (
                               <span className="flex items-center justify-center">
-                                   <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner mr-2"></span>
                                    Generating...
                               </span>
                          ) : (
@@ -111,11 +111,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                     <button
                          onClick={() => generateContent('x')}
                          disabled={loading.linkedin || loading.x}
-                         className="flex-1 px-6 py-3 bg-dark-accent text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                         className="flex-1 px-6 py-3 bg-dark-accent text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                          {loading.x ? (
                               <span className="flex items-center justify-center">
-                                   <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner mr-2"></span>
                                    Generating...
                               </span>
                          ) : (

@@ -84,24 +84,24 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
 
      if (loading) {
           return (
-               <div className="flex items-center justify-center py-12">
-                    <div className="text-dark-text-secondary">Loading repositories...</div>
+               <div className="flex items-center justify-center py-16">
+                    <div className="text-base text-dark-text-secondary">Loading repositories...</div>
                </div>
           );
      }
 
      if (error) {
           return (
-               <div className="bg-dark-surface border border-red-500 rounded-lg p-4">
-                    <p className="text-red-400">{error}</p>
+               <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
+                    <p className="text-dark-error text-sm">{error}</p>
                </div>
           );
      }
 
      if (filteredRepositories.length === 0) {
           return (
-               <div className="text-center py-12">
-                    <p className="text-dark-text-secondary">
+               <div className="text-center py-16">
+                    <p className="text-base text-dark-text-secondary">
                          {searchQuery ? 'No repositories match your search' : 'No repositories found'}
                     </p>
                </div>
@@ -109,22 +109,22 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
      }
 
      return (
-          <div className="space-y-3">
+          <div className="space-y-2">
                {filteredRepositories.map((repo) => (
                     <div
                          key={repo.id}
                          onClick={() => handleRepositoryClick(repo.id)}
-                         className="bg-dark-surface border border-dark-border rounded-lg p-4 cursor-pointer hover:border-dark-accent transition-colors"
+                         className="bg-dark-surface border border-dark-border rounded-lg p-4 cursor-pointer hover:bg-dark-surface-hover"
                     >
-                         <h3 className="text-dark-text font-semibold">{repo.name}</h3>
-                         <p className="text-dark-text-secondary text-sm mt-1">{repo.fullName}</p>
+                         <h3 className="text-base font-medium text-dark-text">{repo.name}</h3>
+                         <p className="text-sm text-dark-text-tertiary mt-1">{repo.fullName}</p>
                          {repo.description && (
-                              <p className="text-dark-text-secondary text-sm mt-2">
+                              <p className="text-sm text-dark-text-secondary mt-2 leading-relaxed">
                                    {repo.description}
                               </p>
                          )}
                          {repo.lastAnalyzed && (
-                              <p className="text-dark-text-secondary text-xs mt-2">
+                              <p className="text-xs text-dark-text-tertiary mt-2">
                                    Last analyzed: {new Date(repo.lastAnalyzed).toLocaleDateString()}
                               </p>
                          )}

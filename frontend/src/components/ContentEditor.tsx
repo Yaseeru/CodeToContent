@@ -94,25 +94,25 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
           <div className="space-y-4">
                <div className="flex items-center justify-between">
                     <div>
-                         <h4 className="text-md font-semibold text-dark-text">
+                         <h4 className="text-base font-medium text-dark-text">
                               {content.platform === 'linkedin' ? 'LinkedIn' : 'X (Twitter)'} Content
                          </h4>
-                         <p className="text-sm text-dark-text-secondary">
+                         <p className="text-sm text-dark-text-secondary mt-1">
                               Tone: {content.tone} | Version: {content.version}
                               {isEdited && ' (edited)'}
                          </p>
                     </div>
                     <button
                          onClick={onRegenerate}
-                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text rounded-lg hover:border-dark-accent transition-colors"
+                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg"
                     >
                          Regenerate
                     </button>
                </div>
 
                {error && (
-                    <div className="bg-dark-surface border border-red-500 rounded-lg p-3">
-                         <p className="text-red-400 text-sm">{error}</p>
+                    <div className="bg-dark-error-bg border border-dark-error rounded-lg p-3">
+                         <p className="text-dark-error text-sm">{error}</p>
                     </div>
                )}
 
@@ -120,7 +120,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                     value={editedText}
                     onChange={handleTextChange}
                     rows={8}
-                    className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-dark-text placeholder-dark-text-secondary focus:outline-none focus:border-dark-accent resize-y"
+                    className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-base text-dark-text placeholder-dark-text-tertiary focus:border-dark-accent resize-y"
                     placeholder="Generated content will appear here..."
                />
 
@@ -128,27 +128,27 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                     <button
                          onClick={() => handleRefine('shorter')}
                          disabled={refining}
-                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text rounded-lg hover:border-dark-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                          {refining ? 'Refining...' : 'Make Shorter'}
                     </button>
                     <button
                          onClick={() => handleRefine('clearer')}
                          disabled={refining}
-                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text rounded-lg hover:border-dark-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                          {refining ? 'Refining...' : 'Make Clearer'}
                     </button>
                     <button
                          onClick={() => handleRefine('more engaging')}
                          disabled={refining}
-                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text rounded-lg hover:border-dark-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                          {refining ? 'Refining...' : 'Make More Engaging'}
                     </button>
                     <button
                          onClick={handleCopy}
-                         className="ml-auto px-6 py-2 bg-dark-accent text-white rounded-lg hover:bg-opacity-90 transition-colors"
+                         className="ml-auto px-6 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg"
                     >
                          {copySuccess ? 'Copied!' : 'Copy'}
                     </button>
