@@ -48,11 +48,74 @@ The heart of CodeToContent is **Gemini 3**. Standard LLMs struggle with the nuan
 
 ## 🛠️ Tech Stack
 
-*   **Framework**: Next.js (App Router)
-*   **Language**: TypeScript
-*   **Styling**: Vanilla CSS Modules (Clean, dark-themed, no-nonsense)
+*   **Framework**: Next.js 16 (App Router)
+*   **Language**: TypeScript 5
+*   **Styling**: Tailwind CSS v4 with custom design system
+*   **Theme**: Dark/Light mode with next-themes
 *   **AI**: Google Gemini 3 API
 *   **Auth**: Auth.js (GitHub Provider)
+*   **Database**: Prisma ORM with PostgreSQL
+
+---
+
+---
+
+## 🎨 Design System
+
+CodeToContent features a comprehensive design system with:
+
+### Theme System
+- **Dark/Light Mode**: Seamless theme switching with automatic persistence
+- **System Preference Detection**: Automatically detects and applies browser preference
+- **No FOUC**: Prevents flash of unstyled content on page load
+- **Smooth Transitions**: 200ms color transitions with reduced-motion support
+
+### Design Tokens
+All colors, typography, and spacing are defined as CSS variables that automatically switch between themes:
+
+**Dark Theme** (Default)
+- Background: `#121926` (blue-tinted dark)
+- Accent: `#4DA1FF` (bright blue)
+- Professional developer-focused aesthetic
+
+**Light Theme**
+- Background: `#FFFFFF` (clean white)
+- Accent: `#2563EB` (blue)
+- WCAG AA compliant contrast ratios
+
+### Component Library
+- **Button**: 3 variants (primary, secondary, ghost), 3 sizes, loading states
+- **Card**: Interactive, outlined, and default variants with hover effects
+- **Input**: Focus states, disabled states, proper ARIA labels
+- **Icons**: 17+ professional line icons (no emojis)
+
+### Typography Scale
+- H1: 36px (page titles)
+- H2: 28px (section headings)
+- H3: 22px (subsections)
+- Body: 16px (content)
+- Caption: 14px (metadata)
+
+### Responsive Design
+- **Mobile**: <768px (single column, overlay sidebar)
+- **Tablet**: 768-1024px (2 columns, collapsed sidebar)
+- **Desktop**: >1024px (3 columns, expanded sidebar)
+
+### Accessibility
+- WCAG AA compliant contrast ratios
+- Full keyboard navigation support
+- Screen reader optimized with ARIA labels
+- Semantic HTML throughout
+- Respects `prefers-reduced-motion`
+
+**📚 Full Documentation**: See [Design System Guide](docs/DESIGN_SYSTEM.md) for complete usage instructions.
+
+### Documentation
+
+- **[Design System Guide](docs/DESIGN_SYSTEM.md)**: Complete design system documentation with examples
+- **[Quick Start Guide](docs/QUICK_START.md)**: Quick reference for common patterns
+- **[Component API Reference](docs/COMPONENT_API.md)**: Detailed API documentation for all components
+- **[Migration Guide](docs/MIGRATION_GUIDE.md)**: Guide for migrating existing code to the design system
 
 ---
 
