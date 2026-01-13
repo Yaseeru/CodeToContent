@@ -225,9 +225,13 @@ Respond with ONLY the refined content. Do not include any explanations, metadata
      private async callGeminiAPI(prompt: string): Promise<string> {
           try {
                const response = await this.ai.models.generateContent({
-                    model: 'gemini-2.0-flash-exp',
+                    model: 'gemini-3-flash-preview',
                     contents: prompt,
                });
+
+               if (!response.text) {
+                    throw new Error('Gemini API returned empty response');
+               }
 
                return response.text.trim();
           } catch (error: any) {
