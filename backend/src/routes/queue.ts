@@ -1,11 +1,11 @@
 import express from 'express';
 import { getQueueMetrics, getJobStatus } from '../config/queue';
-import { authenticate } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
 // Health check endpoint for queue
-router.get('/health', authenticate, async (req, res) => {
+router.get('/health', authenticateToken, async (req, res) => {
      try {
           const metrics = await getQueueMetrics();
 
@@ -26,7 +26,7 @@ router.get('/health', authenticate, async (req, res) => {
 });
 
 // Get job status by ID
-router.get('/jobs/:jobId', authenticate, async (req, res) => {
+router.get('/jobs/:jobId', authenticateToken, async (req, res) => {
      try {
           const { jobId } = req.params;
           const status = await getJobStatus(jobId);
@@ -47,7 +47,7 @@ router.get('/jobs/:jobId', authenticate, async (req, res) => {
 });
 
 // Get queue metrics (admin only)
-router.get('/metrics', authenticate, async (req, res) => {
+router.get('/metrics', authenticateToken, async (req, res) => {
      try {
           const metrics = await getQueueMetrics();
           res.json(metrics);

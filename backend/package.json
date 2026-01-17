@@ -25,6 +25,7 @@
           "ioredis": "^5.9.2",
           "jsonwebtoken": "^9.0.2",
           "mongoose": "^8.0.0",
+          "multer": "^2.0.2",
           "pdf-parse": "^2.4.5"
      },
      "devDependencies": {
@@ -33,6 +34,7 @@
           "@types/ioredis": "^4.28.10",
           "@types/jest": "^29.5.11",
           "@types/jsonwebtoken": "^9.0.5",
+          "@types/multer": "^2.0.0",
           "@types/node": "^20.10.0",
           "@types/pdf-parse": "^1.1.5",
           "@types/supertest": "^6.0.2",
