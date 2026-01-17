@@ -91,6 +91,9 @@ export interface IUser extends Document {
      // Manual overrides (protected from feedback learning)
      manualOverrides?: ManualOverrides;
 
+     // Optimistic locking version field for concurrency control
+     __v?: number;
+
      createdAt: Date;
      updatedAt: Date;
 }
