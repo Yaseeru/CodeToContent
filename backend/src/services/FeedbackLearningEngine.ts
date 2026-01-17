@@ -1,249 +1,454 @@
 import mongoose from 'mongoose';
-import { User, IUser, StyleProfile, ToneMetrics, WritingTraits, StructurePreferences } from '../models/User';
+import { User, IUser, StyleProfile, ManualOverrides } from '../models/User';
 import { Content, IContent } from '../models/Content';
 import { LearningJob, ILearningJob, StyleDelta } from '../models/LearningJob';
 import { StyleDeltaExtractionService } from './StyleDeltaExtractionService';
 import { queueLearningJob as queueJob } from '../config/queue';
 
-interface PatternDetectionResult {
-     sentenceLengthPattern?: number; // Average delta across edits
-     emojiPattern?: { shouldUse: boolean; frequency: number };
+interface DetectedPatterns {
+     sentenceLengthPattern?: number;
+     emojiPattern?: {
+          shouldUse: boolean;
+          frequency: number;
+     };
      ctaPattern?: boolean;
+     tonePattern?: string;
      bannedPhrases: string[];
      commonPhrases: string[];
-     tonePattern?: string;
-     structurePattern?: Partial<StructurePreferences>;
 }
 
 export class FeedbackLearningEngine {
      private styleDeltaService: StyleDeltaExtractionService;
-     private rateLimitMap: Map<string, number> = new Map(); // userId -> last update timestamp
-     private editBatchMap: Map<string, string[]> = new Map(); // userId -> contentIds in batch
+     private rateLimitMap: Map<string, number>;
+     private editBatchMap: Map<string, string[]>;
+     private readonly RATE_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
+     private readonly BATCH_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+     private readonly MIN_EDITS_FOR_MAJOR_CHANGES = 5;
 
-     constructor(geminiApiKey: string) {
-          this.styleDeltaService = new StyleDeltaExtractionService(geminiApiKey);
+     constructor(apiKey: string) {
+          this.styleDeltaService = new StyleDeltaExtractionService(apiKey);
+          this.rateLimitMap = new Map();
+          this.editBatchMap = new Map();
      }
 
      /**
       * Queue a learning job for asynchronous processing
       * Returns immediately without waiting for processing
       */
-     async queueLearningJob(userId: string, contentId: string, priority: number = 0): Promise<void> {
+     async queueLearningJob(contentId: string, userId: string): Promise<void> {
           try {
-               // Check if we should batch this edit
-               const shouldBatch = this.shouldBatchEdit(userId);
+               console.log(`[FeedbackLearning] Queuing learning job for user ${userId}, content ${contentId}`);
 
-               if (shouldBatch) {
-                    // Add to batch
+               // Check if we should batch this edit
+               if (this.shouldBatchEdit(userId)) {
+                    console.log(`[FeedbackLearning] Batching edit for user ${userId}`);
                     const batch = this.editBatchMap.get(userId) || [];
                     batch.push(contentId);
                     this.editBatchMap.set(userId, batch);
-
-                    console.log(`[FeedbackLearning] Added content ${contentId} to batch for user ${userId}`);
-
-                    // Set timer to process batch after 5 minutes
-                    setTimeout(() => {
-                         this.processBatch(userId);
-                    }, 5 * 60 * 1000);
-
                     return;
                }
 
+               // Start a new batch
+               this.editBatchMap.set(userId, [contentId]);
+
                // Create learning job in database
-               const learningJob = new LearningJob({
+               const job = new LearningJob({
                     userId: new mongoose.Types.ObjectId(userId),
                     contentId: new mongoose.Types.ObjectId(contentId),
                     status: 'pending',
-                    priority,
+                    priority: 0,
                     attempts: 0,
                });
 
-               await learningJob.save();
+               await job.save();
 
                // Queue job for processing
-               await queueJob(userId, contentId, priority);
+               await queueJob(userId, contentId, 0);
 
-               console.log(`[FeedbackLearning] Queued learning job for user ${userId}, content ${contentId}`);
+               console.log(`[FeedbackLearning] Learning job queued successfully: ${job._id}`);
           } catch (error: any) {
                console.error(`[FeedbackLearning] Failed to queue learning job:`, error.message);
-               // Don't throw - learning failures should not block user
+               // Don't throw - we don't want to block the user
           }
      }
 
      /**
-      * Process a learning job (called by worker)
+      * Process a learning job
+      * Extracts style deltas and updates user profile
       */
      async processLearningJob(jobId: string): Promise<void> {
-          let learningJob: ILearningJob | null = null;
+          let job: ILearningJob | null = null;
 
           try {
-               // Find the learning job
-               learningJob = await LearningJob.findById(jobId);
-
-               if (!learningJob) {
-                    throw new Error(`Learning job ${jobId} not found`);
+               // Get job from database
+               job = await LearningJob.findById(jobId);
+               if (!job) {
+                    console.error(`[FeedbackLearning] Job ${jobId} not found`);
+                    return;
                }
 
-               // Update status to processing
-               learningJob.status = 'processing';
-               learningJob.processingStarted = new Date();
-               learningJob.attempts += 1;
-               await learningJob.save();
+               console.log(`[FeedbackLearning] Processing job ${jobId} for user ${job.userId}`);
 
-               console.log(`[FeedbackLearning] Processing job ${jobId} (attempt ${learningJob.attempts})`);
+               // Update job status
+               job.status = 'processing';
+               job.processingStarted = new Date();
+               job.attempts += 1;
+               await job.save();
 
                // Extract style deltas
-               const styleDelta = await this.extractStyleDeltas(
-                    learningJob.userId.toString(),
-                    learningJob.contentId.toString()
-               );
+               const styleDelta = await this.extractStyleDeltas(job.contentId.toString());
 
                // Store delta in job
-               learningJob.styleDelta = styleDelta;
-               await learningJob.save();
+               job.styleDelta = styleDelta;
+               await job.save();
 
                // Update profile from deltas
-               await this.updateProfileFromDeltas(learningJob.userId.toString(), [styleDelta]);
+               await this.updateProfileFromDeltas(job.userId.toString(), [styleDelta]);
 
                // Mark job as completed
-               learningJob.status = 'completed';
-               learningJob.processingCompleted = new Date();
-               await learningJob.save();
+               job.status = 'completed';
+               job.processingCompleted = new Date();
+               await job.save();
 
-               console.log(`[FeedbackLearning] Completed job ${jobId}`);
+               console.log(`[FeedbackLearning] Job ${jobId} completed successfully`);
           } catch (error: any) {
                console.error(`[FeedbackLearning] Job ${jobId} failed:`, error.message);
 
-               if (learningJob) {
-                    learningJob.status = 'failed';
-                    learningJob.error = error.message;
-                    learningJob.processingCompleted = new Date();
-                    await learningJob.save();
+               if (job) {
+                    job.status = 'failed';
+                    job.error = error.message;
+                    await job.save();
                }
 
-               throw error; // Re-throw for retry logic
+               throw error;
           }
      }
 
      /**
-      * Extract style deltas from a content edit
+      * Extract style deltas from content edit
       */
-     async extractStyleDeltas(userId: string, contentId: string): Promise<StyleDelta> {
-          // Fetch the content
-          const content = await Content.findById(contentId);
+     async extractStyleDeltas(contentId: string): Promise<StyleDelta> {
+          try {
+               // Get content with edit metadata
+               const content = await Content.findById(contentId);
+               if (!content || !content.editMetadata) {
+                    throw new Error(`Content ${contentId} not found or has no edit metadata`);
+               }
 
-          if (!content) {
-               throw new Error(`Content ${contentId} not found`);
+               // Extract deltas using StyleDeltaExtractionService
+               const delta = await this.styleDeltaService.extractDeltas(
+                    content.editMetadata.originalText,
+                    content.editedText
+               );
+
+               console.log(`[FeedbackLearning] Extracted style deltas for content ${contentId}:`, {
+                    sentenceLengthDelta: delta.sentenceLengthDelta,
+                    emojiNetChange: delta.emojiChanges.netChange,
+                    toneShift: delta.toneShift,
+               });
+
+               return delta;
+          } catch (error: any) {
+               console.error(`[FeedbackLearning] Failed to extract style deltas:`, error.message);
+               throw error;
           }
-
-          if (!content.editMetadata) {
-               throw new Error(`Content ${contentId} has no edit metadata`);
-          }
-
-          // Use the stored edit metadata (already calculated when content was saved)
-          const styleDelta: StyleDelta = {
-               sentenceLengthDelta: content.editMetadata.sentenceLengthDelta,
-               emojiChanges: content.editMetadata.emojiChanges,
-               structureChanges: content.editMetadata.structureChanges,
-               toneShift: content.editMetadata.toneShift,
-               vocabularyChanges: content.editMetadata.vocabularyChanges,
-               phrasesAdded: content.editMetadata.phrasesAdded,
-               phrasesRemoved: content.editMetadata.phrasesRemoved,
-          };
-
-          console.log(`[FeedbackLearning] Extracted style delta for content ${contentId}`);
-
-          return styleDelta;
      }
 
      /**
       * Update user profile from style deltas
+      * Implements pattern detection and weighted updates
       */
      async updateProfileFromDeltas(userId: string, deltas: StyleDelta[]): Promise<void> {
-          // Check rate limiting
-          if (!this.canUpdateProfile(userId)) {
-               console.log(`[FeedbackLearning] Rate limit hit for user ${userId}, skipping update`);
-               return;
+          try {
+               console.log(`[FeedbackLearning] Updating profile for user ${userId} from ${deltas.length} deltas`);
+
+               // Check rate limiting
+               if (!this.canUpdateProfile(userId)) {
+                    console.log(`[FeedbackLearning] Rate limit hit for user ${userId}, skipping update`);
+                    return;
+               }
+
+               // Get user with profile
+               const user = await User.findById(userId);
+               if (!user || !user.styleProfile) {
+                    console.log(`[FeedbackLearning] User ${userId} has no style profile, skipping update`);
+                    return;
+               }
+
+               // Get recent edits for pattern detection
+               const recentEdits = await this.getRecentEdits(userId, 20);
+
+               // Detect patterns across edits
+               const patterns = this.detectPatterns(recentEdits);
+
+               console.log(`[FeedbackLearning] Detected patterns:`, {
+                    sentenceLengthPattern: patterns.sentenceLengthPattern,
+                    emojiPattern: patterns.emojiPattern,
+                    ctaPattern: patterns.ctaPattern,
+                    tonePattern: patterns.tonePattern,
+                    bannedPhrasesCount: patterns.bannedPhrases.length,
+                    commonPhrasesCount: patterns.commonPhrases.length,
+               });
+
+               // Determine if we can make major changes (requires 5+ edits)
+               const canMakeMajorChanges = recentEdits.length >= this.MIN_EDITS_FOR_MAJOR_CHANGES;
+
+               // Apply weighted updates to profile
+               const updatedProfile = this.applyWeightedUpdates(
+                    user.styleProfile,
+                    patterns,
+                    user.manualOverrides || {},
+                    canMakeMajorChanges
+               );
+
+               // Increment learning iterations
+               updatedProfile.learningIterations += 1;
+               updatedProfile.lastUpdated = new Date();
+
+               // Save updated profile
+               user.styleProfile = updatedProfile;
+               await user.save();
+
+               // Update rate limit
+               this.rateLimitMap.set(userId, Date.now());
+
+               // Clear edit batch
+               this.editBatchMap.delete(userId);
+
+               console.log(`[FeedbackLearning] Profile updated successfully for user ${userId}`);
+               console.log(`[FeedbackLearning] Learning iterations: ${updatedProfile.learningIterations}`);
+          } catch (error: any) {
+               console.error(`[FeedbackLearning] Failed to update profile:`, error.message);
+               throw error;
           }
-
-          // Fetch user
-          const user = await User.findById(userId);
-
-          if (!user) {
-               throw new Error(`User ${userId} not found`);
-          }
-
-          // If no profile exists, create a default one
-          if (!user.styleProfile) {
-               console.log(`[FeedbackLearning] User ${userId} has no profile, skipping learning`);
-               return;
-          }
-
-          // Get recent edits for pattern detection
-          const recentEdits = await this.getRecentEdits(userId, 20);
-
-          // Detect patterns across multiple edits
-          const patterns = this.detectPatterns(recentEdits);
-
-          // Check minimum edit threshold for major changes
-          const editCount = await this.getEditCount(userId);
-          const canMakeMajorChanges = editCount >= 5;
-
-          // Apply weighted updates to profile
-          const updatedProfile = this.applyWeightedUpdates(
-               user.styleProfile,
-               patterns,
-               user.manualOverrides,
-               canMakeMajorChanges
-          );
-
-          // Increment learning iterations
-          updatedProfile.learningIterations += 1;
-          updatedProfile.lastUpdated = new Date();
-
-          // Save updated profile
-          user.styleProfile = updatedProfile;
-          await user.save();
-
-          // Update rate limit
-          this.rateLimitMap.set(userId, Date.now());
-
-          console.log(`[FeedbackLearning] Updated profile for user ${userId} (iteration ${updatedProfile.learningIterations})`);
      }
 
      /**
-      * Check if edit should be batched (within 5-minute window)
+      * Get recent edits for a user
       */
-     private shouldBatchEdit(userId: string): boolean {
-          const batch = this.editBatchMap.get(userId);
-
-          if (!batch || batch.length === 0) {
-               return false;
-          }
-
-          // If batch exists, we're within the 5-minute window
-          return true;
+     private async getRecentEdits(userId: string, limit: number): Promise<IContent[]> {
+          return Content.find({
+               userId: new mongoose.Types.ObjectId(userId),
+               editMetadata: { $exists: true },
+          })
+               .sort({ 'editMetadata.editTimestamp': -1 })
+               .limit(limit);
      }
 
      /**
-      * Process batched edits
+      * Detect patterns across multiple edits
+      * Implements minimum thresholds: 3 for most patterns, 2 for banned phrases
       */
-     private async processBatch(userId: string): Promise<void> {
-          const batch = this.editBatchMap.get(userId);
+     private detectPatterns(edits: IContent[]): DetectedPatterns {
+          const patterns: DetectedPatterns = {
+               bannedPhrases: [],
+               commonPhrases: [],
+          };
 
-          if (!batch || batch.length === 0) {
-               return;
+          if (edits.length === 0) {
+               return patterns;
           }
 
-          console.log(`[FeedbackLearning] Processing batch of ${batch.length} edits for user ${userId}`);
+          // Detect sentence length pattern (requires 3+ edits)
+          if (edits.length >= 3) {
+               const sentenceDeltas = edits
+                    .filter(e => e.editMetadata)
+                    .map(e => e.editMetadata!.sentenceLengthDelta);
 
-          // Queue all edits in batch
-          for (const contentId of batch) {
-               await this.queueLearningJob(userId, contentId, 0);
+               if (sentenceDeltas.length >= 3) {
+                    const avgDelta = sentenceDeltas.reduce((sum, d) => sum + d, 0) / sentenceDeltas.length;
+
+                    // Only consider significant patterns (avg delta > 1 or < -1)
+                    if (Math.abs(avgDelta) > 1) {
+                         patterns.sentenceLengthPattern = avgDelta;
+                    }
+               }
           }
 
-          // Clear batch
-          this.editBatchMap.delete(userId);
+          // Detect emoji pattern (requires 3+ edits)
+          if (edits.length >= 3) {
+               const emojiChanges = edits
+                    .filter(e => e.editMetadata)
+                    .map(e => e.editMetadata!.emojiChanges);
+
+               if (emojiChanges.length >= 3) {
+                    const totalAdded = emojiChanges.reduce((sum, c) => sum + c.added, 0);
+                    const totalRemoved = emojiChanges.reduce((sum, c) => sum + c.removed, 0);
+
+                    // If user consistently adds emojis
+                    if (totalAdded > totalRemoved && totalAdded >= 3) {
+                         const avgFrequency = Math.min(5, Math.ceil(totalAdded / emojiChanges.length));
+                         patterns.emojiPattern = {
+                              shouldUse: true,
+                              frequency: avgFrequency,
+                         };
+                    }
+               }
+          }
+
+          // Detect CTA pattern (requires 3+ edits with CTA keywords)
+          if (edits.length >= 3) {
+               const ctaKeywords = ['check out', 'learn more', 'click here', 'visit', 'try now', 'get started', 'sign up', 'download'];
+               let ctaCount = 0;
+
+               for (const edit of edits) {
+                    if (edit.editMetadata) {
+                         const phrasesAdded = edit.editMetadata.phrasesAdded.join(' ').toLowerCase();
+                         if (ctaKeywords.some(keyword => phrasesAdded.includes(keyword))) {
+                              ctaCount++;
+                         }
+                    }
+               }
+
+               if (ctaCount >= 3) {
+                    patterns.ctaPattern = true;
+               }
+          }
+
+          // Detect tone pattern (requires 3+ edits with same tone shift)
+          if (edits.length >= 3) {
+               const toneShifts = edits
+                    .filter(e => e.editMetadata && e.editMetadata.toneShift !== 'no change')
+                    .map(e => e.editMetadata!.toneShift);
+
+               if (toneShifts.length >= 3) {
+                    // Find most common tone shift
+                    const toneCounts: Record<string, number> = {};
+                    for (const shift of toneShifts) {
+                         toneCounts[shift] = (toneCounts[shift] || 0) + 1;
+                    }
+
+                    const mostCommon = Object.entries(toneCounts)
+                         .sort((a, b) => b[1] - a[1])[0];
+
+                    if (mostCommon && mostCommon[1] >= 3) {
+                         patterns.tonePattern = mostCommon[0];
+                    }
+               }
+          }
+
+          // Detect banned phrases (requires 2+ removals)
+          const phraseRemovalCounts: Record<string, number> = {};
+          for (const edit of edits) {
+               if (edit.editMetadata) {
+                    for (const phrase of edit.editMetadata.phrasesRemoved) {
+                         phraseRemovalCounts[phrase] = (phraseRemovalCounts[phrase] || 0) + 1;
+                    }
+               }
+          }
+
+          patterns.bannedPhrases = Object.entries(phraseRemovalCounts)
+               .filter(([_, count]) => count >= 2)
+               .map(([phrase, _]) => phrase);
+
+          // Detect common phrases (requires 3+ additions)
+          const phraseAdditionCounts: Record<string, number> = {};
+          for (const edit of edits) {
+               if (edit.editMetadata) {
+                    for (const phrase of edit.editMetadata.phrasesAdded) {
+                         phraseAdditionCounts[phrase] = (phraseAdditionCounts[phrase] || 0) + 1;
+                    }
+               }
+          }
+
+          patterns.commonPhrases = Object.entries(phraseAdditionCounts)
+               .filter(([_, count]) => count >= 3)
+               .map(([phrase, _]) => phrase);
+
+          return patterns;
+     }
+
+     /**
+      * Apply weighted updates to profile based on detected patterns
+      * Implements 10-20% adjustments and manual override preservation
+      */
+     private applyWeightedUpdates(
+          profile: StyleProfile,
+          patterns: DetectedPatterns,
+          manualOverrides: ManualOverrides,
+          canMakeMajorChanges: boolean
+     ): StyleProfile {
+          // Deep clone profile to avoid mutations
+          const updated: StyleProfile = JSON.parse(JSON.stringify(profile));
+
+          // Apply sentence length adjustment (10-20% of pattern)
+          if (patterns.sentenceLengthPattern !== undefined) {
+               // Check if avgSentenceLength is manually overridden
+               const isOverridden = manualOverrides.writingTraits?.avgSentenceLength !== undefined;
+
+               if (!isOverridden) {
+                    const adjustment = patterns.sentenceLengthPattern * 0.15; // 15% adjustment
+                    updated.writingTraits.avgSentenceLength = Math.max(
+                         5,
+                         Math.min(50, updated.writingTraits.avgSentenceLength + adjustment)
+                    );
+               }
+          }
+
+          // Apply emoji pattern
+          if (patterns.emojiPattern) {
+               // Check if emoji settings are manually overridden
+               const isOverridden = manualOverrides.writingTraits?.usesEmojis !== undefined ||
+                    manualOverrides.writingTraits?.emojiFrequency !== undefined;
+
+               if (!isOverridden) {
+                    updated.writingTraits.usesEmojis = patterns.emojiPattern.shouldUse;
+                    updated.writingTraits.emojiFrequency = patterns.emojiPattern.frequency;
+               }
+          }
+
+          // Apply CTA pattern
+          if (patterns.ctaPattern) {
+               // Check if endingStyle is manually overridden
+               const isOverridden = manualOverrides.structurePreferences?.endingStyle !== undefined;
+
+               if (!isOverridden) {
+                    updated.structurePreferences.endingStyle = 'cta';
+               }
+          }
+
+          // Apply tone pattern (only if major changes allowed)
+          if (patterns.tonePattern && canMakeMajorChanges) {
+               // Check if tone is manually overridden
+               const isOverridden = manualOverrides.tone !== undefined;
+
+               if (!isOverridden) {
+                    // Adjust tone based on pattern
+                    if (patterns.tonePattern === 'more casual') {
+                         updated.tone.formality = Math.max(1, updated.tone.formality - 1);
+                    } else if (patterns.tonePattern === 'more professional') {
+                         updated.tone.formality = Math.min(10, updated.tone.formality + 1);
+                    } else if (patterns.tonePattern === 'more enthusiastic') {
+                         updated.tone.enthusiasm = Math.min(10, updated.tone.enthusiasm + 1);
+                    } else if (patterns.tonePattern === 'more subdued') {
+                         updated.tone.enthusiasm = Math.max(1, updated.tone.enthusiasm - 1);
+                    } else if (patterns.tonePattern === 'more direct') {
+                         updated.tone.directness = Math.min(10, updated.tone.directness + 1);
+                    } else if (patterns.tonePattern === 'more indirect') {
+                         updated.tone.directness = Math.max(1, updated.tone.directness - 1);
+                    } else if (patterns.tonePattern === 'more humorous') {
+                         updated.tone.humor = Math.min(10, updated.tone.humor + 1);
+                    } else if (patterns.tonePattern === 'more serious') {
+                         updated.tone.humor = Math.max(1, updated.tone.humor - 1);
+                    }
+               }
+          }
+
+          // Add banned phrases (always apply, not affected by manual overrides)
+          for (const phrase of patterns.bannedPhrases) {
+               if (!updated.bannedPhrases.includes(phrase)) {
+                    updated.bannedPhrases.push(phrase);
+               }
+          }
+
+          // Add common phrases (always apply, not affected by manual overrides)
+          for (const phrase of patterns.commonPhrases) {
+               if (!updated.commonPhrases.includes(phrase)) {
+                    updated.commonPhrases.push(phrase);
+               }
+          }
+
+          return updated;
      }
 
      /**
@@ -251,299 +456,18 @@ export class FeedbackLearningEngine {
       */
      private canUpdateProfile(userId: string): boolean {
           const lastUpdate = this.rateLimitMap.get(userId);
-
           if (!lastUpdate) {
                return true;
           }
 
           const timeSinceLastUpdate = Date.now() - lastUpdate;
-          const fiveMinutes = 5 * 60 * 1000;
-
-          return timeSinceLastUpdate >= fiveMinutes;
+          return timeSinceLastUpdate >= this.RATE_LIMIT_MS;
      }
 
      /**
-      * Get recent edits for pattern detection
+      * Check if edit should be batched
       */
-     private async getRecentEdits(userId: string, limit: number = 20): Promise<IContent[]> {
-          const contents = await Content.find({
-               userId: new mongoose.Types.ObjectId(userId),
-               editMetadata: { $exists: true },
-          })
-               .sort({ 'editMetadata.editTimestamp': -1 })
-               .limit(limit);
-
-          return contents;
-     }
-
-     /**
-      * Get total edit count for user
-      */
-     private async getEditCount(userId: string): Promise<number> {
-          const count = await Content.countDocuments({
-               userId: new mongoose.Types.ObjectId(userId),
-               editMetadata: { $exists: true },
-          });
-
-          return count;
-     }
-
-     /**
-      * Detect patterns across multiple edits
-      */
-     private detectPatterns(edits: IContent[]): PatternDetectionResult {
-          const result: PatternDetectionResult = {
-               bannedPhrases: [],
-               commonPhrases: [],
-          };
-
-          if (edits.length === 0) {
-               return result;
-          }
-
-          // Apply recency weighting (more recent edits weighted more heavily)
-          const weights = this.calculateRecencyWeights(edits.length);
-
-          // Detect sentence length pattern (weighted average)
-          const sentenceLengthDeltas = edits
-               .filter(e => e.editMetadata)
-               .map(e => e.editMetadata!.sentenceLengthDelta);
-
-          if (sentenceLengthDeltas.length >= 3) {
-               const weightedAvg = this.weightedAverage(sentenceLengthDeltas, weights);
-               if (Math.abs(weightedAvg) > 2) {
-                    result.sentenceLengthPattern = weightedAvg;
-               }
-          }
-
-          // Detect emoji pattern (3+ edits adding emojis)
-          const emojiAdditions = edits
-               .filter(e => e.editMetadata && e.editMetadata.emojiChanges.added > 0)
-               .length;
-
-          if (emojiAdditions >= 3) {
-               const avgFrequency = edits
-                    .filter(e => e.editMetadata)
-                    .reduce((sum, e) => sum + e.editMetadata!.emojiChanges.added, 0) / edits.length;
-
-               result.emojiPattern = {
-                    shouldUse: true,
-                    frequency: Math.min(5, Math.ceil(avgFrequency)),
-               };
-          }
-
-          // Detect CTA pattern (3+ edits adding CTAs)
-          const ctaAdditions = edits
-               .filter(e => e.editMetadata && e.editMetadata.phrasesAdded.some(p =>
-                    p.includes('check out') || p.includes('learn more') || p.includes('click') ||
-                    p.includes('visit') || p.includes('try') || p.includes('get started')
-               ))
-               .length;
-
-          if (ctaAdditions >= 3) {
-               result.ctaPattern = true;
-          }
-
-          // Detect banned phrases (2+ removals)
-          const phraseRemovalCounts = new Map<string, number>();
-
-          for (const edit of edits) {
-               if (edit.editMetadata) {
-                    for (const phrase of edit.editMetadata.phrasesRemoved) {
-                         phraseRemovalCounts.set(phrase, (phraseRemovalCounts.get(phrase) || 0) + 1);
-                    }
-               }
-          }
-
-          for (const [phrase, count] of phraseRemovalCounts.entries()) {
-               if (count >= 2) {
-                    result.bannedPhrases.push(phrase);
-               }
-          }
-
-          // Detect common phrases (3+ additions)
-          const phraseAdditionCounts = new Map<string, number>();
-
-          for (const edit of edits) {
-               if (edit.editMetadata) {
-                    for (const phrase of edit.editMetadata.phrasesAdded) {
-                         phraseAdditionCounts.set(phrase, (phraseAdditionCounts.get(phrase) || 0) + 1);
-                    }
-               }
-          }
-
-          for (const [phrase, count] of phraseAdditionCounts.entries()) {
-               if (count >= 3) {
-                    result.commonPhrases.push(phrase);
-               }
-          }
-
-          // Detect tone pattern (most common tone shift)
-          const toneShifts = edits
-               .filter(e => e.editMetadata && e.editMetadata.toneShift !== 'no change')
-               .map(e => e.editMetadata!.toneShift);
-
-          if (toneShifts.length >= 3) {
-               const mostCommonTone = this.findMostCommon(toneShifts);
-               if (mostCommonTone) {
-                    result.tonePattern = mostCommonTone;
-               }
-          }
-
-          return result;
-     }
-
-     /**
-      * Apply weighted updates to profile based on patterns
-      */
-     private applyWeightedUpdates(
-          profile: StyleProfile,
-          patterns: PatternDetectionResult,
-          manualOverrides: any,
-          canMakeMajorChanges: boolean
-     ): StyleProfile {
-          // Deep clone the profile to avoid mutations
-          const updated: StyleProfile = {
-               ...profile,
-               tone: { ...profile.tone },
-               writingTraits: { ...profile.writingTraits },
-               structurePreferences: { ...profile.structurePreferences },
-               commonPhrases: [...profile.commonPhrases],
-               bannedPhrases: [...profile.bannedPhrases],
-               samplePosts: [...profile.samplePosts],
-          };
-
-          // Update sentence length (10-20% adjustment)
-          if (patterns.sentenceLengthPattern && !manualOverrides?.writingTraits?.avgSentenceLength) {
-               const adjustment = patterns.sentenceLengthPattern * 0.15; // 15% of delta
-               updated.writingTraits.avgSentenceLength = Math.max(5, updated.writingTraits.avgSentenceLength + adjustment);
-          }
-
-          // Update emoji usage
-          if (patterns.emojiPattern && !manualOverrides?.writingTraits?.usesEmojis) {
-               updated.writingTraits.usesEmojis = patterns.emojiPattern.shouldUse;
-               updated.writingTraits.emojiFrequency = patterns.emojiPattern.frequency;
-          }
-
-          // Update ending style for CTA pattern
-          if (patterns.ctaPattern && !manualOverrides?.structurePreferences?.endingStyle) {
-               updated.structurePreferences.endingStyle = 'cta';
-          }
-
-          // Add banned phrases (avoid duplicates)
-          if (patterns.bannedPhrases.length > 0) {
-               const existingBanned = new Set(updated.bannedPhrases);
-               for (const phrase of patterns.bannedPhrases) {
-                    if (!existingBanned.has(phrase)) {
-                         updated.bannedPhrases.push(phrase);
-                    }
-               }
-               // Limit to 50 phrases
-               updated.bannedPhrases = updated.bannedPhrases.slice(-50);
-          }
-
-          // Add common phrases (avoid duplicates)
-          if (patterns.commonPhrases.length > 0) {
-               const existingCommon = new Set(updated.commonPhrases);
-               for (const phrase of patterns.commonPhrases) {
-                    if (!existingCommon.has(phrase)) {
-                         updated.commonPhrases.push(phrase);
-                    }
-               }
-               // Limit to 50 phrases
-               updated.commonPhrases = updated.commonPhrases.slice(-50);
-          }
-
-          // Update tone based on pattern (only if major changes allowed)
-          if (patterns.tonePattern && canMakeMajorChanges && !manualOverrides?.tone) {
-               updated.tone = this.adjustToneForPattern(updated.tone, patterns.tonePattern);
-          }
-
-          return updated;
-     }
-
-     /**
-      * Adjust tone metrics based on detected pattern
-      */
-     private adjustToneForPattern(tone: ToneMetrics, pattern: string): ToneMetrics {
-          const adjusted: ToneMetrics = { ...tone };
-
-          switch (pattern) {
-               case 'more casual':
-                    adjusted.formality = Math.max(1, adjusted.formality - 1);
-                    break;
-               case 'more professional':
-                    adjusted.formality = Math.min(10, adjusted.formality + 1);
-                    break;
-               case 'more enthusiastic':
-                    adjusted.enthusiasm = Math.min(10, adjusted.enthusiasm + 1);
-                    break;
-               case 'more subdued':
-                    adjusted.enthusiasm = Math.max(1, adjusted.enthusiasm - 1);
-                    break;
-               case 'more direct':
-                    adjusted.directness = Math.min(10, adjusted.directness + 1);
-                    break;
-               case 'more indirect':
-                    adjusted.directness = Math.max(1, adjusted.directness - 1);
-                    break;
-               case 'more humorous':
-                    adjusted.humor = Math.min(10, adjusted.humor + 1);
-                    break;
-               case 'more serious':
-                    adjusted.humor = Math.max(1, adjusted.humor - 1);
-                    break;
-          }
-
-          return adjusted;
-     }
-
-     /**
-      * Calculate recency weights (more recent = higher weight)
-      */
-     private calculateRecencyWeights(count: number): number[] {
-          const weights: number[] = [];
-          for (let i = 0; i < count; i++) {
-               // Linear decay: most recent gets weight 1.0, oldest gets weight 0.5
-               weights.push(0.5 + (0.5 * i / (count - 1)));
-          }
-          return weights.reverse(); // Reverse so most recent is first
-     }
-
-     /**
-      * Calculate weighted average
-      */
-     private weightedAverage(values: number[], weights: number[]): number {
-          if (values.length === 0) return 0;
-
-          const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-          const normalizedWeights = weights.map(w => w / totalWeight);
-
-          const sum = values.reduce((acc, val, i) => acc + val * normalizedWeights[i], 0);
-          return sum;
-     }
-
-     /**
-      * Find most common element in array
-      */
-     private findMostCommon<T>(arr: T[]): T | null {
-          if (arr.length === 0) return null;
-
-          const counts = new Map<T, number>();
-          for (const item of arr) {
-               counts.set(item, (counts.get(item) || 0) + 1);
-          }
-
-          let maxCount = 0;
-          let mostCommon: T | null = null;
-
-          for (const [item, count] of counts.entries()) {
-               if (count > maxCount) {
-                    maxCount = count;
-                    mostCommon = item;
-               }
-          }
-
-          return mostCommon;
+     private shouldBatchEdit(userId: string): boolean {
+          return this.editBatchMap.has(userId);
      }
 }
