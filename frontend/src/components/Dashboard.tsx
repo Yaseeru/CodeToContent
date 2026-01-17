@@ -6,6 +6,8 @@ import ToneSelector from './ToneSelector';
 import ContentGenerator from './ContentGenerator';
 import ContentEditor from './ContentEditor';
 import StyleProfileSetup from './StyleProfileSetup';
+import ProfileAnalytics from './ProfileAnalytics';
+import StyleProfileEditor from './StyleProfileEditor';
 import { GeneratedContent } from './ContentGenerator';
 import { apiClient } from '../utils/apiClient';
 
@@ -22,6 +24,14 @@ interface Analysis {
      createdAt: Date;
 }
 
+interface ProfileData {
+     styleProfile: any;
+     voiceStrength: number;
+     evolutionScore: number;
+     editCount?: number;
+     lastUpdated?: string;
+}
+
 const ONBOARDING_COMPLETED_KEY = 'voiceProfileOnboardingCompleted';
 
 const Dashboard: React.FC = () => {
@@ -36,15 +46,20 @@ const Dashboard: React.FC = () => {
      const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
      const [hasStyleProfile, setHasStyleProfile] = useState<boolean>(false);
      const [checkingProfile, setCheckingProfile] = useState<boolean>(true);
+     const [profileData, setProfileData] = useState<ProfileData | null>(null);
+     const [showProfileAnalytics, setShowProfileAnalytics] = useState<boolean>(false);
+     const [showProfileEditor, setShowProfileEditor] = useState<boolean>(false);
+     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
 
      // Check if user has a style profile on mount
      useEffect(() => {
           const checkStyleProfile = async () => {
                try {
                     setCheckingProfile(true);
-                    const response = await apiClient.get('/api/profile/style');
+                    const response = await apiClient.get<ProfileData>('/api/profile/style');
                     const hasProfile = response.data.styleProfile !== undefined && response.data.styleProfile !== null;
                     setHasStyleProfile(hasProfile);
+                    setProfileData(response.data);
 
                     // Show onboarding modal only if:
                     // 1. User doesn't have a profile
@@ -57,6 +72,7 @@ const Dashboard: React.FC = () => {
                     // If profile fetch fails, assume no profile exists
                     console.log('No profile found or error fetching profile');
                     setHasStyleProfile(false);
+                    setProfileData(null);
 
                     // Show onboarding for new users
                     const onboardingCompleted = localStorage.getItem(ONBOARDING_COMPLETED_KEY);
@@ -76,6 +92,8 @@ const Dashboard: React.FC = () => {
           localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
           setShowOnboardingModal(false);
           setHasStyleProfile(true);
+          // Refresh profile data
+          refreshProfileData();
      };
 
      const handleOnboardingSkip = () => {
@@ -91,6 +109,32 @@ const Dashboard: React.FC = () => {
 
      const handleReconfigureVoiceProfile = () => {
           setShowOnboardingModal(true);
+     };
+
+     const refreshProfileData = async () => {
+          try {
+               const response = await apiClient.get<ProfileData>('/api/profile/style');
+               const hasProfile = response.data.styleProfile !== undefined && response.data.styleProfile !== null;
+               setHasStyleProfile(hasProfile);
+               setProfileData(response.data);
+          } catch (err) {
+               console.log('Error refreshing profile data:', err);
+          }
+     };
+
+     const handleDeleteProfile = async () => {
+          try {
+               await apiClient.post('/api/profile/reset');
+               setHasStyleProfile(false);
+               setProfileData(null);
+               setShowDeleteConfirmation(false);
+               // Optionally show a success message
+          } catch (err) {
+               console.error('Error deleting profile:', err);
+               // Close modal even on error to prevent UI from being stuck
+               setShowDeleteConfirmation(false);
+               // Optionally show an error message
+          }
      };
 
      const handleRepositoryClick = (repositoryId: string) => {
@@ -147,6 +191,57 @@ const Dashboard: React.FC = () => {
                     </div>
                )}
 
+               {/* Profile Analytics Modal */}
+               {showProfileAnalytics && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                         <div className="w-full max-w-4xl">
+                              <ProfileAnalytics onClose={() => setShowProfileAnalytics(false)} />
+                         </div>
+                    </div>
+               )}
+
+               {/* Profile Editor Modal */}
+               {showProfileEditor && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                         <div className="w-full max-w-4xl">
+                              <StyleProfileEditor
+                                   onClose={() => setShowProfileEditor(false)}
+                                   onSave={() => {
+                                        setShowProfileEditor(false);
+                                        refreshProfileData();
+                                   }}
+                              />
+                         </div>
+                    </div>
+               )}
+
+               {/* Delete Confirmation Modal */}
+               {showDeleteConfirmation && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                         <div className="bg-dark-surface border border-dark-border rounded-lg p-6 max-w-md w-full">
+                              <h3 className="text-xl font-semibold text-dark-text mb-4">Delete Voice Profile?</h3>
+                              <p className="text-dark-text-secondary mb-6">
+                                   This will permanently delete your voice profile and all learning data.
+                                   You can always create a new profile later.
+                              </p>
+                              <div className="flex gap-3 justify-end">
+                                   <button
+                                        onClick={() => setShowDeleteConfirmation(false)}
+                                        className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                                   >
+                                        Cancel
+                                   </button>
+                                   <button
+                                        onClick={handleDeleteProfile}
+                                        className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
+                                   >
+                                        Delete Profile
+                                   </button>
+                              </div>
+                         </div>
+                    </div>
+               )}
+
                <div className="container mx-auto px-6 py-8 max-w-7xl">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8">
@@ -187,6 +282,64 @@ const Dashboard: React.FC = () => {
                               </button>
                          </div>
                     </div>
+
+                    {/* Voice Profile Section */}
+                    {!checkingProfile && hasStyleProfile && profileData && (
+                         <div className="bg-dark-surface border border-dark-border rounded-lg p-6 mb-6">
+                              <div className="flex items-start justify-between">
+                                   <div className="flex-1">
+                                        <h2 className="text-xl font-semibold text-dark-text mb-2">
+                                             Voice Profile
+                                        </h2>
+                                        <div className="flex items-center gap-4 mb-4">
+                                             <div className="flex items-center gap-2">
+                                                  <span className="text-sm text-dark-text-secondary">Evolution Score:</span>
+                                                  <span className="text-2xl font-bold text-dark-accent">
+                                                       {profileData.evolutionScore || 0}%
+                                                  </span>
+                                             </div>
+                                             {profileData.evolutionScore && profileData.evolutionScore >= 70 && (
+                                                  <span className="px-3 py-1 bg-green-500 bg-opacity-20 text-green-500 text-xs font-medium rounded-full">
+                                                       Well-trained
+                                                  </span>
+                                             )}
+                                        </div>
+                                        <div className="flex items-center gap-6 text-sm text-dark-text-secondary">
+                                             {profileData.editCount !== undefined && (
+                                                  <div>
+                                                       <span className="font-medium text-dark-text">{profileData.editCount}</span> edits
+                                                  </div>
+                                             )}
+                                             {profileData.lastUpdated && (
+                                                  <div>
+                                                       Last updated: {new Date(profileData.lastUpdated).toLocaleDateString()}
+                                                  </div>
+                                             )}
+                                        </div>
+                                   </div>
+                                   <div className="flex flex-col gap-2">
+                                        <button
+                                             onClick={() => setShowProfileAnalytics(true)}
+                                             className="px-4 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover"
+                                        >
+                                             View Analytics
+                                        </button>
+                                        <button
+                                             onClick={() => setShowProfileEditor(true)}
+                                             className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                                        >
+                                             Edit Profile
+                                        </button>
+                                        <button
+                                             onClick={() => setShowDeleteConfirmation(true)}
+                                             className="px-4 py-2 bg-dark-surface border border-red-600 text-red-600 text-sm font-medium rounded-lg hover:bg-red-600 hover:bg-opacity-10"
+                                        >
+                                             Delete Profile
+                                        </button>
+                                   </div>
+                              </div>
+                         </div>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                          {/* Left Column: Repository List */}
