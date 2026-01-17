@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { User, IUser, StyleProfile } from '../models/User';
 import { Content, IContent } from '../models/Content';
+import { cacheService } from './CacheService';
 
 export interface EvolutionMilestone {
      timestamp: Date;
@@ -52,9 +53,17 @@ export class ProfileEvolutionService {
       * - Feedback iterations: 40 points (min(iterations/10, 1) * 40)
       * - Profile completeness: 20 points
       * - Edit consistency: 20 points
+      * 
+      * Uses cache with 5-minute TTL for performance
       */
      async calculateEvolutionScore(userId: string): Promise<number> {
           try {
+               // Check cache first
+               const cachedScore = await cacheService.getEvolutionScore(userId);
+               if (cachedScore !== null) {
+                    return cachedScore;
+               }
+
                const user = await User.findById(userId);
                if (!user || !user.styleProfile) {
                     return 0;
@@ -83,7 +92,12 @@ export class ProfileEvolutionService {
                score += consistencyScore;
 
                // Ensure score is between 0 and 100
-               return Math.max(0, Math.min(100, Math.round(score)));
+               const finalScore = Math.max(0, Math.min(100, Math.round(score)));
+
+               // Cache the result
+               await cacheService.setEvolutionScore(userId, finalScore);
+
+               return finalScore;
           } catch (error: any) {
                console.error(`[ProfileEvolution] Failed to calculate evolution score:`, error.message);
                throw error;

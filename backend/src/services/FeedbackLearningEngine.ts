@@ -4,6 +4,7 @@ import { Content, IContent } from '../models/Content';
 import { LearningJob, ILearningJob, StyleDelta } from '../models/LearningJob';
 import { StyleDeltaExtractionService } from './StyleDeltaExtractionService';
 import { queueLearningJob as queueJob } from '../config/queue';
+import { cacheService } from './CacheService';
 
 interface DetectedPatterns {
      sentenceLengthPattern?: number;
@@ -208,6 +209,10 @@ export class FeedbackLearningEngine {
                // Save updated profile
                user.styleProfile = updatedProfile;
                await user.save();
+
+               // Invalidate cache
+               await cacheService.invalidateStyleProfile(userId);
+               await cacheService.invalidateEvolutionScore(userId);
 
                // Update rate limit
                this.rateLimitMap.set(userId, Date.now());

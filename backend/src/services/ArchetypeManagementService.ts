@@ -1,6 +1,7 @@
 import { VoiceArchetype, IVoiceArchetype, ArchetypeCategory } from '../models/VoiceArchetype';
 import { User, IUser, StyleProfile, ProfileSource } from '../models/User';
 import mongoose from 'mongoose';
+import { cacheService } from './CacheService';
 
 export interface ApplyArchetypeParams {
      userId: string;
@@ -18,10 +19,22 @@ export interface CreateCustomArchetypeParams {
 export class ArchetypeManagementService {
      /**
       * List all available archetypes
+      * Uses cache with 24-hour TTL (rarely changes)
       */
      async listArchetypes(): Promise<IVoiceArchetype[]> {
           try {
+               // Check cache first
+               const cachedArchetypes = await cacheService.getArchetypeList();
+               if (cachedArchetypes) {
+                    return cachedArchetypes;
+               }
+
+               // Fetch from database
                const archetypes = await VoiceArchetype.find().sort({ usageCount: -1, name: 1 });
+
+               // Cache the result
+               await cacheService.setArchetypeList(archetypes);
+
                return archetypes;
           } catch (error: any) {
                throw new Error(`Failed to list archetypes: ${error.message}`);
@@ -30,6 +43,7 @@ export class ArchetypeManagementService {
 
      /**
       * Apply an archetype to a user's profile
+      * Invalidates user's profile cache
       */
      async applyArchetype(params: ApplyArchetypeParams): Promise<StyleProfile> {
           const { userId, archetypeId } = params;
@@ -60,9 +74,16 @@ export class ArchetypeManagementService {
                user.styleProfile = appliedProfile;
                await user.save();
 
+               // Invalidate user's profile cache
+               await cacheService.invalidateStyleProfile(userId);
+               await cacheService.invalidateEvolutionScore(userId);
+
                // Increment archetype usage count
                archetype.usageCount += 1;
                await archetype.save();
+
+               // Invalidate archetype list cache (usage count changed)
+               await cacheService.invalidateArchetypeList();
 
                return appliedProfile;
           } catch (error: any) {
@@ -75,6 +96,7 @@ export class ArchetypeManagementService {
 
      /**
       * Create a custom archetype
+      * Invalidates archetype list cache
       */
      async createCustomArchetype(params: CreateCustomArchetypeParams): Promise<IVoiceArchetype> {
           const { name, description, category, styleProfile, createdBy } = params;
@@ -98,6 +120,10 @@ export class ArchetypeManagementService {
                });
 
                await archetype.save();
+
+               // Invalidate archetype list cache
+               await cacheService.invalidateArchetypeList();
+
                return archetype;
           } catch (error: any) {
                if (error.message.includes('already exists')) {
