@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
 import { ContentGenerationService } from '../services/ContentGenerationService';
-import { Platform } from '../models/Content';
+import { Platform, Content } from '../models/Content';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -22,7 +22,7 @@ router.post('/generate', async (req: Request, res: Response) => {
                });
           }
 
-          const { analysisId, platform, tone } = req.body;
+          const { analysisId, platform, tone, voiceStrength } = req.body;
 
           // Validate required fields
           if (!analysisId || !platform || !tone) {
@@ -56,6 +56,16 @@ router.post('/generate', async (req: Request, res: Response) => {
                });
           }
 
+          // Validate voiceStrength if provided (0-100)
+          if (voiceStrength !== undefined) {
+               if (typeof voiceStrength !== 'number' || voiceStrength < 0 || voiceStrength > 100) {
+                    return res.status(400).json({
+                         error: 'Invalid request',
+                         message: 'voiceStrength must be a number between 0 and 100',
+                    });
+               }
+          }
+
           // Initialize content generation service
           const geminiApiKey = process.env.GEMINI_API_KEY;
           if (!geminiApiKey) {
@@ -73,6 +83,7 @@ router.post('/generate', async (req: Request, res: Response) => {
                userId: req.user.userId,
                platform: platform as Platform,
                tone: tone.trim(),
+               voiceStrength,
           });
 
           res.json({
@@ -85,6 +96,9 @@ router.post('/generate', async (req: Request, res: Response) => {
                     generatedText: content.generatedText,
                     editedText: content.editedText,
                     version: content.version,
+                    usedStyleProfile: content.usedStyleProfile,
+                    voiceStrengthUsed: content.voiceStrengthUsed,
+                    evolutionScoreAtGeneration: content.evolutionScoreAtGeneration,
                     createdAt: content.createdAt,
                },
           });
@@ -192,6 +206,146 @@ router.post('/refine', async (req: Request, res: Response) => {
 
           let statusCode = 500;
           let errorMessage = 'Failed to refine content';
+
+          if (error instanceof Error) {
+               if (error.message.includes('not found')) {
+                    statusCode = 404;
+                    errorMessage = 'Content not found';
+               } else if (error.message.includes('Unauthorized')) {
+                    statusCode = 401;
+                    errorMessage = 'Unauthorized access';
+               } else if (error.message.includes('rate limit')) {
+                    statusCode = 429;
+                    errorMessage = 'API rate limit exceeded';
+               } else if (error.message.includes('Gemini')) {
+                    statusCode = 503;
+                    errorMessage = 'AI service temporarily unavailable';
+               }
+          }
+
+          res.status(statusCode).json({
+               error: errorMessage,
+               message: error instanceof Error ? error.message : 'Unknown error',
+          });
+     }
+});
+
+/**
+ * POST /api/content/:id/save-edits
+ * Save user edits and queue asynchronous learning job
+ */
+router.post('/:id/save-edits', async (req: Request, res: Response) => {
+     try {
+          if (!req.user) {
+               return res.status(401).json({
+                    error: 'Unauthorized',
+                    message: 'User not authenticated',
+               });
+          }
+
+          const { id: contentId } = req.params;
+          const { editedText } = req.body;
+
+          // Validate content ID format
+          if (!mongoose.Types.ObjectId.isValid(contentId)) {
+               return res.status(400).json({
+                    error: 'Invalid request',
+                    message: 'Invalid contentId format',
+               });
+          }
+
+          // Validate editedText
+          if (!editedText || typeof editedText !== 'string' || editedText.trim().length === 0) {
+               return res.status(400).json({
+                    error: 'Invalid request',
+                    message: 'editedText is required and must be a non-empty string',
+               });
+          }
+
+          // Retrieve existing content
+          const content = await Content.findById(contentId);
+          if (!content) {
+               return res.status(404).json({
+                    error: 'Not found',
+                    message: 'Content not found',
+               });
+          }
+
+          // Verify user owns this content
+          if (content.userId.toString() !== req.user.userId) {
+               return res.status(401).json({
+                    error: 'Unauthorized',
+                    message: 'Unauthorized access to content',
+               });
+          }
+
+          // Initialize content generation service for delta extraction
+          const geminiApiKey = process.env.GEMINI_API_KEY;
+          if (!geminiApiKey) {
+               return res.status(500).json({
+                    error: 'Configuration error',
+                    message: 'Gemini API key not configured',
+               });
+          }
+
+          // Import services
+          const { StyleDeltaExtractionService } = await import('../services/StyleDeltaExtractionService');
+          const { FeedbackLearningEngine } = await import('../services/FeedbackLearningEngine');
+
+          const styleDeltaService = new StyleDeltaExtractionService(geminiApiKey);
+
+          // Calculate and store edit metadata
+          const originalText = content.generatedText;
+          const delta = await styleDeltaService.extractDeltas(originalText, editedText.trim());
+
+          // Update content with edited text and metadata
+          content.editedText = editedText.trim();
+          content.editMetadata = {
+               originalText,
+               originalLength: originalText.length,
+               editedLength: editedText.trim().length,
+               sentenceLengthDelta: delta.sentenceLengthDelta,
+               emojiChanges: delta.emojiChanges,
+               structureChanges: delta.structureChanges,
+               toneShift: delta.toneShift,
+               vocabularyChanges: delta.vocabularyChanges,
+               phrasesAdded: delta.phrasesAdded,
+               phrasesRemoved: delta.phrasesRemoved,
+               editTimestamp: new Date(),
+               learningProcessed: false,
+          };
+
+          await content.save();
+
+          // Queue asynchronous learning job (don't wait for it)
+          try {
+               const learningEngine = new FeedbackLearningEngine(geminiApiKey);
+               await learningEngine.queueLearningJob(contentId, req.user.userId);
+          } catch (learningError) {
+               // Log error but don't block the save
+               console.error('Failed to queue learning job:', learningError);
+          }
+
+          // Return immediately without waiting for learning
+          res.json({
+               message: 'Edits saved successfully',
+               content: {
+                    id: content._id,
+                    analysisId: content.analysisId,
+                    platform: content.platform,
+                    tone: content.tone,
+                    generatedText: content.generatedText,
+                    editedText: content.editedText,
+                    version: content.version,
+                    createdAt: content.createdAt,
+                    updatedAt: content.updatedAt,
+               },
+          });
+     } catch (error) {
+          console.error('Error saving edits:', error);
+
+          let statusCode = 500;
+          let errorMessage = 'Failed to save edits';
 
           if (error instanceof Error) {
                if (error.message.includes('not found')) {
