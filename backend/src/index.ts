@@ -6,9 +6,11 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { connectDatabase } from './config/database';
+import { closeQueue } from './config/queue';
 import authRoutes from './routes/auth';
 import repositoryRoutes from './routes/repositories';
 import contentRoutes from './routes/content';
+import queueRoutes from './routes/queue';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +31,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/repositories', repositoryRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/queue', queueRoutes);
 
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -56,5 +59,18 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+     console.log('SIGTERM received, closing server gracefully...');
+     await closeQueue();
+     process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+     console.log('SIGINT received, closing server gracefully...');
+     await closeQueue();
+     process.exit(0);
+});
 
 export default app;
