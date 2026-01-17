@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import RepositoryList from './RepositoryList';
 import AnalysisView from './AnalysisView';
 import ToneSelector from './ToneSelector';
 import ContentGenerator from './ContentGenerator';
 import ContentEditor from './ContentEditor';
+import StyleProfileSetup from './StyleProfileSetup';
 import { GeneratedContent } from './ContentGenerator';
+import { apiClient } from '../utils/apiClient';
 
 interface Analysis {
      id: string;
@@ -20,6 +22,8 @@ interface Analysis {
      createdAt: Date;
 }
 
+const ONBOARDING_COMPLETED_KEY = 'voiceProfileOnboardingCompleted';
+
 const Dashboard: React.FC = () => {
      const [searchQuery, setSearchQuery] = useState<string>('');
      const [selectedRepositoryId, setSelectedRepositoryId] = useState<string | null>(null);
@@ -29,6 +33,65 @@ const Dashboard: React.FC = () => {
           linkedin?: GeneratedContent;
           x?: GeneratedContent;
      }>({});
+     const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
+     const [hasStyleProfile, setHasStyleProfile] = useState<boolean>(false);
+     const [checkingProfile, setCheckingProfile] = useState<boolean>(true);
+
+     // Check if user has a style profile on mount
+     useEffect(() => {
+          const checkStyleProfile = async () => {
+               try {
+                    setCheckingProfile(true);
+                    const response = await apiClient.get('/api/profile/style');
+                    const hasProfile = response.data.styleProfile !== undefined && response.data.styleProfile !== null;
+                    setHasStyleProfile(hasProfile);
+
+                    // Show onboarding modal only if:
+                    // 1. User doesn't have a profile
+                    // 2. Onboarding hasn't been completed before
+                    const onboardingCompleted = localStorage.getItem(ONBOARDING_COMPLETED_KEY);
+                    if (!hasProfile && !onboardingCompleted) {
+                         setShowOnboardingModal(true);
+                    }
+               } catch (err) {
+                    // If profile fetch fails, assume no profile exists
+                    console.log('No profile found or error fetching profile');
+                    setHasStyleProfile(false);
+
+                    // Show onboarding for new users
+                    const onboardingCompleted = localStorage.getItem(ONBOARDING_COMPLETED_KEY);
+                    if (!onboardingCompleted) {
+                         setShowOnboardingModal(true);
+                    }
+               } finally {
+                    setCheckingProfile(false);
+               }
+          };
+
+          checkStyleProfile();
+     }, []);
+
+     const handleOnboardingComplete = (evolutionScore: number) => {
+          console.log('Onboarding completed with evolution score:', evolutionScore);
+          localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+          setShowOnboardingModal(false);
+          setHasStyleProfile(true);
+     };
+
+     const handleOnboardingSkip = () => {
+          console.log('Onboarding skipped');
+          localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+          setShowOnboardingModal(false);
+          setHasStyleProfile(false);
+     };
+
+     const handleSetupVoiceProfile = () => {
+          setShowOnboardingModal(true);
+     };
+
+     const handleReconfigureVoiceProfile = () => {
+          setShowOnboardingModal(true);
+     };
 
      const handleRepositoryClick = (repositoryId: string) => {
           // Reset state when selecting a new repository
@@ -72,6 +135,18 @@ const Dashboard: React.FC = () => {
 
      return (
           <div className="min-h-screen bg-dark-bg text-dark-text">
+               {/* Onboarding Modal */}
+               {showOnboardingModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                         <div className="w-full max-w-3xl">
+                              <StyleProfileSetup
+                                   onComplete={handleOnboardingComplete}
+                                   onSkip={handleOnboardingSkip}
+                              />
+                         </div>
+                    </div>
+               )}
+
                <div className="container mx-auto px-6 py-8 max-w-7xl">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8">
@@ -83,12 +158,34 @@ const Dashboard: React.FC = () => {
                                    Transform your repositories into compelling content
                               </p>
                          </div>
-                         <button
-                              onClick={handleLogout}
-                              className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
-                         >
-                              Logout
-                         </button>
+                         <div className="flex items-center gap-3">
+                              {/* Setup Voice Profile button for users who skipped or don't have a profile */}
+                              {!checkingProfile && !hasStyleProfile && (
+                                   <button
+                                        onClick={handleSetupVoiceProfile}
+                                        className="px-4 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover"
+                                   >
+                                        Setup Voice Profile
+                                   </button>
+                              )}
+
+                              {/* Reconfigure option for users with a profile */}
+                              {!checkingProfile && hasStyleProfile && (
+                                   <button
+                                        onClick={handleReconfigureVoiceProfile}
+                                        className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                                   >
+                                        Reconfigure Voice
+                                   </button>
+                              )}
+
+                              <button
+                                   onClick={handleLogout}
+                                   className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                              >
+                                   Logout
+                              </button>
+                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
