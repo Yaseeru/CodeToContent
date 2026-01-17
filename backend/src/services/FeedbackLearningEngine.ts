@@ -3,6 +3,7 @@ import { User, IUser, StyleProfile, ManualOverrides } from '../models/User';
 import { Content, IContent } from '../models/Content';
 import { LearningJob, ILearningJob, StyleDelta } from '../models/LearningJob';
 import { StyleDeltaExtractionService } from './StyleDeltaExtractionService';
+import { EditMetadataStorageService } from './EditMetadataStorageService';
 import { queueLearningJob as queueJob } from '../config/queue';
 import { cacheService } from './CacheService';
 
@@ -177,7 +178,13 @@ export class FeedbackLearningEngine {
                }
 
                // Get recent edits for pattern detection
-               const recentEdits = await this.getRecentEdits(userId, 20);
+               const recentEdits = await EditMetadataStorageService.getRecentEdits({
+                    userId,
+                    limit: 20,
+               });
+
+               // Prune old edit metadata (keep only 50 most recent)
+               await EditMetadataStorageService.pruneOldEditMetadata(userId);
 
                // Detect patterns across edits
                const patterns = this.detectPatterns(recentEdits);
@@ -233,15 +240,11 @@ export class FeedbackLearningEngine {
      }
 
      /**
-      * Get recent edits for a user
+      * Get recent edits for a user (deprecated - use EditMetadataStorageService)
+      * @deprecated Use EditMetadataStorageService.getRecentEdits instead
       */
      private async getRecentEdits(userId: string, limit: number): Promise<IContent[]> {
-          return Content.find({
-               userId: new mongoose.Types.ObjectId(userId),
-               editMetadata: { $exists: true },
-          })
-               .sort({ 'editMetadata.editTimestamp': -1 })
-               .limit(limit);
+          return EditMetadataStorageService.getRecentEdits({ userId, limit });
      }
 
      /**
