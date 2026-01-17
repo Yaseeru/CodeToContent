@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient, getErrorMessage } from '../utils/apiClient';
 import ErrorNotification from './ErrorNotification';
+import { useToast } from '../contexts/ToastContext';
+import VoiceErrorBoundary from './VoiceErrorBoundary';
+import LoadingSpinner from './LoadingSpinner';
 
 interface StyleProfileSetupProps {
      onComplete: (evolutionScore: number) => void;
@@ -26,6 +29,7 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
      const [error, setError] = useState<string | null>(null);
      const [showErrorNotification, setShowErrorNotification] = useState<boolean>(false);
      const [evolutionScore, setEvolutionScore] = useState<number | null>(null);
+     const toast = useToast();
 
      // Load archetypes when archetype path is selected
      useEffect(() => {
@@ -44,6 +48,7 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);
+               toast.showError('Failed to load archetypes. Please try again.', loadArchetypes);
           } finally {
                setLoading(false);
           }
@@ -53,6 +58,7 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
           if (text.length < 300) {
                setError('Please provide at least 300 characters for analysis.');
                setShowErrorNotification(true);
+               toast.showWarning('Please provide at least 300 characters for analysis.');
                return;
           }
 
@@ -67,11 +73,13 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
 
                const score = response.data.evolutionScore || 0;
                setEvolutionScore(score);
+               toast.showSuccess('Voice profile created successfully!');
           } catch (err) {
                console.error('Error analyzing text:', err);
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);
+               toast.showError('Failed to analyze text. Please try again.', handleTextAnalysis);
           } finally {
                setLoading(false);
           }
@@ -87,6 +95,7 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
           if (!validExtensions.includes(fileExtension)) {
                setError('Please upload a .txt, .md, or .pdf file.');
                setShowErrorNotification(true);
+               toast.showWarning('Please upload a .txt, .md, or .pdf file.');
                return;
           }
 
@@ -108,11 +117,13 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
 
                const score = response.data.evolutionScore || 0;
                setEvolutionScore(score);
+               toast.showSuccess('Voice profile created from file successfully!');
           } catch (err) {
                console.error('Error analyzing file:', err);
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);
+               toast.showError('Failed to analyze file. Please try again.', () => handleFileUpload(event));
           } finally {
                setLoading(false);
           }
@@ -122,6 +133,7 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
           if (!selectedArchetype) {
                setError('Please select an archetype.');
                setShowErrorNotification(true);
+               toast.showWarning('Please select an archetype.');
                return;
           }
 
@@ -136,11 +148,13 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
 
                const score = response.data.evolutionScore || 0;
                setEvolutionScore(score);
+               toast.showSuccess('Archetype applied successfully!');
           } catch (err) {
                console.error('Error applying archetype:', err);
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);
+               toast.showError('Failed to apply archetype. Please try again.', handleArchetypeSelection);
           } finally {
                setLoading(false);
           }
@@ -439,9 +453,7 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
                     </div>
 
                     {loading && archetypes.length === 0 ? (
-                         <div className="flex items-center justify-center py-12">
-                              <span className="w-8 h-8 border-4 border-dark-accent border-t-transparent rounded-full spinner"></span>
-                         </div>
+                         <LoadingSpinner size="lg" message="Loading archetypes..." />
                     ) : (
                          <div className="space-y-4">
                               {archetypes.map((archetype) => (

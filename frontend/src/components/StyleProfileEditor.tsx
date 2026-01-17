@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient, getErrorMessage } from '../utils/apiClient';
 import ErrorNotification from './ErrorNotification';
+import { useToast } from '../contexts/ToastContext';
+import LoadingSpinner from './LoadingSpinner';
 
 // Type definitions matching backend
 type VoiceType = 'educational' | 'storytelling' | 'opinionated' | 'analytical' | 'casual' | 'professional';
@@ -70,6 +72,7 @@ const StyleProfileEditor: React.FC<StyleProfileEditorProps> = ({ onClose, onSave
      const [showResetConfirmation, setShowResetConfirmation] = useState<boolean>(false);
      const [newPhrase, setNewPhrase] = useState<string>('');
      const [newBannedPhrase, setNewBannedPhrase] = useState<string>('');
+     const toast = useToast();
 
      useEffect(() => {
           loadProfile();
@@ -90,6 +93,7 @@ const StyleProfileEditor: React.FC<StyleProfileEditorProps> = ({ onClose, onSave
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);
+               toast.showError('Failed to load profile. Please try again.', loadProfile);
           } finally {
                setLoading(false);
           }
@@ -108,6 +112,8 @@ const StyleProfileEditor: React.FC<StyleProfileEditorProps> = ({ onClose, onSave
                     voiceStrength,
                });
 
+               toast.showSuccess('Profile saved successfully!');
+
                if (onSave) {
                     onSave();
                }
@@ -116,6 +122,7 @@ const StyleProfileEditor: React.FC<StyleProfileEditorProps> = ({ onClose, onSave
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);
+               toast.showError('Failed to save profile. Please try again.', handleSave);
           } finally {
                setSaving(false);
           }
@@ -129,6 +136,8 @@ const StyleProfileEditor: React.FC<StyleProfileEditorProps> = ({ onClose, onSave
 
                await apiClient.post('/api/profile/reset');
 
+               toast.showSuccess('Profile reset successfully!');
+
                // Reload profile after reset
                await loadProfile();
                setShowResetConfirmation(false);
@@ -137,6 +146,7 @@ const StyleProfileEditor: React.FC<StyleProfileEditorProps> = ({ onClose, onSave
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);
+               toast.showError('Failed to reset profile. Please try again.', handleReset);
           } finally {
                setSaving(false);
           }
@@ -217,9 +227,7 @@ const StyleProfileEditor: React.FC<StyleProfileEditorProps> = ({ onClose, onSave
      if (loading) {
           return (
                <div className="bg-dark-surface border border-dark-border rounded-lg p-8">
-                    <div className="flex items-center justify-center py-12">
-                         <span className="w-8 h-8 border-4 border-dark-accent border-t-transparent rounded-full spinner"></span>
-                    </div>
+                    <LoadingSpinner size="lg" message="Loading profile..." />
                </div>
           );
      }

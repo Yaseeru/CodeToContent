@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient, getErrorMessage } from '../utils/apiClient';
 import ErrorNotification from './ErrorNotification';
+import { useToast } from '../contexts/ToastContext';
+import LoadingSpinner from './LoadingSpinner';
 
 // Type definitions matching backend
 interface ToneMetrics {
@@ -55,6 +57,7 @@ const ProfileAnalytics: React.FC<ProfileAnalyticsProps> = ({ onClose }) => {
      const [loading, setLoading] = useState<boolean>(true);
      const [error, setError] = useState<string | null>(null);
      const [showErrorNotification, setShowErrorNotification] = useState<boolean>(false);
+     const toast = useToast();
 
      useEffect(() => {
           loadAnalytics();
@@ -70,6 +73,7 @@ const ProfileAnalytics: React.FC<ProfileAnalyticsProps> = ({ onClose }) => {
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);
+               toast.showError('Failed to load analytics. Please try again.', loadAnalytics);
           } finally {
                setLoading(false);
           }
@@ -116,9 +120,7 @@ const ProfileAnalytics: React.FC<ProfileAnalyticsProps> = ({ onClose }) => {
      if (loading) {
           return (
                <div className="bg-dark-surface border border-dark-border rounded-lg p-8">
-                    <div className="flex items-center justify-center py-12">
-                         <span className="w-8 h-8 border-4 border-dark-accent border-t-transparent rounded-full spinner"></span>
-                    </div>
+                    <LoadingSpinner size="lg" message="Loading analytics..." />
                </div>
           );
      }
