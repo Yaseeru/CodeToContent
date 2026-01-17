@@ -70,6 +70,12 @@ export class ArchetypeManagementService {
                     archetypeBase: archetype.name,
                };
 
+               // Create version snapshot before updating (if profile exists)
+               const { ProfileVersioningService } = await import('./ProfileVersioningService');
+               if (user.styleProfile) {
+                    await ProfileVersioningService.createVersionSnapshot(userId, 'archetype');
+               }
+
                // Update user with the new profile
                user.styleProfile = appliedProfile;
                await user.save();

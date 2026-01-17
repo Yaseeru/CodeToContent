@@ -66,6 +66,13 @@ export interface StyleProfile {
      archetypeBase?: string;               // If started from archetype
 }
 
+export interface ProfileVersion {
+     profile: StyleProfile;
+     timestamp: Date;
+     source: 'manual' | 'feedback' | 'archetype' | 'rollback';
+     learningIterations: number;
+}
+
 export interface IUser extends Document {
      githubId: string;
      username: string;
@@ -74,6 +81,9 @@ export interface IUser extends Document {
 
      // Style Profile (optional for backward compatibility)
      styleProfile?: StyleProfile;
+
+     // Profile version history (store last 10 versions)
+     profileVersions: ProfileVersion[];
 
      // Voice strength preference (0-100, default 80)
      voiceStrength: number;
@@ -175,6 +185,27 @@ const StyleProfileSchema = new Schema({
      },
 }, { _id: false });
 
+const ProfileVersionSchema = new Schema({
+     profile: {
+          type: StyleProfileSchema,
+          required: true,
+     },
+     timestamp: {
+          type: Date,
+          required: true,
+          default: Date.now,
+     },
+     source: {
+          type: String,
+          enum: ['manual', 'feedback', 'archetype', 'rollback'],
+          required: true,
+     },
+     learningIterations: {
+          type: Number,
+          required: true,
+     },
+}, { _id: false });
+
 const ManualOverridesSchema = new Schema({
      tone: {
           type: Schema.Types.Mixed,
@@ -213,6 +244,10 @@ const UserSchema: Schema = new Schema(
           styleProfile: {
                type: StyleProfileSchema,
                required: false,
+          },
+          profileVersions: {
+               type: [ProfileVersionSchema],
+               default: [],
           },
           voiceStrength: {
                type: Number,

@@ -83,6 +83,12 @@ router.post('/analyze-text', upload.single('file'), async (req: Request, res: Re
                });
           }
 
+          // Create version snapshot before updating (if profile exists)
+          const { ProfileVersioningService } = await import('../services/ProfileVersioningService');
+          if (user.styleProfile) {
+               await ProfileVersioningService.createVersionSnapshot(req.user.userId, 'manual');
+          }
+
           user.styleProfile = styleProfile;
           await user.save();
 
@@ -271,6 +277,10 @@ router.put('/style', async (req: Request, res: Response) => {
 
           // Update lastUpdated timestamp
           user.styleProfile.lastUpdated = new Date();
+
+          // Create version snapshot before saving
+          const { ProfileVersioningService } = await import('../services/ProfileVersioningService');
+          await ProfileVersioningService.createVersionSnapshot(req.user.userId, 'manual');
 
           // Save manual overrides
           if (!user.manualOverrides) {
@@ -550,4 +560,101 @@ router.get('/evolution-timeline', async (req: Request, res: Response) => {
      }
 });
 
+/**
+ * GET /api/profile/versions
+ * Get profile version history
+ */
+router.get('/versions', async (req: Request, res: Response) => {
+     try {
+          if (!req.user) {
+               return res.status(401).json({
+                    error: 'Unauthorized',
+                    message: 'User not authenticated',
+               });
+          }
+
+          const { ProfileVersioningService } = await import('../services/ProfileVersioningService');
+          const versions = await ProfileVersioningService.getVersionHistory(req.user.userId);
+
+          res.json({
+               versions,
+               count: versions.length,
+          });
+     } catch (error) {
+          console.error('Error retrieving version history:', error);
+
+          res.status(500).json({
+               error: 'Failed to retrieve version history',
+               message: error instanceof Error ? error.message : 'Unknown error',
+          });
+     }
+});
+
+/**
+ * POST /api/profile/rollback
+ * Rollback to a previous profile version
+ */
+router.post('/rollback', async (req: Request, res: Response) => {
+     try {
+          if (!req.user) {
+               return res.status(401).json({
+                    error: 'Unauthorized',
+                    message: 'User not authenticated',
+               });
+          }
+
+          const { versionIndex } = req.body;
+
+          if (typeof versionIndex !== 'number') {
+               return res.status(400).json({
+                    error: 'Invalid request',
+                    message: 'versionIndex must be a number',
+               });
+          }
+
+          const { ProfileVersioningService } = await import('../services/ProfileVersioningService');
+          const restoredProfile = await ProfileVersioningService.rollbackToVersion(
+               req.user.userId,
+               versionIndex
+          );
+
+          if (!restoredProfile) {
+               return res.status(404).json({
+                    error: 'Version not found',
+                    message: 'No profile version found at the specified index',
+               });
+          }
+
+          // Invalidate caches
+          const { cacheService } = await import('../services/CacheService');
+          await cacheService.invalidateStyleProfile(req.user.userId);
+          await cacheService.invalidateEvolutionScore(req.user.userId);
+
+          // Calculate new evolution score
+          const profileEvolutionService = new ProfileEvolutionService();
+          const evolutionScore = await profileEvolutionService.calculateEvolutionScore(req.user.userId);
+
+          res.json({
+               message: 'Profile rolled back successfully',
+               profile: restoredProfile,
+               evolutionScore,
+          });
+     } catch (error) {
+          console.error('Error rolling back profile:', error);
+
+          if (error instanceof Error && error.message === 'Invalid version index') {
+               return res.status(400).json({
+                    error: 'Invalid version index',
+                    message: error.message,
+               });
+          }
+
+          res.status(500).json({
+               error: 'Failed to rollback profile',
+               message: error instanceof Error ? error.message : 'Unknown error',
+          });
+     }
+});
+
 export default router;
+

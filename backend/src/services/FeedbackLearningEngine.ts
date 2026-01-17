@@ -206,6 +206,10 @@ export class FeedbackLearningEngine {
                updatedProfile.learningIterations += 1;
                updatedProfile.lastUpdated = new Date();
 
+               // Create version snapshot before updating
+               const { ProfileVersioningService } = await import('./ProfileVersioningService');
+               await ProfileVersioningService.createVersionSnapshot(userId, 'feedback');
+
                // Save updated profile
                user.styleProfile = updatedProfile;
                await user.save();
