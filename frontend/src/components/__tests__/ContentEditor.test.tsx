@@ -25,10 +25,13 @@ describe('ContentEditor Unit Tests', () => {
      beforeEach(() => {
           jest.clearAllMocks();
           localStorage.setItem('token', 'test-token');
+          jest.useFakeTimers();
      });
 
      afterEach(() => {
           localStorage.clear();
+          jest.runOnlyPendingTimers();
+          jest.useRealTimers();
      });
 
      // Validates: Requirements 6.3
@@ -239,6 +242,221 @@ describe('ContentEditor Unit Tests', () => {
 
           await waitFor(() => {
                expect(navigator.clipboard.writeText).toHaveBeenCalledWith(editedText);
+          });
+     });
+
+     // Validates: Requirements 5.1
+     test('tracks original generated text', () => {
+          const mockRegenerate = jest.fn();
+          const mockUpdate = jest.fn();
+
+          render(
+               <ContentEditor
+                    content={mockContent}
+                    onRegenerate={mockRegenerate}
+                    onContentUpdate={mockUpdate}
+               />
+          );
+
+          const textarea = screen.getByPlaceholderText(
+               /Generated content will appear here.../i
+          ) as HTMLTextAreaElement;
+
+          // Original text should be displayed
+          expect(textarea.value).toBe(mockContent.generatedText);
+     });
+
+     // Validates: Requirements 5.1
+     test('tracks user edits', () => {
+          const mockRegenerate = jest.fn();
+          const mockUpdate = jest.fn();
+
+          render(
+               <ContentEditor
+                    content={mockContent}
+                    onRegenerate={mockRegenerate}
+                    onContentUpdate={mockUpdate}
+               />
+          );
+
+          const textarea = screen.getByPlaceholderText(
+               /Generated content will appear here.../i
+          ) as HTMLTextAreaElement;
+
+          // Edit the text
+          const editedText = 'This is my edited content.';
+          fireEvent.change(textarea, { target: { value: editedText } });
+
+          // Edited text should be displayed
+          expect(textarea.value).toBe(editedText);
+
+          // Save button should appear when edited
+          expect(screen.getByText('Save Edits')).toBeInTheDocument();
+     });
+
+     // Validates: Requirements 5.2
+     test('shows learning message when saving edits', async () => {
+          const mockRegenerate = jest.fn();
+          const mockUpdate = jest.fn();
+
+          mockedAxios.post.mockResolvedValueOnce({ data: {} });
+
+          render(
+               <ContentEditor
+                    content={mockContent}
+                    onRegenerate={mockRegenerate}
+                    onContentUpdate={mockUpdate}
+               />
+          );
+
+          const textarea = screen.getByPlaceholderText(
+               /Generated content will appear here.../i
+          ) as HTMLTextAreaElement;
+
+          // Edit the text
+          const editedText = 'This is my edited content.';
+          fireEvent.change(textarea, { target: { value: editedText } });
+
+          // Click save button
+          const saveButton = screen.getByText('Save Edits');
+          fireEvent.click(saveButton);
+
+          // Learning message should appear
+          await waitFor(() => {
+               expect(screen.getByText('Learning from your edits...')).toBeInTheDocument();
+          });
+
+          // Verify API was called with edited text
+          expect(mockedAxios.post).toHaveBeenCalledWith(
+               `/api/content/${mockContent.id}/save-edits`,
+               { editedText },
+               {
+                    headers: {
+                         Authorization: 'Bearer test-token',
+                    },
+               }
+          );
+     });
+
+     // Validates: Requirements 5.2
+     test('displays visual learning indicator with spinner', async () => {
+          const mockRegenerate = jest.fn();
+          const mockUpdate = jest.fn();
+
+          mockedAxios.post.mockResolvedValueOnce({ data: {} });
+
+          render(
+               <ContentEditor
+                    content={mockContent}
+                    onRegenerate={mockRegenerate}
+                    onContentUpdate={mockUpdate}
+               />
+          );
+
+          const textarea = screen.getByPlaceholderText(
+               /Generated content will appear here.../i
+          ) as HTMLTextAreaElement;
+
+          // Edit the text
+          const editedText = 'This is my edited content.';
+          fireEvent.change(textarea, { target: { value: editedText } });
+
+          // Click save button
+          const saveButton = screen.getByText('Save Edits');
+          fireEvent.click(saveButton);
+
+          // Learning indicator should appear with spinner
+          await waitFor(() => {
+               const learningMessage = screen.getByText('Learning from your edits...');
+               expect(learningMessage).toBeInTheDocument();
+
+               // Check for spinner SVG
+               const spinner = learningMessage.parentElement?.querySelector('svg.animate-spin');
+               expect(spinner).toBeInTheDocument();
+          });
+     });
+
+     // Validates: Requirements 5.2
+     test('learning indicator disappears after 3 seconds', async () => {
+          const mockRegenerate = jest.fn();
+          const mockUpdate = jest.fn();
+
+          mockedAxios.post.mockResolvedValueOnce({ data: {} });
+
+          render(
+               <ContentEditor
+                    content={mockContent}
+                    onRegenerate={mockRegenerate}
+                    onContentUpdate={mockUpdate}
+               />
+          );
+
+          const textarea = screen.getByPlaceholderText(
+               /Generated content will appear here.../i
+          ) as HTMLTextAreaElement;
+
+          // Edit the text
+          const editedText = 'This is my edited content.';
+          fireEvent.change(textarea, { target: { value: editedText } });
+
+          // Click save button
+          const saveButton = screen.getByText('Save Edits');
+          fireEvent.click(saveButton);
+
+          // Learning message should appear
+          await waitFor(() => {
+               expect(screen.getByText('Learning from your edits...')).toBeInTheDocument();
+          });
+
+          // Fast-forward 3 seconds
+          jest.advanceTimersByTime(3000);
+
+          // Learning message should disappear
+          await waitFor(() => {
+               expect(screen.queryByText('Learning from your edits...')).not.toBeInTheDocument();
+          });
+     });
+
+     // Validates: Requirements 5.1, 5.2
+     test('maintains existing functionality after adding learning features', async () => {
+          const mockRegenerate = jest.fn();
+          const mockUpdate = jest.fn();
+
+          mockedAxios.post.mockResolvedValueOnce({ data: {} });
+
+          render(
+               <ContentEditor
+                    content={mockContent}
+                    onRegenerate={mockRegenerate}
+                    onContentUpdate={mockUpdate}
+               />
+          );
+
+          // Test regenerate still works
+          const regenerateButton = screen.getByText('Regenerate');
+          fireEvent.click(regenerateButton);
+          expect(mockRegenerate).toHaveBeenCalledTimes(1);
+
+          // Test editing still works
+          const textarea = screen.getByPlaceholderText(
+               /Generated content will appear here.../i
+          ) as HTMLTextAreaElement;
+          const editedText = 'This is my edited content.';
+          fireEvent.change(textarea, { target: { value: editedText } });
+          expect(textarea.value).toBe(editedText);
+
+          // Test copy still works
+          const copyButton = screen.getByText('Copy');
+          fireEvent.click(copyButton);
+          await waitFor(() => {
+               expect(navigator.clipboard.writeText).toHaveBeenCalledWith(editedText);
+          });
+
+          // Test save still works
+          const saveButton = screen.getByText('Save Edits');
+          fireEvent.click(saveButton);
+          await waitFor(() => {
+               expect(mockedAxios.post).toHaveBeenCalled();
           });
      });
 });
