@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Analysis, IAnalysis } from '../models/Analysis';
 import { Content, IContent, Platform } from '../models/Content';
 import { User, StyleProfile } from '../models/User';
+import { logger } from './LoggerService';
 
 export interface GenerateContentParams {
      analysisId: string;
@@ -80,18 +81,18 @@ export class ContentGenerationService {
                     }
 
                     // Call Gemini API with voice-aware prompt (temperature 0.7-0.9)
-                    generatedText = await this.callGeminiAPI(prompt, 0.8);
+                    generatedText = await this.callGeminiAPI(prompt, 0.8, userId, 'content_generation');
                     usedStyleProfile = true;
                } catch (error) {
                     console.error('Voice-aware generation failed, falling back to tone-based:', error);
                     // Fall back to tone-based generation
                     const prompt = this.constructContentPrompt(analysis, platform, tone);
-                    generatedText = await this.callGeminiAPI(prompt);
+                    generatedText = await this.callGeminiAPI(prompt, 0.8, userId, 'content_generation');
                }
           } else {
                // Use existing tone-based generation
                const prompt = this.constructContentPrompt(analysis, platform, tone);
-               generatedText = await this.callGeminiAPI(prompt);
+               generatedText = await this.callGeminiAPI(prompt, 0.8, userId, 'content_generation');
           }
 
           // Store generated content with metadata
@@ -109,6 +110,9 @@ export class ContentGenerationService {
           });
 
           await content.save();
+
+          // Track content generation
+          logger.trackContentGeneration(usedStyleProfile);
 
           return content;
      }
@@ -473,7 +477,7 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
           );
 
           // Call Gemini API for refinement
-          const refinedText = await this.callGeminiAPI(prompt);
+          const refinedText = await this.callGeminiAPI(prompt, 0.8, userId, 'content_generation');
 
           // Create new content version with incremented version number
           const refinedContent = new Content({
@@ -534,7 +538,11 @@ Respond with ONLY the refined content. Do not include any explanations, metadata
       * Note: Temperature parameter is accepted but not currently used by the Gemini SDK
       * Temperature is set between 0.7-0.9 as per requirements
       */
-     private async callGeminiAPI(prompt: string, temperature: number = 0.8): Promise<string> {
+     private async callGeminiAPI(prompt: string, temperature: number = 0.8, userId: string = 'unknown', operation: 'content_generation' | 'tone_shift_detection' = 'content_generation'): Promise<string> {
+          const startTime = Date.now();
+          let success = false;
+          let errorMessage: string | undefined;
+
           try {
                const response = await this.ai.models.generateContent({
                     model: 'gemini-3-flash-preview',
@@ -545,8 +553,44 @@ Respond with ONLY the refined content. Do not include any explanations, metadata
                     throw new Error('Gemini API returned empty response');
                }
 
+               success = true;
+               const latencyMs = Date.now() - startTime;
+
+               // Estimate token usage (rough approximation)
+               const promptTokens = Math.ceil(prompt.split(/\s+/).length * 1.3);
+               const completionTokens = Math.ceil(response.text.split(/\s+/).length * 1.3);
+
+               // Log Gemini API call
+               logger.logGeminiAPICall({
+                    operation,
+                    userId,
+                    promptTokens,
+                    completionTokens,
+                    totalTokens: promptTokens + completionTokens,
+                    latencyMs,
+                    success: true,
+                    timestamp: new Date(),
+               });
+
                return response.text.trim();
           } catch (error: any) {
+               success = false;
+               errorMessage = error.message || 'Unknown error';
+               const latencyMs = Date.now() - startTime;
+
+               // Log failed API call
+               logger.logGeminiAPICall({
+                    operation,
+                    userId,
+                    promptTokens: Math.ceil(prompt.split(/\s+/).length * 1.3),
+                    completionTokens: 0,
+                    totalTokens: Math.ceil(prompt.split(/\s+/).length * 1.3),
+                    latencyMs,
+                    success: false,
+                    error: errorMessage,
+                    timestamp: new Date(),
+               });
+
                if (error.message?.includes('429')) {
                     throw new Error('Gemini API rate limit exceeded. Please try again later.');
                }

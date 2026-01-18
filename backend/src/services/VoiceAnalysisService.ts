@@ -1,15 +1,18 @@
 import { GoogleGenAI } from '@google/genai';
 import { StyleProfile, VoiceType, VocabularyLevel, ProfileSource } from '../models/User';
+import { logger } from './LoggerService';
 const pdfParse = require('pdf-parse');
 
 export interface AnalyzeTextParams {
      text: string;
+     userId?: string;
 }
 
 export interface AnalyzeFileParams {
      fileBuffer: Buffer;
      fileName: string;
      mimeType: string;
+     userId?: string;
 }
 
 export interface GeminiStyleResponse {
@@ -54,7 +57,7 @@ export class VoiceAnalysisService {
       * Analyze text input and extract style profile
       */
      async analyzeText(params: AnalyzeTextParams): Promise<StyleProfile> {
-          const { text } = params;
+          const { text, userId = 'unknown' } = params;
 
           // Validate minimum character requirement
           if (text.length < 300) {
@@ -62,7 +65,10 @@ export class VoiceAnalysisService {
           }
 
           // Extract style using Gemini with retry logic
-          const geminiResponse = await this.extractStyleWithRetry(text);
+          const geminiResponse = await this.extractStyleWithRetry(text, userId);
+
+          // Track profile creation
+          logger.trackProfileCreation();
 
           // Convert to StyleProfile
           const styleProfile: StyleProfile = {
@@ -86,7 +92,7 @@ export class VoiceAnalysisService {
       * Analyze file upload and extract style profile
       */
      async analyzeFile(params: AnalyzeFileParams): Promise<StyleProfile> {
-          const { fileBuffer, fileName, mimeType } = params;
+          const { fileBuffer, fileName, mimeType, userId = 'unknown' } = params;
 
           // Validate file format
           const fileExtension = fileName.toLowerCase().split('.').pop();
@@ -103,7 +109,10 @@ export class VoiceAnalysisService {
           }
 
           // Extract style using Gemini with retry logic
-          const geminiResponse = await this.extractStyleWithRetry(extractedText);
+          const geminiResponse = await this.extractStyleWithRetry(extractedText, userId);
+
+          // Track profile creation
+          logger.trackProfileCreation();
 
           // Convert to StyleProfile
           const styleProfile: StyleProfile = {
@@ -248,6 +257,7 @@ export class VoiceAnalysisService {
       */
      private async extractStyleWithRetry(
           text: string,
+          userId: string = 'unknown',
           maxAttempts: number = 3
      ): Promise<GeminiStyleResponse> {
           let lastError: Error | null = null;
@@ -255,7 +265,7 @@ export class VoiceAnalysisService {
           for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                try {
                     const prompt = this.buildStyleExtractionPrompt(text);
-                    const response = await this.callGeminiAPI(prompt);
+                    const response = await this.callGeminiAPI(prompt, userId);
                     const parsed = this.parseGeminiStyleResponse(response);
                     return parsed;
                } catch (error: any) {
@@ -334,7 +344,11 @@ IMPORTANT:
      /**
       * Call Gemini API with prompt
       */
-     private async callGeminiAPI(prompt: string): Promise<string> {
+     private async callGeminiAPI(prompt: string, userId: string = 'unknown'): Promise<string> {
+          const startTime = Date.now();
+          let success = false;
+          let errorMessage: string | undefined;
+
           try {
                const response = await this.ai.models.generateContent({
                     model: 'gemini-2.0-flash-exp',
@@ -345,8 +359,44 @@ IMPORTANT:
                     throw new Error('Gemini API returned empty response');
                }
 
+               success = true;
+               const latencyMs = Date.now() - startTime;
+
+               // Estimate token usage (rough approximation)
+               const promptTokens = Math.ceil(prompt.split(/\s+/).length * 1.3);
+               const completionTokens = Math.ceil(response.text.split(/\s+/).length * 1.3);
+
+               // Log Gemini API call
+               logger.logGeminiAPICall({
+                    operation: 'style_analysis',
+                    userId,
+                    promptTokens,
+                    completionTokens,
+                    totalTokens: promptTokens + completionTokens,
+                    latencyMs,
+                    success: true,
+                    timestamp: new Date(),
+               });
+
                return response.text;
           } catch (error: any) {
+               success = false;
+               errorMessage = error.message || 'Unknown error';
+               const latencyMs = Date.now() - startTime;
+
+               // Log failed API call
+               logger.logGeminiAPICall({
+                    operation: 'style_analysis',
+                    userId,
+                    promptTokens: Math.ceil(prompt.split(/\s+/).length * 1.3),
+                    completionTokens: 0,
+                    totalTokens: Math.ceil(prompt.split(/\s+/).length * 1.3),
+                    latencyMs,
+                    success: false,
+                    error: errorMessage,
+                    timestamp: new Date(),
+               });
+
                if (error.message?.includes('429')) {
                     throw new Error('Gemini API rate limit exceeded. Please try again later.');
                }

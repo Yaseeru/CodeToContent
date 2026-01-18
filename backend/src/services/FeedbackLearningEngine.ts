@@ -6,6 +6,7 @@ import { StyleDeltaExtractionService } from './StyleDeltaExtractionService';
 import { EditMetadataStorageService } from './EditMetadataStorageService';
 import { queueLearningJob as queueJob } from '../config/queue';
 import { cacheService } from './CacheService';
+import { logger } from './LoggerService';
 
 interface DetectedPatterns {
      sentenceLengthPattern?: number;
@@ -79,6 +80,7 @@ export class FeedbackLearningEngine {
       * Extracts style deltas and updates user profile
       */
      async processLearningJob(jobId: string): Promise<void> {
+          const startTime = Date.now();
           let job: ILearningJob | null = null;
 
           try {
@@ -112,11 +114,30 @@ export class FeedbackLearningEngine {
                job.processingCompleted = new Date();
                await job.save();
 
+               // Track processing time
+               const processingTime = Date.now() - startTime;
+               logger.trackLearningJobProcessingTime(processingTime);
+
                console.log(`[FeedbackLearning] Job ${jobId} completed successfully`);
           } catch (error: any) {
                console.error(`[FeedbackLearning] Job ${jobId} failed:`, error.message);
 
+               // Log job failure
                if (job) {
+                    logger.logLearningJobFailure({
+                         jobId: jobId,
+                         userId: job.userId.toString(),
+                         contentId: job.contentId.toString(),
+                         attemptNumber: job.attempts,
+                         error: error.message,
+                         stackTrace: error.stack,
+                         context: {
+                              status: job.status,
+                              priority: job.priority,
+                         },
+                         timestamp: new Date(),
+                    });
+
                     job.status = 'failed';
                     job.error = error.message;
                     await job.save();
@@ -213,6 +234,9 @@ export class FeedbackLearningEngine {
                updatedProfile.learningIterations += 1;
                updatedProfile.lastUpdated = new Date();
 
+               // Store before state for logging
+               const beforeProfile = JSON.parse(JSON.stringify(user.styleProfile));
+
                // Create version snapshot before updating
                const { ProfileVersioningService } = await import('./ProfileVersioningService');
                await ProfileVersioningService.createVersionSnapshot(userId, 'feedback');
@@ -220,6 +244,18 @@ export class FeedbackLearningEngine {
                // Save updated profile
                user.styleProfile = updatedProfile;
                await user.save();
+
+               // Log profile update with before/after
+               const changedFields = this.getChangedFields(beforeProfile, updatedProfile);
+               logger.logProfileUpdate({
+                    userId,
+                    updateType: 'feedback',
+                    before: beforeProfile,
+                    after: updatedProfile,
+                    changedFields,
+                    learningIterations: updatedProfile.learningIterations,
+                    timestamp: new Date(),
+               });
 
                // Invalidate cache
                await cacheService.invalidateStyleProfile(userId);
@@ -481,5 +517,49 @@ export class FeedbackLearningEngine {
       */
      private shouldBatchEdit(userId: string): boolean {
           return this.editBatchMap.has(userId);
+     }
+
+     /**
+      * Get list of changed fields between two profiles
+      */
+     private getChangedFields(before: StyleProfile, after: StyleProfile): string[] {
+          const changed: string[] = [];
+
+          // Check tone metrics
+          if (JSON.stringify(before.tone) !== JSON.stringify(after.tone)) {
+               changed.push('tone');
+          }
+
+          // Check writing traits
+          if (JSON.stringify(before.writingTraits) !== JSON.stringify(after.writingTraits)) {
+               changed.push('writingTraits');
+          }
+
+          // Check structure preferences
+          if (JSON.stringify(before.structurePreferences) !== JSON.stringify(after.structurePreferences)) {
+               changed.push('structurePreferences');
+          }
+
+          // Check vocabulary level
+          if (before.vocabularyLevel !== after.vocabularyLevel) {
+               changed.push('vocabularyLevel');
+          }
+
+          // Check common phrases
+          if (JSON.stringify(before.commonPhrases) !== JSON.stringify(after.commonPhrases)) {
+               changed.push('commonPhrases');
+          }
+
+          // Check banned phrases
+          if (JSON.stringify(before.bannedPhrases) !== JSON.stringify(after.bannedPhrases)) {
+               changed.push('bannedPhrases');
+          }
+
+          // Check voice type
+          if (before.voiceType !== after.voiceType) {
+               changed.push('voiceType');
+          }
+
+          return changed;
      }
 }

@@ -12,6 +12,7 @@ import repositoryRoutes from './routes/repositories';
 import contentRoutes from './routes/content';
 import queueRoutes from './routes/queue';
 import profileRoutes from './routes/profile';
+import monitoringRoutes from './routes/monitoring';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,6 +35,7 @@ app.use('/api/repositories', repositoryRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/monitoring', monitoringRoutes);
 
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
