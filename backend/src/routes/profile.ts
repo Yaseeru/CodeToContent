@@ -8,6 +8,7 @@ import { ArchetypeManagementService } from '../services/ArchetypeManagementServi
 import { User } from '../models/User';
 import mongoose from 'mongoose';
 import multer from 'multer';
+import { FILE_UPLOAD_CONFIG, VALIDATION_CONFIG } from '../config/constants';
 
 const router = Router();
 
@@ -15,14 +16,13 @@ const router = Router();
 const upload = multer({
      storage: multer.memoryStorage(),
      limits: {
-          fileSize: 10 * 1024 * 1024, // 10MB limit
+          fileSize: FILE_UPLOAD_CONFIG.MAX_SIZE_BYTES,
      },
      fileFilter: (req, file, cb) => {
-          const allowedMimeTypes = ['text/plain', 'text/markdown', 'application/pdf'];
-          if (allowedMimeTypes.includes(file.mimetype)) {
+          if (FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
                cb(null, true);
           } else {
-               cb(new Error('Invalid file type. Supported formats: .txt, .md, .pdf'));
+               cb(new Error(`Invalid file type. Supported formats: ${FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES.join(', ')}`));
           }
      },
 });

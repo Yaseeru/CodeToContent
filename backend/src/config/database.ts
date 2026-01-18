@@ -1,13 +1,14 @@
 import mongoose from 'mongoose';
 import { logger, LogLevel } from '../services/LoggerService';
+import { DATABASE_CONFIG } from './constants';
 
 /**
  * Connect to MongoDB with retry logic and exponential backoff
  * Implements Requirements 7.1-7.10 from critical-fixes spec
  */
 export const connectDatabase = async (): Promise<void> => {
-     const maxRetries = 3;
-     const delays = [1000, 2000, 4000]; // Exponential backoff: 1s, 2s, 4s
+     const maxRetries = DATABASE_CONFIG.MAX_RETRIES;
+     const delays = DATABASE_CONFIG.RETRY_DELAYS_MS;
 
      // Validate URI format before attempting connection (Requirement 7.9)
      const uri = process.env.MONGODB_URI;

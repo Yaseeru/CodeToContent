@@ -9,6 +9,7 @@ import RedisStore from 'rate-limit-redis';
 import { Request, Response } from 'express';
 import Redis from 'ioredis';
 import { logger, LogLevel } from '../services/LoggerService';
+import { RATE_LIMIT_CONFIG } from '../config/constants';
 
 // Create Redis client for rate limiting
 // Use the same URL parsing as other Redis connections
@@ -29,8 +30,8 @@ export const defaultRateLimiter = rateLimit({
           sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
           prefix: 'rl:default:',
      }),
-     windowMs: 60 * 60 * 1000, // 1 hour
-     max: parseInt(process.env.RATE_LIMIT_DEFAULT || '100', 10),
+     windowMs: RATE_LIMIT_CONFIG.DEFAULT_WINDOW_MS,
+     max: parseInt(process.env.RATE_LIMIT_DEFAULT || String(RATE_LIMIT_CONFIG.DEFAULT_MAX_REQUESTS), 10),
      message: 'Too many requests, please try again later',
      standardHeaders: true, // Return rate limit info in RateLimit-* headers
      legacyHeaders: false, // Disable X-RateLimit-* headers
@@ -83,8 +84,8 @@ export const strictRateLimiter = rateLimit({
           sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
           prefix: 'rl:strict:',
      }),
-     windowMs: 60 * 60 * 1000, // 1 hour
-     max: parseInt(process.env.RATE_LIMIT_STRICT || '10', 10),
+     windowMs: RATE_LIMIT_CONFIG.DEFAULT_WINDOW_MS,
+     max: parseInt(process.env.RATE_LIMIT_STRICT || String(RATE_LIMIT_CONFIG.STRICT_MAX_REQUESTS), 10),
      message: 'Too many expensive requests, please try again later',
      standardHeaders: true, // Return rate limit info in RateLimit-* headers
      legacyHeaders: false, // Disable X-RateLimit-* headers

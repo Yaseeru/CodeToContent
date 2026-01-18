@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance } from 'axios';
+import { GITHUB_CONFIG } from '../config/constants';
 
 export interface GitHubRepository {
      id: number;
@@ -90,7 +91,7 @@ export class GitHubService {
      /**
       * Fetch user's repositories
       */
-     async fetchUserRepositories(page: number = 1, perPage: number = 100): Promise<GitHubRepository[]> {
+     async fetchUserRepositories(page: number = GITHUB_CONFIG.DEFAULT_PAGE, perPage: number = GITHUB_CONFIG.DEFAULT_PER_PAGE): Promise<GitHubRepository[]> {
           try {
                const response = await this.client.get<GitHubRepository[]>('/user/repos', {
                     params: {
@@ -144,7 +145,7 @@ export class GitHubService {
      /**
       * Fetch commit history
       */
-     async fetchCommitHistory(owner: string, repo: string, limit: number = 50): Promise<GitHubCommit[]> {
+     async fetchCommitHistory(owner: string, repo: string, limit: number = GITHUB_CONFIG.COMMIT_HISTORY_LIMIT): Promise<GitHubCommit[]> {
           try {
                const response = await this.client.get<GitHubCommit[]>(`/repos/${owner}/${repo}/commits`, {
                     params: {
@@ -174,7 +175,7 @@ export class GitHubService {
      /**
       * Fetch pull request data
       */
-     async fetchPullRequests(owner: string, repo: string, state: 'open' | 'closed' | 'all' = 'all', limit: number = 50): Promise<GitHubPullRequest[]> {
+     async fetchPullRequests(owner: string, repo: string, state: 'open' | 'closed' | 'all' = 'all', limit: number = GITHUB_CONFIG.PULL_REQUEST_LIMIT): Promise<GitHubPullRequest[]> {
           try {
                const response = await this.client.get<GitHubPullRequest[]>(`/repos/${owner}/${repo}/pulls`, {
                     params: {

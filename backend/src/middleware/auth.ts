@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/AuthService';
 import { JWTPayload } from '../services/AuthService';
+import { VALIDATION_CONFIG } from '../config/constants';
 
 // Extend Express Request type to include user information
 declare global {
@@ -33,7 +34,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           // Expected format: "Bearer <token>"
           const parts = authHeader.split(' ');
 
-          if (parts.length !== 2 || parts[0] !== 'Bearer') {
+          if (parts.length !== VALIDATION_CONFIG.BEARER_TOKEN_PARTS || parts[0] !== 'Bearer') {
                res.status(401).json({
                     error: 'Unauthorized',
                     message: 'Invalid authorization header format',

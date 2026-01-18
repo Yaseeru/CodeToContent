@@ -3,6 +3,8 @@
  * Provides structured logging for monitoring and debugging
  */
 
+import { MONITORING_CONFIG } from '../config/constants';
+
 export enum LogLevel {
      DEBUG = 'DEBUG',
      INFO = 'INFO',

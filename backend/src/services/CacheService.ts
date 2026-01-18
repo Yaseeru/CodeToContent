@@ -1,6 +1,7 @@
 import Redis from 'ioredis';
 import { StyleProfile } from '../models/User';
 import { IVoiceArchetype } from '../models/VoiceArchetype';
+import { CACHE_CONFIG, REDIS_CONFIG } from '../config/constants';
 
 export interface CacheMetrics {
      hits: number;
@@ -13,9 +14,9 @@ export class CacheService {
      private metrics: { hits: number; misses: number };
 
      // Cache TTLs in seconds
-     private readonly PROFILE_TTL = 3600; // 1 hour
-     private readonly EVOLUTION_SCORE_TTL = 300; // 5 minutes
-     private readonly ARCHETYPE_LIST_TTL = 86400; // 24 hours (rarely changes)
+     private readonly PROFILE_TTL = CACHE_CONFIG.PROFILE_TTL_SECONDS;
+     private readonly EVOLUTION_SCORE_TTL = CACHE_CONFIG.EVOLUTION_SCORE_TTL_SECONDS;
+     private readonly ARCHETYPE_LIST_TTL = CACHE_CONFIG.ARCHETYPE_LIST_TTL_SECONDS;
 
      // Cache key prefixes
      private readonly PROFILE_PREFIX = 'profile:';
@@ -29,7 +30,7 @@ export class CacheService {
           this.redis = new Redis(redisUrl, {
                maxRetriesPerRequest: null,
                retryStrategy: (times: number) => {
-                    const delay = Math.min(times * 50, 2000);
+                    const delay = Math.min(times * REDIS_CONFIG.RETRY_DELAY_BASE_MS, REDIS_CONFIG.MAX_RETRY_DELAY_MS);
                     return delay;
                },
           });

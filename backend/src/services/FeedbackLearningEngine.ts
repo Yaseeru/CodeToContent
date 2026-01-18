@@ -7,6 +7,7 @@ import { EditMetadataStorageService } from './EditMetadataStorageService';
 import { queueLearningJob as queueJob } from '../config/queue';
 import { cacheService } from './CacheService';
 import { logger } from './LoggerService';
+import { LEARNING_CONFIG, VALIDATION_CONFIG } from '../config/constants';
 
 interface DetectedPatterns {
      sentenceLengthPattern?: number;
@@ -24,9 +25,9 @@ export class FeedbackLearningEngine {
      private styleDeltaService: StyleDeltaExtractionService;
      private rateLimitMap: Map<string, number>;
      private editBatchMap: Map<string, string[]>;
-     private readonly RATE_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
-     private readonly BATCH_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-     private readonly MIN_EDITS_FOR_MAJOR_CHANGES = 5;
+     private readonly RATE_LIMIT_MS = LEARNING_CONFIG.RATE_LIMIT_MS;
+     private readonly BATCH_WINDOW_MS = LEARNING_CONFIG.BATCH_WINDOW_MS;
+     private readonly MIN_EDITS_FOR_MAJOR_CHANGES = LEARNING_CONFIG.MIN_EDITS_FOR_MAJOR_CHANGES;
 
      constructor(apiKey: string) {
           this.styleDeltaService = new StyleDeltaExtractionService(apiKey);
@@ -201,10 +202,10 @@ export class FeedbackLearningEngine {
                // Get recent edits for pattern detection
                const recentEdits = await EditMetadataStorageService.getRecentEdits({
                     userId,
-                    limit: 20,
+                    limit: LEARNING_CONFIG.RECENT_EDITS_LIMIT,
                });
 
-               // Prune old edit metadata (keep only 50 most recent)
+               // Prune old edit metadata
                await EditMetadataStorageService.pruneOldEditMetadata(userId);
 
                // Detect patterns across edits
@@ -298,12 +299,12 @@ export class FeedbackLearningEngine {
           }
 
           // Detect sentence length pattern (requires 3+ edits)
-          if (edits.length >= 3) {
+          if (edits.length >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                const sentenceDeltas = edits
                     .filter(e => e.editMetadata)
                     .map(e => e.editMetadata!.sentenceLengthDelta);
 
-               if (sentenceDeltas.length >= 3) {
+               if (sentenceDeltas.length >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                     const avgDelta = sentenceDeltas.reduce((sum, d) => sum + d, 0) / sentenceDeltas.length;
 
                     // Only consider significant patterns (avg delta > 1 or < -1)
@@ -314,18 +315,18 @@ export class FeedbackLearningEngine {
           }
 
           // Detect emoji pattern (requires 3+ edits)
-          if (edits.length >= 3) {
+          if (edits.length >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                const emojiChanges = edits
                     .filter(e => e.editMetadata)
                     .map(e => e.editMetadata!.emojiChanges);
 
-               if (emojiChanges.length >= 3) {
+               if (emojiChanges.length >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                     const totalAdded = emojiChanges.reduce((sum, c) => sum + c.added, 0);
                     const totalRemoved = emojiChanges.reduce((sum, c) => sum + c.removed, 0);
 
                     // If user consistently adds emojis
-                    if (totalAdded > totalRemoved && totalAdded >= 3) {
-                         const avgFrequency = Math.min(5, Math.ceil(totalAdded / emojiChanges.length));
+                    if (totalAdded > totalRemoved && totalAdded >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
+                         const avgFrequency = Math.min(VALIDATION_CONFIG.EMOJI_FREQUENCY_MAX, Math.ceil(totalAdded / emojiChanges.length));
                          patterns.emojiPattern = {
                               shouldUse: true,
                               frequency: avgFrequency,
@@ -335,7 +336,7 @@ export class FeedbackLearningEngine {
           }
 
           // Detect CTA pattern (requires 3+ edits with CTA keywords)
-          if (edits.length >= 3) {
+          if (edits.length >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                const ctaKeywords = ['check out', 'learn more', 'click here', 'visit', 'try now', 'get started', 'sign up', 'download'];
                let ctaCount = 0;
 
@@ -348,18 +349,18 @@ export class FeedbackLearningEngine {
                     }
                }
 
-               if (ctaCount >= 3) {
+               if (ctaCount >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                     patterns.ctaPattern = true;
                }
           }
 
           // Detect tone pattern (requires 3+ edits with same tone shift)
-          if (edits.length >= 3) {
+          if (edits.length >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                const toneShifts = edits
                     .filter(e => e.editMetadata && e.editMetadata.toneShift !== 'no change')
                     .map(e => e.editMetadata!.toneShift);
 
-               if (toneShifts.length >= 3) {
+               if (toneShifts.length >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                     // Find most common tone shift
                     const toneCounts: Record<string, number> = {};
                     for (const shift of toneShifts) {
@@ -369,7 +370,7 @@ export class FeedbackLearningEngine {
                     const mostCommon = Object.entries(toneCounts)
                          .sort((a, b) => b[1] - a[1])[0];
 
-                    if (mostCommon && mostCommon[1] >= 3) {
+                    if (mostCommon && mostCommon[1] >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION) {
                          patterns.tonePattern = mostCommon[0];
                     }
                }
@@ -386,7 +387,7 @@ export class FeedbackLearningEngine {
           }
 
           patterns.bannedPhrases = Object.entries(phraseRemovalCounts)
-               .filter(([_, count]) => count >= 2)
+               .filter(([_, count]) => count >= LEARNING_CONFIG.MIN_EDITS_FOR_BANNED_PHRASES)
                .map(([phrase, _]) => phrase);
 
           // Detect common phrases (requires 3+ additions)
@@ -400,7 +401,7 @@ export class FeedbackLearningEngine {
           }
 
           patterns.commonPhrases = Object.entries(phraseAdditionCounts)
-               .filter(([_, count]) => count >= 3)
+               .filter(([_, count]) => count >= LEARNING_CONFIG.MIN_EDITS_FOR_PATTERN_DETECTION)
                .map(([phrase, _]) => phrase);
 
           return patterns;
@@ -425,10 +426,10 @@ export class FeedbackLearningEngine {
                const isOverridden = manualOverrides.writingTraits?.avgSentenceLength !== undefined;
 
                if (!isOverridden) {
-                    const adjustment = patterns.sentenceLengthPattern * 0.15; // 15% adjustment
+                    const adjustment = patterns.sentenceLengthPattern * LEARNING_CONFIG.ADJUSTMENT_PERCENTAGE;
                     updated.writingTraits.avgSentenceLength = Math.max(
-                         5,
-                         Math.min(50, updated.writingTraits.avgSentenceLength + adjustment)
+                         LEARNING_CONFIG.SENTENCE_LENGTH_MIN,
+                         Math.min(LEARNING_CONFIG.SENTENCE_LENGTH_MAX, updated.writingTraits.avgSentenceLength + adjustment)
                     );
                }
           }
@@ -463,21 +464,21 @@ export class FeedbackLearningEngine {
                if (!isOverridden) {
                     // Adjust tone based on pattern
                     if (patterns.tonePattern === 'more casual') {
-                         updated.tone.formality = Math.max(1, updated.tone.formality - 1);
+                         updated.tone.formality = Math.max(VALIDATION_CONFIG.TONE_METRIC_MIN, updated.tone.formality - 1);
                     } else if (patterns.tonePattern === 'more professional') {
-                         updated.tone.formality = Math.min(10, updated.tone.formality + 1);
+                         updated.tone.formality = Math.min(VALIDATION_CONFIG.TONE_METRIC_MAX, updated.tone.formality + 1);
                     } else if (patterns.tonePattern === 'more enthusiastic') {
-                         updated.tone.enthusiasm = Math.min(10, updated.tone.enthusiasm + 1);
+                         updated.tone.enthusiasm = Math.min(VALIDATION_CONFIG.TONE_METRIC_MAX, updated.tone.enthusiasm + 1);
                     } else if (patterns.tonePattern === 'more subdued') {
-                         updated.tone.enthusiasm = Math.max(1, updated.tone.enthusiasm - 1);
+                         updated.tone.enthusiasm = Math.max(VALIDATION_CONFIG.TONE_METRIC_MIN, updated.tone.enthusiasm - 1);
                     } else if (patterns.tonePattern === 'more direct') {
-                         updated.tone.directness = Math.min(10, updated.tone.directness + 1);
+                         updated.tone.directness = Math.min(VALIDATION_CONFIG.TONE_METRIC_MAX, updated.tone.directness + 1);
                     } else if (patterns.tonePattern === 'more indirect') {
-                         updated.tone.directness = Math.max(1, updated.tone.directness - 1);
+                         updated.tone.directness = Math.max(VALIDATION_CONFIG.TONE_METRIC_MIN, updated.tone.directness - 1);
                     } else if (patterns.tonePattern === 'more humorous') {
-                         updated.tone.humor = Math.min(10, updated.tone.humor + 1);
+                         updated.tone.humor = Math.min(VALIDATION_CONFIG.TONE_METRIC_MAX, updated.tone.humor + 1);
                     } else if (patterns.tonePattern === 'more serious') {
-                         updated.tone.humor = Math.max(1, updated.tone.humor - 1);
+                         updated.tone.humor = Math.max(VALIDATION_CONFIG.TONE_METRIC_MIN, updated.tone.humor - 1);
                     }
                }
           }

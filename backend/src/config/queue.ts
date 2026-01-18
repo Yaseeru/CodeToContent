@@ -1,5 +1,6 @@
 import { Queue, QueueEvents, Job } from 'bullmq';
 import { getRedisConnection } from './redisConnection';
+import { QUEUE_CONFIG } from './constants';
 
 // Redis connection configuration
 const redisConnection = {
@@ -18,14 +19,14 @@ export interface LearningJobData {
 export const learningQueue = new Queue<LearningJobData>('learning-jobs', {
      connection: redisConnection,
      defaultJobOptions: {
-          attempts: 3,
+          attempts: QUEUE_CONFIG.MAX_ATTEMPTS,
           backoff: {
                type: 'exponential',
-               delay: 1000, // Start with 1 second, then 2s, 4s
+               delay: QUEUE_CONFIG.BACKOFF_DELAY_MS,
           },
           removeOnComplete: {
-               age: 24 * 3600, // Keep completed jobs for 24 hours
-               count: 1000, // Keep last 1000 completed jobs
+               age: QUEUE_CONFIG.COMPLETED_JOB_RETENTION_SECONDS,
+               count: QUEUE_CONFIG.COMPLETED_JOB_MAX_COUNT,
           },
           removeOnFail: false, // Keep failed jobs for debugging
      },

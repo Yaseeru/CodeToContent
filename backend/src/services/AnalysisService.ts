@@ -1,8 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 import mongoose from 'mongoose';
-import { GitHubService, GitHubCommit, GitHubPullRequest, GitHubContent } from './GitHubService';
 import { Analysis, IAnalysis, IRawSignals } from '../models/Analysis';
 import { Repository } from '../models/Repository';
+import { GITHUB_CONFIG, MONITORING_CONFIG } from '../config/constants';
+import { GitHubService, GitHubCommit, GitHubPullRequest, GitHubContent } from './GitHubService';
 
 export interface AnalysisResult {
      problemStatement: string;
@@ -131,15 +132,15 @@ export class AnalysisService {
           repoName: string,
           repoDescription: string
      ): string {
-          // Extract recent commit messages (last 10)
+          // Extract recent commit messages
           const recentCommitMessages = signals.commits
-               .slice(0, 10)
+               .slice(0, GITHUB_CONFIG.RECENT_COMMITS_FOR_ANALYSIS)
                .map(c => `- ${c.commit.message.split('\n')[0]}`)
                .join('\n');
 
           // Extract recent PR titles and descriptions
           const recentPRs = signals.pullRequests
-               .slice(0, 10)
+               .slice(0, GITHUB_CONFIG.RECENT_PRS_FOR_ANALYSIS)
                .map(pr => `- ${pr.title}${pr.body ? ': ' + pr.body.substring(0, 100) : ''}`)
                .join('\n');
 
@@ -151,7 +152,7 @@ export class AnalysisService {
           // Extract dependencies from package.json if available
           let dependenciesInfo = '';
           if (signals.packageJson && signals.packageJson.dependencies) {
-               const deps = Object.keys(signals.packageJson.dependencies).slice(0, 15);
+               const deps = Object.keys(signals.packageJson.dependencies).slice(0, GITHUB_CONFIG.DEPENDENCIES_DISPLAY_LIMIT);
                dependenciesInfo = `\n\nKey Dependencies:\n${deps.map(d => `- ${d}`).join('\n')}`;
           }
 
@@ -160,8 +161,8 @@ export class AnalysisService {
 Repository: ${repoName}
 Description: ${repoDescription || 'No description provided'}
 
-README Content (first 2000 chars):
-${signals.readme.substring(0, 2000)}
+README Content (first ${GITHUB_CONFIG.README_TRUNCATION_LIMIT} chars):
+${signals.readme.substring(0, GITHUB_CONFIG.README_TRUNCATION_LIMIT)}
 
 Recent Commits:
 ${recentCommitMessages || 'No commits found'}

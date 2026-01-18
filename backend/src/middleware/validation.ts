@@ -2,6 +2,7 @@ import { body, param, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { logger, LogLevel } from '../services/LoggerService';
+import { VALIDATION_CONFIG } from '../config/constants';
 
 /**
  * Validation error handler middleware
@@ -46,8 +47,8 @@ export const validateContentGeneration = [
           .withMessage('platform must be either "linkedin" or "x"'),
      body('voiceStrength')
           .optional()
-          .isInt({ min: 0, max: 100 })
-          .withMessage('voiceStrength must be between 0 and 100'),
+          .isInt({ min: VALIDATION_CONFIG.VOICE_STRENGTH_MIN, max: VALIDATION_CONFIG.VOICE_STRENGTH_MAX })
+          .withMessage(`voiceStrength must be between ${VALIDATION_CONFIG.VOICE_STRENGTH_MIN} and ${VALIDATION_CONFIG.VOICE_STRENGTH_MAX}`),
      handleValidationErrors
 ];
 
@@ -60,8 +61,8 @@ export const validateTextAnalysis = [
      body('text')
           .if((value: any, { req }: any) => !req.file) // Only validate text if no file uploaded
           .notEmpty().withMessage('text is required when no file is uploaded')
-          .isLength({ min: 300 })
-          .withMessage('text must be at least 300 characters'),
+          .isLength({ min: VALIDATION_CONFIG.TEXT_ANALYSIS_MIN_CHARS })
+          .withMessage(`text must be at least ${VALIDATION_CONFIG.TEXT_ANALYSIS_MIN_CHARS} characters`),
      body('source')
           .optional()
           .isIn(['text', 'file'])
@@ -76,20 +77,20 @@ export const validateTextAnalysis = [
 export const validateStyleUpdate = [
      body('tone.professional')
           .optional()
-          .isInt({ min: 1, max: 10 })
-          .withMessage('tone.professional must be between 1 and 10'),
+          .isInt({ min: VALIDATION_CONFIG.TONE_METRIC_MIN, max: VALIDATION_CONFIG.TONE_METRIC_MAX })
+          .withMessage(`tone.professional must be between ${VALIDATION_CONFIG.TONE_METRIC_MIN} and ${VALIDATION_CONFIG.TONE_METRIC_MAX}`),
      body('tone.casual')
           .optional()
-          .isInt({ min: 1, max: 10 })
-          .withMessage('tone.casual must be between 1 and 10'),
+          .isInt({ min: VALIDATION_CONFIG.TONE_METRIC_MIN, max: VALIDATION_CONFIG.TONE_METRIC_MAX })
+          .withMessage(`tone.casual must be between ${VALIDATION_CONFIG.TONE_METRIC_MIN} and ${VALIDATION_CONFIG.TONE_METRIC_MAX}`),
      body('tone.enthusiastic')
           .optional()
-          .isInt({ min: 1, max: 10 })
-          .withMessage('tone.enthusiastic must be between 1 and 10'),
+          .isInt({ min: VALIDATION_CONFIG.TONE_METRIC_MIN, max: VALIDATION_CONFIG.TONE_METRIC_MAX })
+          .withMessage(`tone.enthusiastic must be between ${VALIDATION_CONFIG.TONE_METRIC_MIN} and ${VALIDATION_CONFIG.TONE_METRIC_MAX}`),
      body('tone.analytical')
           .optional()
-          .isInt({ min: 1, max: 10 })
-          .withMessage('tone.analytical must be between 1 and 10'),
+          .isInt({ min: VALIDATION_CONFIG.TONE_METRIC_MIN, max: VALIDATION_CONFIG.TONE_METRIC_MAX })
+          .withMessage(`tone.analytical must be between ${VALIDATION_CONFIG.TONE_METRIC_MIN} and ${VALIDATION_CONFIG.TONE_METRIC_MAX}`),
      handleValidationErrors
 ];
 
@@ -103,8 +104,8 @@ export const validateSaveEdits = [
           .withMessage('Content ID must be a valid MongoDB ObjectId'),
      body('editedText')
           .notEmpty().withMessage('editedText is required')
-          .isLength({ min: 10 })
-          .withMessage('editedText must be at least 10 characters'),
+          .isLength({ min: VALIDATION_CONFIG.EDITED_TEXT_MIN_CHARS })
+          .withMessage(`editedText must be at least ${VALIDATION_CONFIG.EDITED_TEXT_MIN_CHARS} characters`),
      body('deltas')
           .optional()
           .isArray()

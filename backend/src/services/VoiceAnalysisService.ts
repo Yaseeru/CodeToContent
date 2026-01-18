@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { StyleProfile, VoiceType, VocabularyLevel, ProfileSource } from '../models/User';
 import { logger } from './LoggerService';
+import { VALIDATION_CONFIG, VOICE_ANALYSIS_CONFIG, MONITORING_CONFIG } from '../config/constants';
 const pdfParse = require('pdf-parse');
 
 export interface AnalyzeTextParams {
@@ -60,8 +61,8 @@ export class VoiceAnalysisService {
           const { text, userId = 'unknown' } = params;
 
           // Validate minimum character requirement
-          if (text.length < 300) {
-               throw new Error('Minimum 300 characters required for text analysis');
+          if (text.length < VALIDATION_CONFIG.TEXT_ANALYSIS_MIN_CHARS) {
+               throw new Error(`Minimum ${VALIDATION_CONFIG.TEXT_ANALYSIS_MIN_CHARS} characters required for text analysis`);
           }
 
           // Extract style using Gemini with retry logic
@@ -96,16 +97,17 @@ export class VoiceAnalysisService {
 
           // Validate file format
           const fileExtension = fileName.toLowerCase().split('.').pop();
-          if (!fileExtension || !['txt', 'md', 'pdf'].includes(fileExtension)) {
-               throw new Error('Supported formats: .txt, .md, .pdf');
+          const allowedExtensions = ['txt', 'md', 'pdf'];
+          if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+               throw new Error(`Supported formats: ${allowedExtensions.map(ext => `.${ext}`).join(', ')}`);
           }
 
           // Extract text from file
           const extractedText = await this.extractTextFromFile(fileBuffer, fileExtension, mimeType);
 
           // Validate minimum character requirement for files
-          if (extractedText.length < 500) {
-               throw new Error('File must contain at least 500 characters');
+          if (extractedText.length < VALIDATION_CONFIG.FILE_ANALYSIS_MIN_CHARS) {
+               throw new Error(`File must contain at least ${VALIDATION_CONFIG.FILE_ANALYSIS_MIN_CHARS} characters`);
           }
 
           // Extract style using Gemini with retry logic
@@ -212,9 +214,9 @@ export class VoiceAnalysisService {
                writingTraits: aggregatedWritingTraits,
                structurePreferences: mostRecentProfile.structurePreferences,
                vocabularyLevel: mostRecentProfile.vocabularyLevel,
-               commonPhrases: uniqueCommonPhrases.slice(0, 20), // Limit to 20
-               bannedPhrases: uniqueBannedPhrases.slice(0, 20), // Limit to 20
-               samplePosts: uniqueSamplePosts.slice(0, 10), // Limit to 10
+               commonPhrases: uniqueCommonPhrases.slice(0, VOICE_ANALYSIS_CONFIG.MAX_COMMON_PHRASES),
+               bannedPhrases: uniqueBannedPhrases.slice(0, VOICE_ANALYSIS_CONFIG.MAX_BANNED_PHRASES),
+               samplePosts: uniqueSamplePosts.slice(0, VOICE_ANALYSIS_CONFIG.MAX_SAMPLE_POSTS),
                learningIterations: Math.max(...profiles.map(p => p.learningIterations)),
                lastUpdated: new Date(),
                profileSource: 'manual' as ProfileSource,
@@ -291,8 +293,8 @@ export class VoiceAnalysisService {
       * Build Gemini prompt for style extraction
       */
      private buildStyleExtractionPrompt(text: string): string {
-          // Limit text to first 5000 characters to avoid token limits
-          const analyzableText = text.substring(0, 5000);
+          // Limit text to avoid token limits
+          const analyzableText = text.substring(0, VOICE_ANALYSIS_CONFIG.TEXT_TRUNCATION_LIMIT);
 
           const prompt = `You are an expert writing style analyst. Analyze the following text and extract a comprehensive style profile.
 
@@ -363,8 +365,8 @@ IMPORTANT:
                const latencyMs = Date.now() - startTime;
 
                // Estimate token usage (rough approximation)
-               const promptTokens = Math.ceil(prompt.split(/\s+/).length * 1.3);
-               const completionTokens = Math.ceil(response.text.split(/\s+/).length * 1.3);
+               const promptTokens = Math.ceil(prompt.split(/\s+/).length * MONITORING_CONFIG.TOKEN_ESTIMATION_MULTIPLIER);
+               const completionTokens = Math.ceil(response.text.split(/\s+/).length * MONITORING_CONFIG.TOKEN_ESTIMATION_MULTIPLIER);
 
                // Log Gemini API call
                logger.logGeminiAPICall({
@@ -388,9 +390,9 @@ IMPORTANT:
                logger.logGeminiAPICall({
                     operation: 'style_analysis',
                     userId,
-                    promptTokens: Math.ceil(prompt.split(/\s+/).length * 1.3),
+                    promptTokens: Math.ceil(prompt.split(/\s+/).length * MONITORING_CONFIG.TOKEN_ESTIMATION_MULTIPLIER),
                     completionTokens: 0,
-                    totalTokens: Math.ceil(prompt.split(/\s+/).length * 1.3),
+                    totalTokens: Math.ceil(prompt.split(/\s+/).length * MONITORING_CONFIG.TOKEN_ESTIMATION_MULTIPLIER),
                     latencyMs,
                     success: false,
                     error: errorMessage,
@@ -448,8 +450,10 @@ IMPORTANT:
 
           const toneFields = ['formality', 'enthusiasm', 'directness', 'humor', 'emotionality'];
           for (const field of toneFields) {
-               if (typeof parsed.tone[field] !== 'number' || parsed.tone[field] < 1 || parsed.tone[field] > 10) {
-                    throw new Error(`Invalid tone.${field}: must be number between 1 and 10`);
+               const min = VALIDATION_CONFIG.TONE_METRIC_MIN;
+               const max = VALIDATION_CONFIG.TONE_METRIC_MAX;
+               if (typeof parsed.tone[field] !== 'number' || parsed.tone[field] < min || parsed.tone[field] > max) {
+                    throw new Error(`Invalid tone.${field}: must be number between ${min} and ${max}`);
                }
           }
 

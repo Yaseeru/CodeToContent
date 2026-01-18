@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { User, IUser } from '../models/User';
+import { AUTH_CONFIG } from '../config/constants';
 
 export interface GitHubUser {
      id: number;
@@ -135,7 +136,7 @@ export class AuthService {
           };
 
           return jwt.sign(payload, this.jwtSecret, {
-               expiresIn: '7d',
+               expiresIn: AUTH_CONFIG.JWT_EXPIRY,
           });
      }
 

@@ -4,6 +4,7 @@ import { Analysis, IAnalysis } from '../models/Analysis';
 import { Content, IContent, Platform } from '../models/Content';
 import { User, StyleProfile } from '../models/User';
 import { logger } from './LoggerService';
+import { CONTENT_CONFIG, MONITORING_CONFIG, VALIDATION_CONFIG, VOICE_ANALYSIS_CONFIG } from '../config/constants';
 
 export interface GenerateContentParams {
      analysisId: string;
@@ -80,19 +81,19 @@ export class ContentGenerationService {
                          throw new Error('Prompt too large');
                     }
 
-                    // Call Gemini API with voice-aware prompt (temperature 0.7-0.9)
-                    generatedText = await this.callGeminiAPI(prompt, 0.8, userId, 'content_generation');
+                    // Call Gemini API with voice-aware prompt
+                    generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
                     usedStyleProfile = true;
                } catch (error) {
                     console.error('Voice-aware generation failed, falling back to tone-based:', error);
                     // Fall back to tone-based generation
                     const prompt = this.constructContentPrompt(analysis, platform, tone);
-                    generatedText = await this.callGeminiAPI(prompt, 0.8, userId, 'content_generation');
+                    generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
                }
           } else {
                // Use existing tone-based generation
                const prompt = this.constructContentPrompt(analysis, platform, tone);
-               generatedText = await this.callGeminiAPI(prompt, 0.8, userId, 'content_generation');
+               generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
           }
 
           // Store generated content with metadata
@@ -285,17 +286,17 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
                return [];
           }
 
-          // If we have 6 or fewer samples, use all of them
-          if (samplePosts.length <= 6) {
+          // If we have max samples or fewer, use all of them
+          if (samplePosts.length <= VOICE_ANALYSIS_CONFIG.FEW_SHOT_SAMPLES_MAX) {
                return samplePosts;
           }
 
-          // If we have more than 6, select 6 evenly distributed samples
+          // If we have more, select evenly distributed samples
           // Prioritize recent samples (assuming they're ordered with most recent first)
           const selectedSamples: string[] = [];
-          const step = Math.floor(samplePosts.length / 6);
+          const step = Math.floor(samplePosts.length / VOICE_ANALYSIS_CONFIG.FEW_SHOT_SAMPLES_MAX);
 
-          for (let i = 0; i < 6; i++) {
+          for (let i = 0; i < VOICE_ANALYSIS_CONFIG.FEW_SHOT_SAMPLES_MAX; i++) {
                const index = Math.min(i * step, samplePosts.length - 1);
                selectedSamples.push(samplePosts[index]);
           }
@@ -355,9 +356,9 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
           description += `Vocabulary Level: ${vocabularyLevel}\n`;
 
           // Voice strength guidance
-          if (voiceStrength < 50) {
+          if (voiceStrength < CONTENT_CONFIG.VOICE_STRENGTH_LOW_THRESHOLD) {
                description += `\nNote: Voice strength is set to ${voiceStrength}%, so blend the user's style with more generic, creative variation.\n`;
-          } else if (voiceStrength >= 50 && voiceStrength < 80) {
+          } else if (voiceStrength >= CONTENT_CONFIG.VOICE_STRENGTH_LOW_THRESHOLD && voiceStrength < CONTENT_CONFIG.VOICE_STRENGTH_HIGH_THRESHOLD) {
                description += `\nNote: Voice strength is set to ${voiceStrength}%, so match the user's style while allowing some creative flexibility.\n`;
           } else {
                description += `\nNote: Voice strength is set to ${voiceStrength}%, so closely match the user's authentic voice and style.\n`;
@@ -370,13 +371,13 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
       * Describe tone level with voice strength applied
       */
      private describeToneLevel(level: number, strengthMultiplier: number): string {
-          // Blend towards neutral (5) based on voice strength
-          const blendedLevel = 5 + (level - 5) * strengthMultiplier;
+          // Blend towards neutral based on voice strength
+          const blendedLevel = CONTENT_CONFIG.TONE_NEUTRAL_VALUE + (level - CONTENT_CONFIG.TONE_NEUTRAL_VALUE) * strengthMultiplier;
 
-          if (blendedLevel <= 2) return 'very low';
-          if (blendedLevel <= 4) return 'low';
-          if (blendedLevel <= 6) return 'moderate';
-          if (blendedLevel <= 8) return 'high';
+          if (blendedLevel <= CONTENT_CONFIG.TONE_VERY_LOW_MAX) return 'very low';
+          if (blendedLevel <= CONTENT_CONFIG.TONE_LOW_MAX) return 'low';
+          if (blendedLevel <= CONTENT_CONFIG.TONE_MODERATE_MAX) return 'moderate';
+          if (blendedLevel <= CONTENT_CONFIG.TONE_HIGH_MAX) return 'high';
           return 'very high';
      }
 
@@ -412,7 +413,7 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
           // Rough estimation: 1 token ≈ 0.75 words
           // So 8000 tokens ≈ 6000 words
           const wordCount = prompt.split(/\s+/).length;
-          return wordCount < 6000;
+          return wordCount < CONTENT_CONFIG.PROMPT_MAX_WORDS;
      }
 
      /**
@@ -422,30 +423,33 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
      private calculateEvolutionScore(styleProfile: StyleProfile): number {
           let score = 0;
 
-          // Initial samples present (20 points)
+          // Initial samples present
           if (styleProfile.samplePosts.length > 0) {
-               score += 20;
+               score += CONTENT_CONFIG.EVOLUTION_SCORE_INITIAL_SAMPLES;
           }
 
-          // Feedback iterations (40 points max)
-          const iterationScore = Math.min((styleProfile.learningIterations / 10) * 40, 40);
+          // Feedback iterations (max points)
+          const iterationScore = Math.min(
+               (styleProfile.learningIterations / CONTENT_CONFIG.EVOLUTION_SCORE_ITERATIONS_THRESHOLD) * CONTENT_CONFIG.EVOLUTION_SCORE_FEEDBACK_MAX,
+               CONTENT_CONFIG.EVOLUTION_SCORE_FEEDBACK_MAX
+          );
           score += iterationScore;
 
-          // Profile completeness (20 points)
+          // Profile completeness
           let completenessScore = 0;
           if (styleProfile.commonPhrases.length > 0) completenessScore += 5;
           if (styleProfile.bannedPhrases.length > 0) completenessScore += 5;
-          if (styleProfile.samplePosts.length >= 3) completenessScore += 10;
+          if (styleProfile.samplePosts.length >= VOICE_ANALYSIS_CONFIG.FEW_SHOT_SAMPLES_MIN) completenessScore += 10;
           score += completenessScore;
 
-          // Edit consistency (20 points) - simplified, assume 20 if iterations > 5
-          if (styleProfile.learningIterations >= 5) {
-               score += 20;
+          // Edit consistency - simplified, assume max if iterations > threshold
+          if (styleProfile.learningIterations >= CONTENT_CONFIG.EVOLUTION_SCORE_CONSISTENCY_THRESHOLD) {
+               score += CONTENT_CONFIG.EVOLUTION_SCORE_CONSISTENCY_MAX;
           } else {
-               score += (styleProfile.learningIterations / 5) * 20;
+               score += (styleProfile.learningIterations / CONTENT_CONFIG.EVOLUTION_SCORE_CONSISTENCY_THRESHOLD) * CONTENT_CONFIG.EVOLUTION_SCORE_CONSISTENCY_MAX;
           }
 
-          return Math.min(Math.round(score), 100);
+          return Math.min(Math.round(score), CONTENT_CONFIG.EVOLUTION_SCORE_MAX);
      }
 
      /**
@@ -477,7 +481,7 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
           );
 
           // Call Gemini API for refinement
-          const refinedText = await this.callGeminiAPI(prompt, 0.8, userId, 'content_generation');
+          const refinedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
 
           // Create new content version with incremented version number
           const refinedContent = new Content({
@@ -557,8 +561,8 @@ Respond with ONLY the refined content. Do not include any explanations, metadata
                const latencyMs = Date.now() - startTime;
 
                // Estimate token usage (rough approximation)
-               const promptTokens = Math.ceil(prompt.split(/\s+/).length * 1.3);
-               const completionTokens = Math.ceil(response.text.split(/\s+/).length * 1.3);
+               const promptTokens = Math.ceil(prompt.split(/\s+/).length * MONITORING_CONFIG.TOKEN_ESTIMATION_MULTIPLIER);
+               const completionTokens = Math.ceil(response.text.split(/\s+/).length * MONITORING_CONFIG.TOKEN_ESTIMATION_MULTIPLIER);
 
                // Log Gemini API call
                logger.logGeminiAPICall({
@@ -582,9 +586,9 @@ Respond with ONLY the refined content. Do not include any explanations, metadata
                logger.logGeminiAPICall({
                     operation,
                     userId,
-                    promptTokens: Math.ceil(prompt.split(/\s+/).length * 1.3),
+                    promptTokens: Math.ceil(prompt.split(/\s+/).length * MONITORING_CONFIG.TOKEN_ESTIMATION_MULTIPLIER),
                     completionTokens: 0,
-                    totalTokens: Math.ceil(prompt.split(/\s+/).length * 1.3),
+                    totalTokens: Math.ceil(prompt.split(/\s+/).length * MONITORING_CONFIG.TOKEN_ESTIMATION_MULTIPLIER),
                     latencyMs,
                     success: false,
                     error: errorMessage,

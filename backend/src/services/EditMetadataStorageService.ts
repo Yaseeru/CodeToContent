@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { Content, IContent } from '../models/Content';
+import { LEARNING_CONFIG } from '../config/constants';
 
 export interface EditMetadataQuery {
      userId: string;
