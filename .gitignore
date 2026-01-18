@@ -15,8 +15,11 @@ backend/dist/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
 backend/.env
+backend/.env.production
 frontend/.env
+frontend/.env.production
 
 # Logs
 logs

@@ -5,7 +5,7 @@
 CodeToContent is a developer-focused application that analyzes GitHub repositories using AI and generates clear, human-readable content suitable for social media. The system uses deep code understanding to help developers communicate what they're building, why it matters, and what's new—especially to non-technical audiences.
 
 ## ✨ Features
-
+ 
 ### Core Features
 - **🔐 GitHub OAuth Authentication** - Seamless login with your GitHub account
 - **📊 Repository Analysis** - Deep analysis of code structure, commits, PRs, and documentation
