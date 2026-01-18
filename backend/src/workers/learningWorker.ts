@@ -1,6 +1,8 @@
 import { Worker, Job } from 'bullmq';
 import { LearningJobData, deadLetterQueue } from '../config/queue';
 import { LearningJob } from '../models/LearningJob';
+import { FeedbackLearningEngine } from '../services/FeedbackLearningEngine';
+import { logger, LogLevel } from '../services/LoggerService';
 
 // Redis connection for worker
 const redisConnection = {
@@ -12,81 +14,94 @@ const redisConnection = {
 // Concurrency configuration
 const CONCURRENCY = parseInt(process.env.LEARNING_QUEUE_CONCURRENCY || '5', 10);
 
+// Initialize FeedbackLearningEngine
+const geminiApiKey = process.env.GEMINI_API_KEY || '';
+const feedbackEngine = new FeedbackLearningEngine(geminiApiKey);
+
 // Process learning job function
 async function processLearningJob(job: Job<LearningJobData>): Promise<void> {
      const { userId, contentId } = job.data;
+     const startTime = Date.now();
 
-     console.log(`[Worker] Processing learning job ${job.id} for user ${userId}, content ${contentId}`);
+     // Log job start
+     logger.log(LogLevel.INFO, `Processing learning job ${job.id}`, {
+          jobId: job.id?.toString(),
+          userId,
+          contentId,
+          attemptsMade: job.attemptsMade,
+     });
 
      try {
-          // Update job status in database
-          await LearningJob.findOneAndUpdate(
-               { userId, contentId },
-               {
-                    status: 'processing',
-                    processingStarted: new Date(),
-                    attempts: job.attemptsMade + 1,
-               },
-               { upsert: true }
-          );
+          // Find the job in database to get the job ID
+          const dbJob = await LearningJob.findOne({ userId, contentId, status: 'pending' });
 
-          // Update progress
-          await job.updateProgress(10);
+          if (!dbJob) {
+               throw new Error(`Learning job not found in database for user ${userId}, content ${contentId}`);
+          }
 
-          // TODO: This will be implemented in task 8 (Feedback Learning Engine)
-          // For now, we'll just simulate the processing
-          console.log(`[Worker] Learning job processing would happen here for ${userId}`);
+          // Call FeedbackLearningEngine.processLearningJob with the job ID
+          await feedbackEngine.processLearningJob(dbJob._id.toString());
 
-          // Simulate processing time
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Log successful completion
+          const processingTime = Date.now() - startTime;
+          logger.log(LogLevel.INFO, `Learning job ${job.id} completed successfully`, {
+               jobId: job.id?.toString(),
+               userId,
+               contentId,
+               processingTimeMs: processingTime,
+               attemptsMade: job.attemptsMade,
+          });
 
-          // Update progress
-          await job.updateProgress(50);
+          // Track processing time metric
+          logger.trackLearningJobProcessingTime(processingTime);
 
-          // More processing simulation
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          // Update progress
-          await job.updateProgress(100);
-
-          // Mark as completed in database
-          await LearningJob.findOneAndUpdate(
-               { userId, contentId },
-               {
-                    status: 'completed',
-                    processingCompleted: new Date(),
-                    error: undefined,
-               }
-          );
-
-          console.log(`[Worker] Successfully processed learning job ${job.id}`);
      } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          console.error(`[Worker] Error processing learning job ${job.id}:`, errorMessage);
+          const errorStack = error instanceof Error ? error.stack : undefined;
 
-          // Update job status in database
-          await LearningJob.findOneAndUpdate(
-               { userId, contentId },
-               {
-                    status: 'failed',
-                    error: errorMessage,
-                    attempts: job.attemptsMade + 1,
-               }
-          );
+          // Log job failure
+          logger.log(LogLevel.ERROR, `Learning job ${job.id} failed`, {
+               jobId: job.id?.toString(),
+               userId,
+               contentId,
+               error: errorMessage,
+               attemptsMade: job.attemptsMade,
+               maxAttempts: 3,
+          });
+
+          // Log detailed failure for monitoring
+          logger.logLearningJobFailure({
+               jobId: job.id?.toString() || 'unknown',
+               userId,
+               contentId,
+               attemptNumber: job.attemptsMade + 1,
+               error: errorMessage,
+               stackTrace: errorStack,
+               context: {
+                    priority: job.data.priority,
+                    timestamp: new Date(),
+               },
+               timestamp: new Date(),
+          });
 
           // If this is the last attempt, move to dead letter queue
           if (job.attemptsMade >= 2) {
-               console.error(`[Worker] Job ${job.id} failed after 3 attempts, moving to DLQ`);
+               logger.log(LogLevel.ERROR, `Job ${job.id} failed after 3 attempts, moving to DLQ`, {
+                    jobId: job.id?.toString(),
+                    userId,
+                    contentId,
+               });
+
                await deadLetterQueue.add('failed-learning', job.data, {
                     jobId: `dlq-${job.id}`,
                });
           }
 
-          throw error; // Re-throw to trigger retry
+          throw error; // Re-throw to trigger Bull's retry mechanism
      }
 }
 
-// Create the worker with concurrency support
+// Create the worker with concurrency support and retry configuration
 export const learningWorker = new Worker<LearningJobData>(
      'learning-jobs',
      processLearningJob,
@@ -100,36 +115,69 @@ export const learningWorker = new Worker<LearningJobData>(
      }
 );
 
-// Worker event handlers
+// Worker event handlers with comprehensive logging
 learningWorker.on('completed', (job) => {
-     console.log(`[Worker] Job ${job.id} completed`);
+     logger.log(LogLevel.INFO, `Job ${job.id} completed`, {
+          jobId: job.id?.toString(),
+          userId: job.data.userId,
+          contentId: job.data.contentId,
+          returnValue: job.returnvalue,
+     });
 });
 
 learningWorker.on('failed', (job, err) => {
-     console.error(`[Worker] Job ${job?.id} failed:`, err.message);
+     if (job) {
+          logger.log(LogLevel.ERROR, `Job ${job.id} failed`, {
+               jobId: job.id?.toString(),
+               userId: job.data.userId,
+               contentId: job.data.contentId,
+               error: err.message,
+               attemptsMade: job.attemptsMade,
+          });
+     } else {
+          logger.log(LogLevel.ERROR, 'Job failed with no job data', {
+               error: err.message,
+          });
+     }
 });
 
 learningWorker.on('error', (err) => {
-     console.error('[Worker] Worker error:', err);
+     logger.log(LogLevel.ERROR, 'Worker error occurred', {
+          error: err.message,
+          stack: err.stack,
+     });
 });
 
 learningWorker.on('stalled', (jobId) => {
-     console.warn(`[Worker] Job ${jobId} stalled`);
+     logger.log(LogLevel.WARN, `Job ${jobId} stalled`, {
+          jobId,
+     });
+});
+
+learningWorker.on('active', (job) => {
+     logger.log(LogLevel.INFO, `Job ${job.id} started processing`, {
+          jobId: job.id?.toString(),
+          userId: job.data.userId,
+          contentId: job.data.contentId,
+          attemptsMade: job.attemptsMade,
+     });
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-     console.log('[Worker] SIGTERM received, closing worker...');
+     logger.log(LogLevel.INFO, 'SIGTERM received, closing worker gracefully');
      await learningWorker.close();
+     logger.log(LogLevel.INFO, 'Worker closed successfully');
      process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-     console.log('[Worker] SIGINT received, closing worker...');
+     logger.log(LogLevel.INFO, 'SIGINT received, closing worker gracefully');
      await learningWorker.close();
+     logger.log(LogLevel.INFO, 'Worker closed successfully');
      process.exit(0);
 });
 
-console.log(`[Worker] Learning worker started with concurrency: ${CONCURRENCY}`);
+logger.log(LogLevel.INFO, `Learning worker started with concurrency: ${CONCURRENCY}`);
 
 export default learningWorker;

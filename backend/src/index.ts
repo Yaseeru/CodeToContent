@@ -5,8 +5,10 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { connectDatabase } from './config/database';
+import { connectDatabase, checkDatabaseHealth } from './config/database';
 import { closeQueue } from './config/queue';
+import { validateEnvironmentVariables } from './config/validateEnv';
+import { validateRedisConnection, checkRedisHealth } from './config/redis';
 import authRoutes from './routes/auth';
 import repositoryRoutes from './routes/repositories';
 import contentRoutes from './routes/content';
@@ -25,8 +27,49 @@ app.use(cors({
 app.use(express.json());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-     res.json({ status: 'ok', message: 'CodeToContent API is running' });
+// Requirements: 2.7, 2.8 - Include Redis and database connection status
+app.get('/health', async (req, res) => {
+     try {
+          // Check Redis connection status
+          const redisHealth = await checkRedisHealth();
+
+          // Check database connection status
+          const databaseHealth = await checkDatabaseHealth();
+
+          // Determine overall status
+          const isHealthy = redisHealth.connected && databaseHealth.connected;
+          const status = isHealthy ? 'healthy' : 'degraded';
+
+          // Return appropriate HTTP status code
+          const statusCode = isHealthy ? 200 : 503;
+
+          res.status(statusCode).json({
+               status,
+               message: isHealthy
+                    ? 'CodeToContent API is running'
+                    : 'CodeToContent API is running with degraded services',
+               services: {
+                    redis: {
+                         connected: redisHealth.connected,
+                         latencyMs: redisHealth.latencyMs,
+                         error: redisHealth.error
+                    },
+                    database: {
+                         connected: databaseHealth.connected,
+                         database: databaseHealth.database,
+                         error: databaseHealth.error
+                    }
+               },
+               timestamp: new Date().toISOString()
+          });
+     } catch (error: any) {
+          res.status(503).json({
+               status: 'unhealthy',
+               message: 'Health check failed',
+               error: error.message,
+               timestamp: new Date().toISOString()
+          });
+     }
 });
 
 // API Routes
@@ -51,8 +94,19 @@ if (process.env.NODE_ENV === 'production') {
 // Start server
 const startServer = async () => {
      try {
+          // Critical Fixes - Startup Validation Sequence
+          // Requirements: 3.6, 2.1, 7.6
+
+          // 1. Validate environment variables first (fail fast if config is wrong)
+          validateEnvironmentVariables();
+
+          // 2. Validate Redis connection second (required for rate limiting and worker)
+          await validateRedisConnection();
+
+          // 3. Connect to database third (with retry logic)
           await connectDatabase();
 
+          // 4. Only start server after all validations pass
           app.listen(PORT, () => {
                console.log(`Backend server running on port ${PORT}`);
           });

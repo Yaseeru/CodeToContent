@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
+import { defaultRateLimiter, strictRateLimiter } from '../middleware/rateLimiter';
+import { validateTextAnalysis, validateStyleUpdate } from '../middleware/validation';
 import { VoiceAnalysisService } from '../services/VoiceAnalysisService';
 import { ProfileEvolutionService } from '../services/ProfileEvolutionService';
 import { ArchetypeManagementService } from '../services/ArchetypeManagementService';
@@ -32,7 +34,7 @@ router.use(authenticateToken);
  * POST /api/profile/analyze-text
  * Analyze text or file upload to create/update style profile
  */
-router.post('/analyze-text', upload.single('file'), async (req: Request, res: Response) => {
+router.post('/analyze-text', strictRateLimiter, upload.single('file'), validateTextAnalysis, async (req: Request, res: Response) => {
      try {
           if (!req.user) {
                return res.status(401).json({
@@ -185,7 +187,7 @@ router.get('/style', async (req: Request, res: Response) => {
  * PUT /api/profile/style
  * Update user's style profile manually
  */
-router.put('/style', async (req: Request, res: Response) => {
+router.put('/style', defaultRateLimiter, validateStyleUpdate, async (req: Request, res: Response) => {
      try {
           if (!req.user) {
                return res.status(401).json({

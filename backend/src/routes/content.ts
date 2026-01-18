@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
+import { defaultRateLimiter, strictRateLimiter } from '../middleware/rateLimiter';
+import { validateContentGeneration, validateSaveEdits } from '../middleware/validation';
 import { ContentGenerationService } from '../services/ContentGenerationService';
 import { Platform, Content } from '../models/Content';
 import mongoose from 'mongoose';
@@ -13,7 +15,7 @@ router.use(authenticateToken);
  * POST /api/content/generate
  * Generate platform-specific content from analysis
  */
-router.post('/generate', async (req: Request, res: Response) => {
+router.post('/generate', strictRateLimiter, validateContentGeneration, async (req: Request, res: Response) => {
      try {
           if (!req.user) {
                return res.status(401).json({
@@ -234,7 +236,7 @@ router.post('/refine', async (req: Request, res: Response) => {
  * POST /api/content/:id/save-edits
  * Save user edits and queue asynchronous learning job
  */
-router.post('/:id/save-edits', async (req: Request, res: Response) => {
+router.post('/:id/save-edits', defaultRateLimiter, validateSaveEdits, async (req: Request, res: Response) => {
      try {
           if (!req.user) {
                return res.status(401).json({
