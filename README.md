@@ -32,7 +32,7 @@ The Voice Engine transforms CodeToContent from a generic AI content generator in
 - **↩️ Profile Versioning** - Rollback to previous versions if needed
 - **🚀 Zero-Setup Option** - Skip onboarding and let the system learn entirely from your edits
 
-**Quick Start:** See [Voice Engine Quick Start](docs/VOICE_ENGINE_QUICK_START.md) for a 5-minute setup guide.
+**Quick Start:** Follow the Voice Engine setup instructions in this README for a complete guide.
 
 ## 🏗️ Architecture
 
@@ -137,7 +137,7 @@ code-to-content/
 
 - **Node.js** 18+ and npm
 - **MongoDB** (local or MongoDB Atlas)
-- **Redis** (local or Redis Cloud) - Required for Voice Engine - [Setup Guide](docs/REDIS_SETUP_TUTORIAL.md)
+- **Redis** (local or Redis Cloud) - Required for Voice Engine - See Redis Setup section below
 - **GitHub OAuth App** credentials
 - **Google Gemini API** key
 
@@ -957,16 +957,6 @@ ISC
 For security issues, see [SECURITY.md](SECURITY.md)
 
 For deployment help, see [DEPLOYMENT.md](DEPLOYMENT.md)
-
-**📚 Complete Documentation:**
-- **[Voice Engine Quick Start](docs/VOICE_ENGINE_QUICK_START.md)** - 5-minute setup guide
-- **[Voice Engine API Reference](docs/VOICE_ENGINE_API.md)** - Complete API documentation
-- **[Learning Algorithm](docs/LEARNING_ALGORITHM.md)** - How the AI learns your style
-- **[Redis Setup Tutorial](docs/REDIS_SETUP_TUTORIAL.md)** ⭐ - Step-by-step Redis installation
-- **[Redis Guide for Beginners](docs/REDIS_GUIDE.md)** - Understanding Redis
-- **[Redis Setup Complete](docs/REDIS_SETUP_COMPLETE.md)** - Verification guide
-- **[Monitoring Guide](docs/MONITORING.md)** - Production monitoring
-- **[Worker Process Info](docs/WORKER_PROCESS_INFO.md)** - Background worker details
 
 For general questions, open an issue on GitHub.
 
