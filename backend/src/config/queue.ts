@@ -1,9 +1,9 @@
 import { Queue, QueueEvents, Job } from 'bullmq';
+import { getRedisConnection } from './redisConnection';
 
 // Redis connection configuration
 const redisConnection = {
-     host: process.env.REDIS_URL?.replace('redis://', '').split(':')[0] || 'localhost',
-     port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379', 10),
+     ...getRedisConnection(),
      maxRetriesPerRequest: null,
 };
 

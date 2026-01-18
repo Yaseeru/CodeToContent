@@ -23,13 +23,10 @@ export class CacheService {
      private readonly ARCHETYPE_LIST_KEY = 'archetypes:list';
 
      constructor() {
-          // Use existing Redis connection from queue config
+          // Use centralized Redis URL parsing
           const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-          const [host, port] = this.parseRedisUrl(redisUrl);
 
-          this.redis = new Redis({
-               host,
-               port,
+          this.redis = new Redis(redisUrl, {
                maxRetriesPerRequest: null,
                retryStrategy: (times: number) => {
                     const delay = Math.min(times * 50, 2000);
@@ -48,16 +45,7 @@ export class CacheService {
           });
      }
 
-     /**
-      * Parse Redis URL to extract host and port
-      */
-     private parseRedisUrl(url: string): [string, number] {
-          const cleanUrl = url.replace('redis://', '');
-          const parts = cleanUrl.split(':');
-          const host = parts[0] || 'localhost';
-          const port = parseInt(parts[1] || '6379', 10);
-          return [host, port];
-     }
+
 
      /**
       * Get style profile from cache

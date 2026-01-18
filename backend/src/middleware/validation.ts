@@ -17,7 +17,7 @@ export function handleValidationErrors(req: Request, res: Response, next: NextFu
           }));
 
           logger.log(LogLevel.WARN, 'Validation failed', {
-               userId: req.user?.id,
+               userId: req.user?.userId,
                endpoint: req.path,
                errors: formattedErrors
           });

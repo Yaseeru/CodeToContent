@@ -168,7 +168,6 @@ cp frontend/.env.example frontend/.env
 # Edit frontend/.env with your actual values
 ```
 
-See [SECURITY.md](SECURITY.md) for detailed configuration instructions.
 
 ### Running the Application
 

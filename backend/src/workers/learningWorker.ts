@@ -3,11 +3,11 @@ import { LearningJobData, deadLetterQueue } from '../config/queue';
 import { LearningJob } from '../models/LearningJob';
 import { FeedbackLearningEngine } from '../services/FeedbackLearningEngine';
 import { logger, LogLevel } from '../services/LoggerService';
+import { getRedisConnection } from '../config/redisConnection';
 
 // Redis connection for worker
 const redisConnection = {
-     host: process.env.REDIS_URL?.replace('redis://', '').split(':')[0] || 'localhost',
-     port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379', 10),
+     ...getRedisConnection(),
      maxRetriesPerRequest: null,
 };
 

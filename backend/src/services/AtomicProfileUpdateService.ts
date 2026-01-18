@@ -22,13 +22,10 @@ export class AtomicProfileUpdateService {
      private readonly RETRY_DELAY_BASE = 100; // Base delay in ms for exponential backoff
 
      constructor() {
-          // Use existing Redis connection for distributed locks
+          // Use centralized Redis URL parsing
           const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-          const [host, port] = this.parseRedisUrl(redisUrl);
 
-          this.redis = new Redis({
-               host,
-               port,
+          this.redis = new Redis(redisUrl, {
                maxRetriesPerRequest: null,
                retryStrategy: (times: number) => {
                     const delay = Math.min(times * 50, 2000);
@@ -41,16 +38,7 @@ export class AtomicProfileUpdateService {
           });
      }
 
-     /**
-      * Parse Redis URL to extract host and port
-      */
-     private parseRedisUrl(url: string): [string, number] {
-          const cleanUrl = url.replace('redis://', '');
-          const parts = cleanUrl.split(':');
-          const host = parts[0] || 'localhost';
-          const port = parseInt(parts[1] || '6379', 10);
-          return [host, port];
-     }
+
 
      /**
       * Acquire a distributed lock for a user's profile

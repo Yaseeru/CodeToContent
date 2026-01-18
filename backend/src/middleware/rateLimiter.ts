@@ -11,6 +11,7 @@ import Redis from 'ioredis';
 import { logger, LogLevel } from '../services/LoggerService';
 
 // Create Redis client for rate limiting
+// Use the same URL parsing as other Redis connections
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redisClient = new Redis(redisUrl, {
      maxRetriesPerRequest: null,
@@ -25,7 +26,7 @@ const redisClient = new Redis(redisUrl, {
 export const defaultRateLimiter = rateLimit({
      store: new RedisStore({
           // Use sendCommand function for ioredis compatibility
-          sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)),
+          sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
           prefix: 'rl:default:',
      }),
      windowMs: 60 * 60 * 1000, // 1 hour
@@ -79,7 +80,7 @@ export const defaultRateLimiter = rateLimit({
 export const strictRateLimiter = rateLimit({
      store: new RedisStore({
           // Use sendCommand function for ioredis compatibility
-          sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)),
+          sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
           prefix: 'rl:strict:',
      }),
      windowMs: 60 * 60 * 1000, // 1 hour
