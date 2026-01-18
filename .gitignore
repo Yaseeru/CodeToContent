@@ -9,17 +9,28 @@ build/
 frontend/dist/
 backend/dist/
 
-# Environment variables
+# Environment variables - NEVER COMMIT THESE FILES
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
-.env.production.local
 .env.production
+.env.production.local
 backend/.env
+backend/.env.local
+backend/.env.development
 backend/.env.production
 frontend/.env
+frontend/.env.local
+frontend/.env.development
 frontend/.env.production
+
+# Keep example files (these are safe to commit)
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Logs
 logs

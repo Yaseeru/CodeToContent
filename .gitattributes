@@ -1,0 +1,11 @@
+# Prevent .env files from being committed
+*.env filter=git-secrets
+*.env.* filter=git-secrets
+.env filter=git-secrets
+.env.local filter=git-secrets
+.env.production filter=git-secrets
+.env.development filter=git-secrets
+
+# Mark sensitive files
+**/.env linguist-generated=true
+**/.env.* linguist-generated=true
