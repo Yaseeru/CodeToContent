@@ -55,18 +55,9 @@ jest.mock('../AnalysisView', () => ({
      ),
 }));
 
-jest.mock('../ToneSelector', () => ({
-     __esModule: true,
-     default: ({ onToneChange, selectedTone }: any) => (
-          <div data-testid="tone-selector">
-               <button onClick={() => onToneChange('Casual')}>Change Tone</button>
-          </div>
-     ),
-}));
-
 jest.mock('../ContentGenerator', () => ({
      __esModule: true,
-     default: ({ analysisId, tone, onContentGenerated }: any) => (
+     default: ({ analysisId, onContentGenerated }: any) => (
           <div data-testid="content-generator">
                <button
                     onClick={() =>
@@ -74,7 +65,6 @@ jest.mock('../ContentGenerator', () => ({
                               id: 'content-1',
                               platform: 'linkedin',
                               generatedText: 'Test content',
-                              tone,
                               version: 1,
                          })
                     }

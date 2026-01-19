@@ -36,7 +36,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -67,7 +66,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -99,7 +97,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           const { container } = render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Casual"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -132,7 +129,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           const { container } = render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -172,7 +168,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -199,7 +194,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           const { container } = render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -232,7 +226,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          id: 'content-123',
                          platform: 'linkedin',
                          generatedText: 'Generated content',
-                         tone: 'Professional',
                          version: 1,
                     },
                },
@@ -247,7 +240,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -266,7 +258,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          url: '/api/content/generate',
                          data: expect.objectContaining({
                               analysisId: 'test-analysis-id',
-                              tone: 'Professional',
                               platform: 'linkedin',
                               voiceStrength: 80,
                          }),
@@ -290,7 +281,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          id: 'content-123',
                          platform: 'linkedin',
                          generatedText: 'Generated content',
-                         tone: 'Professional',
                          version: 1,
                     },
                },
@@ -305,7 +295,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -324,7 +313,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          url: '/api/content/generate',
                          data: expect.objectContaining({
                               analysisId: 'test-analysis-id',
-                              tone: 'Professional',
                               platform: 'linkedin',
                               voiceStrength: undefined,
                          }),
@@ -353,7 +341,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          id: 'content-123',
                          platform: 'x',
                          generatedText: 'Generated content',
-                         tone: 'Professional',
                          version: 1,
                     },
                },
@@ -368,7 +355,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           const { container } = render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );
@@ -410,7 +396,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          id: 'content-123',
                          platform: 'linkedin',
                          generatedText: 'Generated content',
-                         tone: 'Professional',
                          version: 1,
                     },
                },
@@ -423,7 +408,6 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           render(
                <ContentGenerator
                     analysisId="test-analysis-id"
-                    tone="Professional"
                     onContentGenerated={mockOnContentGenerated}
                />
           );

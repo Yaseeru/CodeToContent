@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import RepositoryList from './RepositoryList';
 import AnalysisView from './AnalysisView';
-import ToneSelector from './ToneSelector';
 import ContentGenerator from './ContentGenerator';
 import ContentEditor from './ContentEditor';
 import StyleProfileSetup from './StyleProfileSetup';
@@ -38,7 +37,6 @@ const Dashboard: React.FC = () => {
      const [searchQuery, setSearchQuery] = useState<string>('');
      const [selectedRepositoryId, setSelectedRepositoryId] = useState<string | null>(null);
      const [analysis, setAnalysis] = useState<Analysis | null>(null);
-     const [selectedTone, setSelectedTone] = useState<string>('Professional');
      const [generatedContents, setGeneratedContents] = useState<{
           linkedin?: GeneratedContent;
           x?: GeneratedContent;
@@ -376,20 +374,13 @@ const Dashboard: React.FC = () => {
                                                   Generate Content
                                              </h2>
                                              <p className="text-sm text-dark-text-secondary leading-relaxed">
-                                                  Customize the tone and generate platform-specific content
+                                                  Generate platform-specific content using your voice profile
                                              </p>
                                         </div>
-
-                                        {/* Tone Selector */}
-                                        <ToneSelector
-                                             onToneChange={setSelectedTone}
-                                             selectedTone={selectedTone}
-                                        />
 
                                         {/* Content Generator */}
                                         <ContentGenerator
                                              analysisId={analysis.id}
-                                             tone={selectedTone}
                                              onContentGenerated={handleContentGenerated}
                                         />
 

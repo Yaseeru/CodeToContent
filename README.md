@@ -11,7 +11,7 @@ CodeToContent is a developer-focused application that analyzes GitHub repositori
 - **📊 Repository Analysis** - Deep analysis of code structure, commits, PRs, and documentation
 - **🤖 AI-Powered Content Generation** - Uses Gemini 3.0 to create compelling narratives
 - **🎨 Multi-Platform Support** - Generate optimized content for LinkedIn and X (Twitter)
-- **🎭 Tone Customization** - Choose from 7 predefined tones or create your own
+- **🎤 Voice Profile** - Personalized content generation using your unique writing style
 - **✏️ Content Refinement** - Edit and refine generated content with AI assistance
 - **🌙 Dark Theme UI** - Clean, minimal interface inspired by Raycast
 - **💾 Persistent Storage** - MongoDB stores analyses and content for future reference
@@ -60,7 +60,6 @@ code-to-content/
 │   │   │   ├── AnalysisView.tsx
 │   │   │   ├── ContentGenerator.tsx
 │   │   │   ├── ContentEditor.tsx
-│   │   │   ├── ToneSelector.tsx
 │   │   │   ├── StyleProfileSetup.tsx      # NEW: Voice onboarding
 │   │   │   ├── StyleProfileEditor.tsx     # NEW: Manual profile editing
 │   │   │   ├── ProfileAnalytics.tsx       # NEW: Evolution dashboard
@@ -215,7 +214,7 @@ The project uses a comprehensive testing approach:
 **Test Coverage:**
 - ✅ Authentication flow (OAuth, JWT)
 - ✅ Repository analysis (GitHub API, Gemini AI)
-- ✅ Content generation (multi-platform, tone application)
+- ✅ Content generation (multi-platform, voice-aware)
 - ✅ Data persistence (MongoDB models)
 - ✅ UI components (user interactions, state management)
 
@@ -364,8 +363,7 @@ docker run -d -p 6379:6379 redis:latest
 
 ### 3. Content Generation
 - User selects platform (LinkedIn or X)
-- User chooses tone (Professional, Casual, Confident, Funny, Meme, Thoughtful, Educational)
-- **NEW:** If user has a Voice Profile, system uses personalized style
+- If user has a Voice Profile, system uses personalized style
 - Gemini AI generates platform-specific content
 - Content optimized for:
   - LinkedIn: 150-300 words, professional format
@@ -427,7 +425,7 @@ When you have a Style Profile, content generation uses **Few-Shot Prompting**:
 3. Gemini AI generates content matching your authentic voice
 4. Voice Strength control (0-100%) lets you blend personal style with variation
 
-**Fallback:** If profile is missing or generation fails, system uses traditional tone-based generation.
+**Fallback:** If profile is missing or generation fails, system uses generic generation.
 
 #### 3. Feedback Loop: The Primary Learning Engine
 
@@ -486,7 +484,7 @@ All archetypes can be customized after application and will evolve through feedb
 
 Adjust how strongly your personal style is applied:
 
-- **0%**: Generic tone-based generation (no voice profile)
+- **0%**: Generic generation (no voice profile)
 - **50%**: Balanced blend of your style and creative variation
 - **100%**: Maximum voice matching (closest to your authentic voice)
 
@@ -609,7 +607,7 @@ GET  /api/profile/evolution-timeline  # Get learning history with milestones
 - Repository reference, user reference, structured summary, raw signals
 
 **Content**
-- Analysis reference, user reference, platform, tone, generated text, edited text, version
+- Analysis reference, user reference, platform, generated text, edited text, version
 - **NEW:** editMetadata - Comprehensive edit tracking for learning
   - originalText, sentenceLengthDelta, emojiChanges, structureChanges
   - toneShift, vocabularyChanges, phrasesAdded, phrasesRemoved
@@ -678,7 +676,7 @@ PROFILE_CACHE_TTL_SECONDS=3600
 **No migration required!** The Voice Engine is fully backward compatible:
 
 - `styleProfile` field is optional on User model
-- Existing users without profiles continue using tone-based generation
+- Existing users without profiles continue using generic generation
 - `editMetadata` field is optional on Content model
 - Existing content works without edit tracking
 
@@ -741,7 +739,7 @@ If you need to rollback:
 
 1. **Stop worker process**
 2. **Remove Redis dependency** (optional - won't break anything)
-3. **Existing users continue with tone-based generation**
+3. **Existing users continue with generic generation**
 4. **No data loss** - styleProfile is optional
 
 The Voice Engine is designed for zero-downtime deployment and graceful degradation.

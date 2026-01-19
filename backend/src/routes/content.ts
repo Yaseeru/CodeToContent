@@ -24,13 +24,13 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                });
           }
 
-          const { analysisId, platform, tone, voiceStrength } = req.body;
+          const { analysisId, platform, voiceStrength } = req.body;
 
           // Validate required fields
-          if (!analysisId || !platform || !tone) {
+          if (!analysisId || !platform) {
                return res.status(400).json({
                     error: 'Invalid request',
-                    message: 'analysisId, platform, and tone are required',
+                    message: 'analysisId and platform are required',
                });
           }
 
@@ -47,14 +47,6 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                return res.status(400).json({
                     error: 'Invalid request',
                     message: 'platform must be either "linkedin" or "x"',
-               });
-          }
-
-          // Validate tone (basic validation - not empty)
-          if (typeof tone !== 'string' || tone.trim().length === 0) {
-               return res.status(400).json({
-                    error: 'Invalid request',
-                    message: 'tone must be a non-empty string',
                });
           }
 
@@ -84,7 +76,6 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                analysisId,
                userId: req.user.userId,
                platform: platform as Platform,
-               tone: tone.trim(),
                voiceStrength,
           });
 
@@ -94,7 +85,6 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                     id: content._id,
                     analysisId: content.analysisId,
                     platform: content.platform,
-                    tone: content.tone,
                     generatedText: content.generatedText,
                     editedText: content.editedText,
                     version: content.version,
@@ -196,7 +186,6 @@ router.post('/refine', async (req: Request, res: Response) => {
                     id: refinedContent._id,
                     analysisId: refinedContent.analysisId,
                     platform: refinedContent.platform,
-                    tone: refinedContent.tone,
                     generatedText: refinedContent.generatedText,
                     editedText: refinedContent.editedText,
                     version: refinedContent.version,
@@ -335,7 +324,6 @@ router.post('/:id/save-edits', defaultRateLimiter, validateSaveEdits, async (req
                     id: content._id,
                     analysisId: content.analysisId,
                     platform: content.platform,
-                    tone: content.tone,
                     generatedText: content.generatedText,
                     editedText: content.editedText,
                     version: content.version,

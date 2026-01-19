@@ -4,7 +4,6 @@ import ErrorNotification from './ErrorNotification';
 
 interface ContentGeneratorProps {
      analysisId: string;
-     tone: string;
      onContentGenerated: (content: GeneratedContent) => void;
 }
 
@@ -12,7 +11,6 @@ export interface GeneratedContent {
      id: string;
      platform: 'linkedin' | 'x';
      generatedText: string;
-     tone: string;
      version: number;
 }
 
@@ -30,7 +28,6 @@ interface ProfileData {
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({
      analysisId,
-     tone,
      onContentGenerated,
 }) => {
      const [loading, setLoading] = useState<{ linkedin: boolean; x: boolean }>({
@@ -85,7 +82,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                     '/api/content/generate',
                     {
                          analysisId,
-                         tone,
                          platform,
                          voiceStrength: profileData?.styleProfile ? voiceStrength : undefined,
                     }
@@ -220,7 +216,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                          Generate Content
                     </h3>
                     <p className="text-sm text-dark-text-secondary leading-relaxed">
-                         Select a platform to generate content with the selected tone
+                         Select a platform to generate content using your voice profile
                     </p>
                </div>
 

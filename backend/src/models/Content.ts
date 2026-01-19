@@ -6,7 +6,6 @@ export interface IContent extends Document {
      analysisId: mongoose.Types.ObjectId;
      userId: mongoose.Types.ObjectId;
      platform: Platform;
-     tone: string;
      generatedText: string;
      editedText: string;
      version: number;
@@ -66,10 +65,6 @@ const ContentSchema: Schema = new Schema(
                type: String,
                required: true,
                enum: ['linkedin', 'x'],
-          },
-          tone: {
-               type: String,
-               required: true,
           },
           generatedText: {
                type: String,

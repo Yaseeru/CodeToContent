@@ -10,7 +10,6 @@ export interface GenerateContentParams {
      analysisId: string;
      userId: string;
      platform: Platform;
-     tone: string;
      voiceStrength?: number; // Optional voice strength override (0-100)
 }
 
@@ -33,7 +32,7 @@ export class ContentGenerationService {
       * Generate platform-specific content from analysis
       */
      async generateContent(params: GenerateContentParams): Promise<IContent> {
-          const { analysisId, userId, platform, tone, voiceStrength } = params;
+          const { analysisId, userId, platform, voiceStrength } = params;
 
           // Retrieve Summary from database
           const analysis = await Analysis.findById(analysisId);
@@ -71,13 +70,12 @@ export class ContentGenerationService {
                          analysis,
                          user.styleProfile,
                          platform,
-                         tone,
                          effectiveVoiceStrength
                     );
 
                     // Validate prompt size (under 8000 tokens, roughly 6000 words)
                     if (!this.validatePromptSize(prompt)) {
-                         console.warn('Voice-aware prompt too large, falling back to tone-based generation');
+                         console.warn('Voice-aware prompt too large, falling back to generic generation');
                          throw new Error('Prompt too large');
                     }
 
@@ -85,14 +83,14 @@ export class ContentGenerationService {
                     generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
                     usedStyleProfile = true;
                } catch (error) {
-                    console.error('Voice-aware generation failed, falling back to tone-based:', error);
-                    // Fall back to tone-based generation
-                    const prompt = this.constructContentPrompt(analysis, platform, tone);
+                    console.error('Voice-aware generation failed, falling back to generic:', error);
+                    // Fall back to generic generation
+                    const prompt = this.constructContentPrompt(analysis, platform);
                     generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
                }
           } else {
-               // Use existing tone-based generation
-               const prompt = this.constructContentPrompt(analysis, platform, tone);
+               // Use generic generation without voice profile
+               const prompt = this.constructContentPrompt(analysis, platform);
                generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
           }
 
@@ -101,7 +99,6 @@ export class ContentGenerationService {
                analysisId: new mongoose.Types.ObjectId(analysisId),
                userId: new mongoose.Types.ObjectId(userId),
                platform,
-               tone,
                generatedText,
                editedText: '',
                version: 1,
@@ -119,12 +116,11 @@ export class ContentGenerationService {
      }
 
      /**
-      * Construct platform-specific prompts
+      * Construct platform-specific prompts (generic, without voice profile)
       */
      private constructContentPrompt(
           analysis: IAnalysis,
-          platform: Platform,
-          tone: string
+          platform: Platform
      ): string {
           // Base content from analysis
           const baseContext = `
@@ -162,26 +158,14 @@ Guidelines:
 `;
           }
 
-          // Apply tone customization
-          const toneGuidance = `
-Tone: ${tone}
-Apply this tone to influence:
-- Word choice (formal vs casual, technical vs accessible)
-- Sentence structure (short and punchy vs detailed and explanatory)
-- Overall length and depth
-- Emotional resonance (confident, funny, thoughtful, educational, etc.)
-`;
-
           const prompt = `You are an expert content writer helping developers communicate their work to broader audiences.
 
 ${baseContext}
 
 ${platformGuidelines}
 
-${toneGuidance}
-
 Generate ONE coherent narrative post for this repository. Do not create multiple posts or per-commit content.
-The content should be clear, engaging, and appropriate for the target platform and tone.
+The content should be clear, engaging, and appropriate for the target platform.
 
 Respond with ONLY the post content. Do not include any explanations, metadata, or formatting markers.`;
 
@@ -195,7 +179,6 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
           analysis: IAnalysis,
           styleProfile: StyleProfile,
           platform: Platform,
-          tone: string,
           voiceStrength: number
      ): string {
           // Select 3-6 representative samples
@@ -266,8 +249,6 @@ ${voiceDescription}
 ${fewShotExamples}
 
 ${phrasesGuidance}
-
-Base Tone Preference: ${tone}
 
 Generate ONE coherent narrative post for this repository that matches the user's authentic writing style.
 Do not create multiple posts or per-commit content.
@@ -476,8 +457,7 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
           const prompt = this.constructRefinementPrompt(
                baseText,
                instruction,
-               existingContent.platform,
-               existingContent.tone
+               existingContent.platform
           );
 
           // Call Gemini API for refinement
@@ -488,7 +468,6 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
                analysisId: existingContent.analysisId,
                userId: existingContent.userId,
                platform: existingContent.platform,
-               tone: existingContent.tone,
                generatedText: refinedText,
                editedText: '',
                version: existingContent.version + 1,
@@ -505,8 +484,7 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
      private constructRefinementPrompt(
           baseText: string,
           instruction: string,
-          platform: Platform,
-          tone: string
+          platform: Platform
      ): string {
           // Map common instructions to specific guidance
           let refinementGuidance = '';
@@ -525,12 +503,10 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
 Original Content:
 ${baseText}
 
-Original Tone: ${tone}
-
 Refinement Instruction:
 ${refinementGuidance}
 
-Provide the refined version of the content. Maintain the original tone and platform appropriateness while applying the refinement instruction.
+Provide the refined version of the content. Maintain platform appropriateness while applying the refinement instruction.
 
 Respond with ONLY the refined content. Do not include any explanations, metadata, or formatting markers.`;
 

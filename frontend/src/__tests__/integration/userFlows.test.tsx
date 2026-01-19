@@ -149,7 +149,6 @@ describe('Integration Tests - Complete User Flows', () => {
                     id: 'content-1',
                     platform: 'linkedin' as const,
                     generatedText: 'Check out my new project!',
-                    tone: 'Professional',
                     version: 1,
                };
 
@@ -356,7 +355,6 @@ describe('Integration Tests - Complete User Flows', () => {
                     id: 'content-1',
                     platform: 'linkedin' as const,
                     generatedText: 'Original content',
-                    tone: 'Professional',
                     version: 1,
                };
 
