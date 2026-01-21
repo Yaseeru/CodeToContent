@@ -1,8 +1,8 @@
 # CodeToContent
 
-> Transform your GitHub repositories into compelling content for X (Twitter).
+> Create authentic, personalized X (Twitter) content with AI assistance.
 
-CodeToContent is a developer-focused application that analyzes GitHub repositories using AI and generates clear, human-readable content suitable for social media. The system uses deep code understanding to help developers communicate what they're building, why it matters, and what's new—especially to non-technical audiences.
+CodeToContent is a developer-focused application that helps you create compelling social media content that sounds authentically like you—not generic AI. The system analyzes your GitHub repositories and learns your unique writing style to help you communicate what you're building, why it matters, and what's new to both technical and non-technical audiences.
 
 ## ✨ Features
  
@@ -18,9 +18,9 @@ CodeToContent is a developer-focused application that analyzes GitHub repositori
 
 ### 🎙️ Personalized Voice Engine (NEW!)
 
-The Voice Engine transforms CodeToContent from a generic AI content generator into an intelligent writing assistant that learns your unique voice:
+The Voice Engine transforms CodeToContent from a generic AI content generator into an intelligent writing assistant that learns your unique voice. **Note:** Quality personalization requires some initial setup and ongoing refinement, but the result is content that sounds authentically like you.
 
-- **🧠 Intelligent Learning** - Automatically learns from your writing samples and edits
+- **🧠 Intelligent Learning** - Learns from your writing samples and edits over time
 - **📝 Multi-Source Training** - Paste text, upload files (.txt, .md, .pdf), or learn from edits
 - **🎯 Voice Archetypes** - Quick-start with pre-built personas (Tech Twitter, Meme Lord, Academic)
 - **🔄 Feedback Loop** - Continuously improves by analyzing how you edit AI-generated content
@@ -32,7 +32,7 @@ The Voice Engine transforms CodeToContent from a generic AI content generator in
 - **↩️ Profile Versioning** - Rollback to previous versions if needed
 - **🚀 Zero-Setup Option** - Skip onboarding and let the system learn entirely from your edits
 
-**Quick Start:** Follow the Voice Engine setup instructions in this README for a complete guide.
+**Reality Check:** The Voice Engine improves over time. Early content may need editing, but each edit teaches the system your preferences. Expect 5-10 generations before seeing significant personalization.
 
 ## 🏗️ Architecture
 
@@ -366,21 +366,25 @@ docker run -d -p 6379:6379 redis:latest
 - If user has a Voice Profile, system uses personalized style
 - Gemini AI generates platform-specific content
 - Content optimized for X: 200-500 characters, concise and engaging
+- **First-time users:** Content will be generic until you train your voice profile
 
-### 4. Content Refinement
-- User can edit generated content manually
-- **NEW:** System learns from edits to improve future generations
+### 4. Content Refinement & Learning
+- User edits generated content to match their style
+- **System learns from your edits** to improve future generations
 - AI-powered refinement options:
   - "Shorter" - Reduce length by 30-50%
   - "Clearer" - Simplify language and improve flow
   - "More engaging" - Add hooks and compelling language
 - One-click copy to clipboard
+- **Each edit improves your voice profile** - expect better results after 5-10 generations
 
 ## 🎙️ Voice Engine Deep Dive
 
 ### What is the Voice Engine?
 
 The Voice Engine is an intelligent learning system that transforms CodeToContent into a personalized writing assistant. Instead of generic AI content, it learns your unique voice and generates content that sounds authentically like you.
+
+**Important:** The Voice Engine requires initial setup and ongoing refinement. It's not fully automatic—you guide the AI by providing samples and editing outputs. The payoff is content that genuinely sounds like you, not a generic bot.
 
 ### How Voice Learning Works
 
@@ -449,7 +453,7 @@ When you have a Style Profile, content generation uses **Few-Shot Prompting**:
 - Rate limited to once per 5 minutes per user
 - Multiple rapid edits batched for efficiency
 
-**Result:** Your Profile Evolution Score increases, and future content requires less editing.
+**Result:** Your Profile Evolution Score increases, and future content requires less editing. This is a gradual process—expect to invest time upfront for long-term quality gains.
 
 ### Voice Archetypes
 
@@ -472,9 +476,9 @@ All archetypes can be customized after application and will evolve through feedb
 - **Edit Consistency (20 points)**: Are your edits consistent and pattern-based?
 
 **Score Interpretation:**
-- **0-30%**: Early learning phase - provide samples or generate more content
-- **30-70%**: Active learning - profile improving with each edit
-- **70-100%**: Well-trained - content closely matches your voice
+- **0-30%**: Early learning phase - provide samples or generate more content (expect significant editing needed)
+- **30-70%**: Active learning - profile improving with each edit (still requires review and refinement)
+- **70-100%**: Well-trained - content closely matches your voice (minor edits typically needed)
 
 ### Voice Strength Control
 
@@ -955,4 +959,8 @@ For general questions, open an issue on GitHub.
 
 ---
 
-**Built with ❤️ for developers who want to share their work with the world.**
+## 🎯 Philosophy
+
+CodeToContent is built on the belief that **quality content requires human input**. We don't promise fully automatic content generation—we promise AI assistance that learns from you and gets better over time. You invest time upfront (providing samples, editing outputs) to get authentic, personalized content that sounds like you, not a generic bot.
+
+**Built with ❤️ for developers who want to share their work authentically.**
