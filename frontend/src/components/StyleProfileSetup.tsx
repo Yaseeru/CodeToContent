@@ -193,7 +193,16 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
      // Choose path view
      if (currentPath === 'choose') {
           return (
-               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto">
+               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto relative">
+                    <button
+                         onClick={onSkip}
+                         className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2"
+                         aria-label="Close voice profile setup"
+                    >
+                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                         </svg>
+                    </button>
                     <div className="text-center mb-8">
                          <h2 className="text-2xl font-semibold text-dark-text mb-2">
                               Set Up Your Voice Profile
@@ -277,7 +286,16 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
           }
 
           return (
-               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto">
+               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto relative">
+                    <button
+                         onClick={onSkip}
+                         className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2"
+                         aria-label="Close voice profile setup"
+                    >
+                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                         </svg>
+                    </button>
                     {showErrorNotification && error && (
                          <div className="mb-6">
                               <ErrorNotification
@@ -420,7 +438,16 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
           }
 
           return (
-               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto">
+               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto relative">
+                    <button
+                         onClick={onSkip}
+                         className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2"
+                         aria-label="Close voice profile setup"
+                    >
+                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                         </svg>
+                    </button>
                     {showErrorNotification && error && (
                          <div className="mb-6">
                               <ErrorNotification
@@ -501,7 +528,16 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
      // Skip confirmation view
      if (currentPath === 'skip') {
           return (
-               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto text-center">
+               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto text-center relative">
+                    <button
+                         onClick={onSkip}
+                         className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2"
+                         aria-label="Close voice profile setup"
+                    >
+                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                         </svg>
+                    </button>
                     <div className="mb-6">
                          <div className="w-16 h-16 bg-dark-bg border border-dark-border rounded-full flex items-center justify-center mx-auto mb-4">
                               <svg className="w-8 h-8 text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
