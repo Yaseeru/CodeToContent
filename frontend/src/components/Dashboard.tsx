@@ -38,7 +38,6 @@ const Dashboard: React.FC = () => {
      const [selectedRepositoryId, setSelectedRepositoryId] = useState<string | null>(null);
      const [analysis, setAnalysis] = useState<Analysis | null>(null);
      const [generatedContents, setGeneratedContents] = useState<{
-          linkedin?: GeneratedContent;
           x?: GeneratedContent;
      }>({});
      const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
@@ -160,13 +159,9 @@ const Dashboard: React.FC = () => {
           }));
      };
 
-     const handleRegenerate = (platform: 'linkedin' | 'x') => {
-          // Remove the content for the platform to trigger regeneration
-          setGeneratedContents((prev) => {
-               const updated = { ...prev };
-               delete updated[platform];
-               return updated;
-          });
+     const handleRegenerate = () => {
+          // Remove the content to trigger regeneration
+          setGeneratedContents({});
      };
 
      const handleLogout = () => {
@@ -384,19 +379,11 @@ const Dashboard: React.FC = () => {
                                              onContentGenerated={handleContentGenerated}
                                         />
 
-                                        {/* Content Editors */}
-                                        {generatedContents.linkedin && (
-                                             <ContentEditor
-                                                  content={generatedContents.linkedin}
-                                                  onRegenerate={() => handleRegenerate('linkedin')}
-                                                  onContentUpdate={handleContentUpdate}
-                                             />
-                                        )}
-
+                                        {/* Content Editor */}
                                         {generatedContents.x && (
                                              <ContentEditor
                                                   content={generatedContents.x}
-                                                  onRegenerate={() => handleRegenerate('x')}
+                                                  onRegenerate={handleRegenerate}
                                                   onContentUpdate={handleContentUpdate}
                                              />
                                         )}

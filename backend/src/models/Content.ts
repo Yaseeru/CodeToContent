@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type Platform = 'linkedin' | 'x';
+export type Platform = 'x';
 
 export interface IContent extends Document {
      analysisId: mongoose.Types.ObjectId;
@@ -64,7 +64,7 @@ const ContentSchema: Schema = new Schema(
           platform: {
                type: String,
                required: true,
-               enum: ['linkedin', 'x'],
+               enum: ['x'],
           },
           generatedText: {
                type: String,

@@ -71,8 +71,6 @@ export const CACHE_CONFIG = {
 
 // Content Generation Configuration
 export const CONTENT_CONFIG = {
-     LINKEDIN_MIN_WORDS: 150,
-     LINKEDIN_MAX_WORDS: 300,
      TWITTER_MIN_CHARS: 200,
      TWITTER_MAX_CHARS: 500,
      PROMPT_MAX_WORDS: 6000, // ~8000 tokens

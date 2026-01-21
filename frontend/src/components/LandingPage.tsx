@@ -13,7 +13,7 @@ const LandingPage: React.FC = () => {
                          CodeToContent
                     </h1>
                     <p className="text-base text-dark-text-secondary mb-8 leading-relaxed">
-                         Transform your GitHub repositories into compelling content for LinkedIn and X
+                         Transform your GitHub repositories into compelling content for X (Twitter)
                     </p>
                     <button
                          onClick={handleGitHubLogin}

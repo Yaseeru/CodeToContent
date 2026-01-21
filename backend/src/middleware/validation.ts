@@ -43,8 +43,8 @@ export const validateContentGeneration = [
           .custom((value) => mongoose.Types.ObjectId.isValid(value))
           .withMessage('analysisId must be a valid MongoDB ObjectId'),
      body('platform')
-          .isIn(['linkedin', 'x'])
-          .withMessage('platform must be either "linkedin" or "x"'),
+          .isIn(['x'])
+          .withMessage('platform must be "x"'),
      body('voiceStrength')
           .optional()
           .isInt({ min: VALIDATION_CONFIG.VOICE_STRENGTH_MIN, max: VALIDATION_CONFIG.VOICE_STRENGTH_MAX })

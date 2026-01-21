@@ -1,6 +1,6 @@
 # CodeToContent
 
-> Transform your GitHub repositories into compelling content for LinkedIn and X (Twitter).
+> Transform your GitHub repositories into compelling content for X (Twitter).
 
 CodeToContent is a developer-focused application that analyzes GitHub repositories using AI and generates clear, human-readable content suitable for social media. The system uses deep code understanding to help developers communicate what they're building, why it matters, and what's new—especially to non-technical audiences.
 
@@ -10,7 +10,7 @@ CodeToContent is a developer-focused application that analyzes GitHub repositori
 - **🔐 GitHub OAuth Authentication** - Seamless login with your GitHub account
 - **📊 Repository Analysis** - Deep analysis of code structure, commits, PRs, and documentation
 - **🤖 AI-Powered Content Generation** - Uses Gemini 3.0 to create compelling narratives
-- **🎨 Multi-Platform Support** - Generate optimized content for LinkedIn and X (Twitter)
+- **🎨 X (Twitter) Optimized** - Generate optimized content for X (Twitter)
 - **🎤 Voice Profile** - Personalized content generation using your unique writing style
 - **✏️ Content Refinement** - Edit and refine generated content with AI assistance
 - **🌙 Dark Theme UI** - Clean, minimal interface inspired by Raycast
@@ -22,7 +22,7 @@ The Voice Engine transforms CodeToContent from a generic AI content generator in
 
 - **🧠 Intelligent Learning** - Automatically learns from your writing samples and edits
 - **📝 Multi-Source Training** - Paste text, upload files (.txt, .md, .pdf), or learn from edits
-- **🎯 Voice Archetypes** - Quick-start with pre-built personas (Tech Twitter, LinkedIn Leader, Meme Lord, Academic)
+- **🎯 Voice Archetypes** - Quick-start with pre-built personas (Tech Twitter, Meme Lord, Academic)
 - **🔄 Feedback Loop** - Continuously improves by analyzing how you edit AI-generated content
 - **📊 Evolution Tracking** - Profile Evolution Score (0-100%) shows learning progress
 - **🎚️ Voice Strength Control** - Adjust how strongly your personal style is applied (0-100%)
@@ -362,12 +362,10 @@ docker run -d -p 6379:6379 redis:latest
   - Value proposition
 
 ### 3. Content Generation
-- User selects platform (LinkedIn or X)
+- User selects repository
 - If user has a Voice Profile, system uses personalized style
 - Gemini AI generates platform-specific content
-- Content optimized for:
-  - LinkedIn: 150-300 words, professional format
-  - X: 200-500 characters, concise and engaging
+- Content optimized for X: 200-500 characters, concise and engaging
 
 ### 4. Content Refinement
 - User can edit generated content manually
@@ -397,9 +395,8 @@ The Voice Engine is an intelligent learning system that transforms CodeToContent
 - Profile Evolution Score starts at 20-40%
 
 **Path B: Choose a Voice Archetype**
-- Select from 4 pre-built personas:
+- Select from 3 pre-built personas:
   - **Tech Twitter Influencer**: Casual, direct, emoji-heavy, short sentences
-  - **LinkedIn Thought Leader**: Professional, thoughtful, storytelling
   - **Meme Lord**: Humorous, very casual, internet slang
   - **Academic Researcher**: Formal, analytical, technical vocabulary
 - Customize after application
@@ -461,7 +458,6 @@ Pre-built personas for quick-start:
 | Archetype | Voice Type | Formality | Enthusiasm | Sentence Length | Emoji Usage |
 |-----------|------------|-----------|------------|-----------------|-------------|
 | **Tech Twitter Influencer** | Casual | 2/10 | 8/10 | Short (10-15 words) | High (3-5 per post) |
-| **LinkedIn Thought Leader** | Professional | 7/10 | 6/10 | Medium (15-20 words) | Low (0-1 per post) |
 | **Meme Lord** | Casual | 1/10 | 10/10 | Very Short (5-10 words) | Very High (5+ per post) |
 | **Academic Researcher** | Analytical | 9/10 | 3/10 | Long (20-30 words) | None |
 

@@ -134,29 +134,15 @@ Value Proposition: ${analysis.valueProposition}
 `;
 
           // Platform-specific guidelines
-          let platformGuidelines = '';
-          if (platform === 'linkedin') {
-               platformGuidelines = `
-Platform: LinkedIn
-Guidelines:
-- Professional tone suitable for LinkedIn audience
-- Length: 150-300 words (LinkedIn posts work best in this range)
-- Structure: Start with a hook, explain the problem/solution, highlight key features, end with value
-- Use line breaks for readability
-- Avoid hashtags unless specifically requested
-- Focus on professional impact and technical innovation
-`;
-          } else if (platform === 'x') {
-               platformGuidelines = `
+          const platformGuidelines = `
 Platform: X (Twitter)
 Guidelines:
 - Concise and engaging tone suitable for X audience
 - Length: 200-280 characters (single tweet) or up to 500 characters for thread-style
 - Structure: Hook in first sentence, key points, call-to-action or insight
-- Can be more casual and direct than LinkedIn
+- Can be more casual and direct
 - Focus on what's interesting, new, or surprising
 `;
-          }
 
           const prompt = `You are an expert content writer helping developers communicate their work to broader audiences.
 
@@ -196,29 +182,15 @@ Value Proposition: ${analysis.valueProposition}
 `;
 
           // Platform-specific guidelines
-          let platformGuidelines = '';
-          if (platform === 'linkedin') {
-               platformGuidelines = `
-Platform: LinkedIn
-Guidelines:
-- Professional tone suitable for LinkedIn audience
-- Length: 150-300 words (LinkedIn posts work best in this range)
-- Structure: Start with a hook, explain the problem/solution, highlight key features, end with value
-- Use line breaks for readability
-- Avoid hashtags unless specifically requested
-- Focus on professional impact and technical innovation
-`;
-          } else if (platform === 'x') {
-               platformGuidelines = `
+          const platformGuidelines = `
 Platform: X (Twitter)
 Guidelines:
 - Concise and engaging tone suitable for X audience
 - Length: 200-280 characters (single tweet) or up to 500 characters for thread-style
 - Structure: Hook in first sentence, key points, call-to-action or insight
-- Can be more casual and direct than LinkedIn
+- Can be more casual and direct
 - Focus on what's interesting, new, or surprising
 `;
-          }
 
           // Build voice profile description
           const voiceDescription = this.buildVoiceDescription(styleProfile, voiceStrength);

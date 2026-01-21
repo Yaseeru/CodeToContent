@@ -171,7 +171,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                <div className="flex items-center justify-between">
                     <div>
                          <h4 className="text-base font-medium text-dark-text">
-                              {content.platform === 'linkedin' ? 'LinkedIn' : 'X (Twitter)'} Content
+                              X (Twitter) Content
                          </h4>
                          <p className="text-sm text-dark-text-secondary mt-1">
                               Tone: {content.tone} | Version: {content.version}

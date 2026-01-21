@@ -43,10 +43,10 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
           }
 
           // Validate platform
-          if (platform !== 'linkedin' && platform !== 'x') {
+          if (platform !== 'x') {
                return res.status(400).json({
                     error: 'Invalid request',
-                    message: 'platform must be either "linkedin" or "x"',
+                    message: 'platform must be "x"',
                });
           }
 

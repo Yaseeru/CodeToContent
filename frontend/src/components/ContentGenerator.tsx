@@ -9,7 +9,7 @@ interface ContentGeneratorProps {
 
 export interface GeneratedContent {
      id: string;
-     platform: 'linkedin' | 'x';
+     platform: 'x';
      generatedText: string;
      version: number;
 }
@@ -30,13 +30,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
      analysisId,
      onContentGenerated,
 }) => {
-     const [loading, setLoading] = useState<{ linkedin: boolean; x: boolean }>({
-          linkedin: false,
-          x: false,
-     });
+     const [loading, setLoading] = useState<boolean>(false);
      const [error, setError] = useState<string | null>(null);
      const [showErrorNotification, setShowErrorNotification] = useState<boolean>(false);
-     const lastPlatform = useRef<'linkedin' | 'x' | null>(null);
+     const lastPlatform = useRef<'x' | null>(null);
      const [profileData, setProfileData] = useState<ProfileData | null>(null);
      const [voiceStrength, setVoiceStrength] = useState<number>(80);
      const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
@@ -71,18 +68,18 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
           fetchProfile();
      }, []);
 
-     const generateContent = async (platform: 'linkedin' | 'x') => {
+     const generateContent = async () => {
           try {
-               setLoading((prev) => ({ ...prev, [platform]: true }));
+               setLoading(true);
                setError(null);
                setShowErrorNotification(false);
-               lastPlatform.current = platform;
+               lastPlatform.current = 'x';
 
                const response = await apiClient.post(
                     '/api/content/generate',
                     {
                          analysisId,
-                         platform,
+                         platform: 'x',
                          voiceStrength: profileData?.styleProfile ? voiceStrength : undefined,
                     }
                );
@@ -94,15 +91,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                setError(errorMessage);
                setShowErrorNotification(true);
           } finally {
-               setLoading((prev) => ({ ...prev, [platform]: false }));
+               setLoading(false);
           }
      };
 
      const handleRetryGenerate = () => {
-          if (lastPlatform.current) {
-               setShowErrorNotification(false);
-               generateContent(lastPlatform.current);
-          }
+          setShowErrorNotification(false);
+          generateContent();
      };
 
      const handleCloseErrorNotification = () => {
@@ -222,32 +217,17 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
 
                <div className="flex gap-3">
                     <button
-                         onClick={() => generateContent('linkedin')}
-                         disabled={loading.linkedin || loading.x}
+                         onClick={() => generateContent()}
+                         disabled={loading}
                          className="flex-1 px-6 py-3 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                         {loading.linkedin ? (
+                         {loading ? (
                               <span className="flex items-center justify-center">
                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner mr-2"></span>
                                    Generating...
                               </span>
                          ) : (
-                              'Generate for LinkedIn'
-                         )}
-                    </button>
-
-                    <button
-                         onClick={() => generateContent('x')}
-                         disabled={loading.linkedin || loading.x}
-                         className="flex-1 px-6 py-3 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                         {loading.x ? (
-                              <span className="flex items-center justify-center">
-                                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner mr-2"></span>
-                                   Generating...
-                              </span>
-                         ) : (
-                              'Generate for X'
+                              'Generate for X (Twitter)'
                          )}
                     </button>
                </div>
