@@ -75,8 +75,8 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
 
      if (loading) {
           return (
-               <div className="flex items-center justify-center py-16">
-                    <div className="text-base text-dark-text-secondary">Loading repositories...</div>
+               <div className="flex items-center justify-center py-12 sm:py-16">
+                    <div className="text-sm sm:text-base text-dark-text-secondary">Loading repositories...</div>
                </div>
           );
      }
@@ -95,7 +95,8 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
                          <p className="text-dark-error text-sm mb-3">{error}</p>
                          <button
                               onClick={handleRetryFetch}
-                              className="px-4 py-2 bg-dark-error text-white text-sm font-medium rounded-lg hover:bg-dark-error-hover"
+                              className="px-4 py-3 min-h-[44px] bg-dark-error text-white text-sm font-medium rounded-lg hover:bg-dark-error-hover focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                              aria-label="Retry loading repositories"
                          >
                               Retry
                          </button>
@@ -106,8 +107,8 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
 
      if (filteredRepositories.length === 0) {
           return (
-               <div className="text-center py-16">
-                    <p className="text-base text-dark-text-secondary">
+               <div className="text-center py-12 sm:py-16">
+                    <p className="text-sm sm:text-base text-dark-text-secondary">
                          {searchQuery ? 'No repositories match your search' : 'No repositories found'}
                     </p>
                </div>
@@ -115,17 +116,20 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
      }
 
      return (
-          <div className="space-y-2">
+          <div className="space-y-2 sm:space-y-3">
                {filteredRepositories.map((repo) => (
                     <div
                          key={repo.id}
                          onClick={() => handleRepositoryClick(repo.id)}
-                         className="bg-dark-surface border border-dark-border rounded-lg p-4 cursor-pointer hover:bg-dark-surface-hover"
+                         className="bg-dark-surface border border-dark-border rounded-lg p-3 sm:p-4 cursor-pointer hover:bg-dark-surface-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                         role="button"
+                         tabIndex={0}
+                         aria-label={`Select repository ${repo.name}`}
                     >
-                         <h3 className="text-base font-medium text-dark-text">{repo.name}</h3>
-                         <p className="text-sm text-dark-text-tertiary mt-1">{repo.fullName}</p>
+                         <h3 className="text-sm sm:text-base font-medium text-dark-text">{repo.name}</h3>
+                         <p className="text-xs sm:text-sm text-dark-text-tertiary mt-1">{repo.fullName}</p>
                          {repo.description && (
-                              <p className="text-sm text-dark-text-secondary mt-2 leading-relaxed">
+                              <p className="text-xs sm:text-sm text-dark-text-secondary mt-2 leading-relaxed line-clamp-2">
                                    {repo.description}
                               </p>
                          )}

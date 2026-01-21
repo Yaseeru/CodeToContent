@@ -168,19 +168,20 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                     </div>
                )}
 
-               <div className="flex items-center justify-between">
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                          <h4 className="text-base font-medium text-dark-text">
                               X (Twitter) Content
                          </h4>
                          <p className="text-sm text-dark-text-secondary mt-1">
-                              Tone: {content.tone} | Version: {content.version}
+                              Platform: {content.platform} | Version: {content.version}
                               {isEdited && ' (edited)'}
                          </p>
                     </div>
                     <button
                          onClick={onRegenerate}
-                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                         className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                         aria-label="Regenerate content"
                     >
                          Regenerate
                     </button>
@@ -190,47 +191,57 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                     value={editedText}
                     onChange={handleTextChange}
                     rows={8}
-                    className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-base text-dark-text placeholder-dark-text-tertiary focus:border-dark-accent resize-y"
+                    className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-base text-dark-text placeholder-dark-text-tertiary focus:border-dark-accent focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg resize-y transition-colors"
                     placeholder="Generated content will appear here..."
+                    aria-label="Content editor"
                />
 
-               <div className="flex flex-wrap gap-2">
-                    <button
-                         onClick={() => handleRefine('shorter')}
-                         disabled={refining}
-                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                         {refining ? 'Refining...' : 'Make Shorter'}
-                    </button>
-                    <button
-                         onClick={() => handleRefine('clearer')}
-                         disabled={refining}
-                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                         {refining ? 'Refining...' : 'Make Clearer'}
-                    </button>
-                    <button
-                         onClick={() => handleRefine('more engaging')}
-                         disabled={refining}
-                         className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                         {refining ? 'Refining...' : 'Make More Engaging'}
-                    </button>
-                    {isEdited && (
+               <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap gap-2">
                          <button
-                              onClick={handleSaveEdits}
-                              disabled={saving}
-                              className="px-4 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => handleRefine('shorter')}
+                              disabled={refining}
+                              className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                              aria-label="Make content shorter"
                          >
-                              {saving ? 'Saving...' : 'Save Edits'}
+                              {refining ? 'Refining...' : 'Make Shorter'}
                          </button>
-                    )}
-                    <button
-                         onClick={handleCopy}
-                         className="ml-auto px-6 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover"
-                    >
-                         {copySuccess ? 'Copied!' : 'Copy'}
-                    </button>
+                         <button
+                              onClick={() => handleRefine('clearer')}
+                              disabled={refining}
+                              className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                              aria-label="Make content clearer"
+                         >
+                              {refining ? 'Refining...' : 'Make Clearer'}
+                         </button>
+                         <button
+                              onClick={() => handleRefine('more engaging')}
+                              disabled={refining}
+                              className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                              aria-label="Make content more engaging"
+                         >
+                              {refining ? 'Refining...' : 'Make More Engaging'}
+                         </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                         {isEdited && (
+                              <button
+                                   onClick={handleSaveEdits}
+                                   disabled={saving}
+                                   className="px-4 py-3 min-h-[44px] bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                   aria-label="Save your edits"
+                              >
+                                   {saving ? 'Saving...' : 'Save Edits'}
+                              </button>
+                         )}
+                         <button
+                              onClick={handleCopy}
+                              className="px-4 py-3 min-h-[44px] bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors sm:ml-auto"
+                              aria-label="Copy content to clipboard"
+                         >
+                              {copySuccess ? 'Copied!' : 'Copy'}
+                         </button>
+                    </div>
                </div>
           </div>
      );

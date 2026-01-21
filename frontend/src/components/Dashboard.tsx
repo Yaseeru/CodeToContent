@@ -175,7 +175,7 @@ const Dashboard: React.FC = () => {
                {/* Onboarding Modal */}
                {showOnboardingModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                         <div className="w-full max-w-3xl">
+                         <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                               <StyleProfileSetup
                                    onComplete={handleOnboardingComplete}
                                    onSkip={handleOnboardingSkip}
@@ -187,7 +187,7 @@ const Dashboard: React.FC = () => {
                {/* Profile Analytics Modal */}
                {showProfileAnalytics && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                         <div className="w-full max-w-4xl">
+                         <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                               <ProfileAnalytics onClose={() => setShowProfileAnalytics(false)} />
                          </div>
                     </div>
@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
                {/* Profile Editor Modal */}
                {showProfileEditor && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                         <div className="w-full max-w-4xl">
+                         <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                               <StyleProfileEditor
                                    onClose={() => setShowProfileEditor(false)}
                                    onSave={() => {
@@ -217,16 +217,18 @@ const Dashboard: React.FC = () => {
                                    This will permanently delete your voice profile and all learning data.
                                    You can always create a new profile later.
                               </p>
-                              <div className="flex gap-3 justify-end">
+                              <div className="flex flex-col sm:flex-row gap-3 justify-end">
                                    <button
                                         onClick={() => setShowDeleteConfirmation(false)}
-                                        className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                                        className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                        aria-label="Cancel profile deletion"
                                    >
                                         Cancel
                                    </button>
                                    <button
                                         onClick={handleDeleteProfile}
-                                        className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
+                                        className="px-4 py-3 min-h-[44px] bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                        aria-label="Confirm profile deletion"
                                    >
                                         Delete Profile
                                    </button>
@@ -235,23 +237,24 @@ const Dashboard: React.FC = () => {
                     </div>
                )}
 
-               <div className="container mx-auto px-6 py-8 max-w-7xl">
+               <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
                          <div>
-                              <h1 className="text-3xl font-semibold text-dark-text mb-2">
+                              <h1 className="text-2xl sm:text-3xl font-semibold text-dark-text mb-2">
                                    CodeToContent
                               </h1>
-                              <p className="text-base text-dark-text-secondary leading-relaxed">
+                              <p className="text-sm sm:text-base text-dark-text-secondary leading-relaxed">
                                    Transform your repositories into compelling content
                               </p>
                          </div>
-                         <div className="flex items-center gap-3">
+                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                               {/* Setup Voice Profile button for users who skipped or don't have a profile */}
                               {!checkingProfile && !hasStyleProfile && (
                                    <button
                                         onClick={handleSetupVoiceProfile}
-                                        className="px-4 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover"
+                                        className="px-4 py-3 min-h-[44px] bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                        aria-label="Setup your voice profile"
                                    >
                                         Setup Voice Profile
                                    </button>
@@ -261,7 +264,8 @@ const Dashboard: React.FC = () => {
                               {!checkingProfile && hasStyleProfile && (
                                    <button
                                         onClick={handleReconfigureVoiceProfile}
-                                        className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                                        className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                        aria-label="Reconfigure your voice profile"
                                    >
                                         Reconfigure Voice
                                    </button>
@@ -269,7 +273,8 @@ const Dashboard: React.FC = () => {
 
                               <button
                                    onClick={handleLogout}
-                                   className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                                   className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                   aria-label="Logout from your account"
                               >
                                    Logout
                               </button>
@@ -278,16 +283,16 @@ const Dashboard: React.FC = () => {
 
                     {/* Voice Profile Section */}
                     {!checkingProfile && hasStyleProfile && profileData && (
-                         <div className="bg-dark-surface border border-dark-border rounded-lg p-6 mb-6">
-                              <div className="flex items-start justify-between">
+                         <div className="bg-dark-surface border border-dark-border rounded-lg p-4 sm:p-6 mb-6">
+                              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                                    <div className="flex-1">
-                                        <h2 className="text-xl font-semibold text-dark-text mb-2">
+                                        <h2 className="text-lg sm:text-xl font-semibold text-dark-text mb-2">
                                              Voice Profile
                                         </h2>
-                                        <div className="flex items-center gap-4 mb-4">
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
                                              <div className="flex items-center gap-2">
                                                   <span className="text-sm text-dark-text-secondary">Evolution Score:</span>
-                                                  <span className="text-2xl font-bold text-dark-accent">
+                                                  <span className="text-xl sm:text-2xl font-bold text-dark-accent">
                                                        {profileData.evolutionScore || 0}%
                                                   </span>
                                              </div>
@@ -297,7 +302,7 @@ const Dashboard: React.FC = () => {
                                                   </span>
                                              )}
                                         </div>
-                                        <div className="flex items-center gap-6 text-sm text-dark-text-secondary">
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-dark-text-secondary">
                                              {profileData.editCount !== undefined && (
                                                   <div>
                                                        <span className="font-medium text-dark-text">{profileData.editCount}</span> edits
@@ -310,22 +315,25 @@ const Dashboard: React.FC = () => {
                                              )}
                                         </div>
                                    </div>
-                                   <div className="flex flex-col gap-2">
+                                   <div className="flex flex-col sm:flex-row gap-2 lg:flex-col">
                                         <button
                                              onClick={() => setShowProfileAnalytics(true)}
-                                             className="px-4 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover"
+                                             className="px-4 py-3 min-h-[44px] bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                             aria-label="View your voice profile analytics"
                                         >
                                              View Analytics
                                         </button>
                                         <button
                                              onClick={() => setShowProfileEditor(true)}
-                                             className="px-4 py-2 bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
+                                             className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                             aria-label="Edit your voice profile"
                                         >
                                              Edit Profile
                                         </button>
                                         <button
                                              onClick={() => setShowDeleteConfirmation(true)}
-                                             className="px-4 py-2 bg-dark-surface border border-red-600 text-red-600 text-sm font-medium rounded-lg hover:bg-red-600 hover:bg-opacity-10"
+                                             className="px-4 py-3 min-h-[44px] bg-dark-surface border border-red-600 text-red-600 text-sm font-medium rounded-lg hover:bg-red-600 hover:bg-opacity-10 focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                             aria-label="Delete your voice profile"
                                         >
                                              Delete Profile
                                         </button>
@@ -334,11 +342,11 @@ const Dashboard: React.FC = () => {
                          </div>
                     )}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
                          {/* Left Column: Repository List */}
-                         <div className="lg:col-span-1">
-                              <div className="bg-dark-surface border border-dark-border rounded-lg p-6">
-                                   <h2 className="text-xl font-semibold text-dark-text mb-4">
+                         <div className="xl:col-span-1">
+                              <div className="bg-dark-surface border border-dark-border rounded-lg p-4 sm:p-6">
+                                   <h2 className="text-lg sm:text-xl font-semibold text-dark-text mb-4">
                                         Your Repositories
                                    </h2>
                                    <SearchBar
@@ -354,7 +362,7 @@ const Dashboard: React.FC = () => {
                          </div>
 
                          {/* Right Column: Analysis and Content Generation */}
-                         <div className="lg:col-span-2 space-y-6">
+                         <div className="xl:col-span-2 space-y-4 sm:space-y-6">
                               {/* Analysis View */}
                               <AnalysisView
                                    repositoryId={selectedRepositoryId}
@@ -363,9 +371,9 @@ const Dashboard: React.FC = () => {
 
                               {/* Content Generation Section */}
                               {analysis && (
-                                   <div className="bg-dark-surface border border-dark-border rounded-lg p-6 space-y-6">
+                                   <div className="bg-dark-surface border border-dark-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
                                         <div>
-                                             <h2 className="text-2xl font-semibold text-dark-text mb-2">
+                                             <h2 className="text-xl sm:text-2xl font-semibold text-dark-text mb-2">
                                                   Generate Content
                                              </h2>
                                              <p className="text-sm text-dark-text-secondary leading-relaxed">

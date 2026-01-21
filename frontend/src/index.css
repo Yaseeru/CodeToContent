@@ -31,16 +31,24 @@ code {
     monospace;
 }
 
-/* Disable all animations and transitions for minimal aesthetic */
+/* Enable meaningful animations and transitions */
 *,
 *::before,
 *::after {
-  animation-duration: 0s !important;
-  animation-delay: 0s !important;
-  transition-duration: 0s !important;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-in-out;
 }
 
-/* Override for necessary loading spinners and error notifications */
+/* Override for elements that should have no transitions */
+.no-transition,
+.no-transition *,
+.no-transition *::before,
+.no-transition *::after {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+}
+
+/* Enhanced animations for loading spinners and error notifications */
 .spinner,
 .animate-spin,
 .animate-slide-in {
@@ -77,14 +85,51 @@ code {
   animation: slideIn 0.3s ease-out forwards !important;
 }
 
-/* Remove focus outline glow, use simple border instead */
-*:focus {
-  outline: none;
+/* Mobile viewport optimization */
+@viewport {
+  width: device-width;
+  initial-scale: 1;
+  maximum-scale: 5;
+  user-scalable: yes;
 }
 
-input:focus,
-textarea:focus,
-button:focus {
+/* Improved scroll behavior for mobile */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent horizontal scroll on mobile */
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Better text rendering on mobile */
+body {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) and (pointer: coarse) {
+  button, a, input, textarea, select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Focus management for accessibility */
+*:focus-visible {
+  outline: 2px solid #5b8def;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse interactions, keep for keyboard */
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
   outline: none;
 }
 
