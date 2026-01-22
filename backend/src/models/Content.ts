@@ -18,6 +18,7 @@ export interface IContent extends Document {
      editedText: string;
      tweets?: Tweet[]; // Array of tweets for threads (undefined for single posts)
      version: number;
+     snapshotId?: mongoose.Types.ObjectId; // Optional reference to CodeSnapshot
 
      // Edit metadata for learning
      editMetadata?: {
@@ -161,6 +162,11 @@ const ContentSchema: Schema = new Schema(
                required: false,
                min: 0,
                max: 100,
+          },
+          snapshotId: {
+               type: Schema.Types.ObjectId,
+               ref: 'CodeSnapshot',
+               required: false,
           },
      },
      {

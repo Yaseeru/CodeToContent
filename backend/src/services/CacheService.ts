@@ -1,7 +1,7 @@
 import Redis from 'ioredis';
 import { StyleProfile } from '../models/User';
 import { IVoiceArchetype } from '../models/VoiceArchetype';
-import { CACHE_CONFIG, REDIS_CONFIG } from '../config/constants';
+import { CACHE_CONFIG, REDIS_CONFIG, SNAPSHOT_CONFIG } from '../config/constants';
 
 export interface CacheMetrics {
      hits: number;
@@ -22,6 +22,8 @@ export class CacheService {
      private readonly PROFILE_PREFIX = 'profile:';
      private readonly EVOLUTION_SCORE_PREFIX = 'evolution:';
      private readonly ARCHETYPE_LIST_KEY = 'archetypes:list';
+     private readonly SNAPSHOT_ANALYSIS_PREFIX = 'snapshot:analysis:';
+     private readonly SNAPSHOT_SELECTION_PREFIX = 'snapshot:selection:';
 
      constructor() {
           // Use centralized Redis URL parsing
@@ -232,6 +234,78 @@ export class CacheService {
                console.log(`[Cache] Cleared all cache entries`);
           } catch (error: any) {
                console.error(`[Cache] Error clearing cache:`, error.message);
+          }
+     }
+
+     /**
+      * Cache snapshot analysis results with 24-hour TTL
+      * @param key - Cache key (e.g., repositoryId:commitSha or snippet hash)
+      * @param data - Analysis data to cache (any JSON-serializable object)
+      * @param ttl - Optional TTL in seconds (defaults to 24 hours)
+      */
+     async cacheSnapshotAnalysis(key: string, data: any, ttl?: number): Promise<void> {
+          try {
+               const cacheKey = `${this.SNAPSHOT_ANALYSIS_PREFIX}${key}`;
+               const cacheTTL = ttl || SNAPSHOT_CONFIG.ANALYSIS_CACHE_TTL_SECONDS;
+               await this.redis.setex(cacheKey, cacheTTL, JSON.stringify(data));
+               console.log(`[Cache] Cached snapshot analysis for key ${key} (TTL: ${cacheTTL}s)`);
+          } catch (error: any) {
+               console.error(`[Cache] Error caching snapshot analysis:`, error.message);
+               // Don't throw - caching is optional
+          }
+     }
+
+     /**
+      * Get cached snapshot analysis results
+      * @param key - Cache key (e.g., repositoryId:commitSha or snippet hash)
+      * @returns Cached analysis data or null if not found
+      */
+     async getCachedSnapshotAnalysis(key: string): Promise<any | null> {
+          try {
+               const cacheKey = `${this.SNAPSHOT_ANALYSIS_PREFIX}${key}`;
+               const cached = await this.redis.get(cacheKey);
+
+               if (cached) {
+                    this.metrics.hits++;
+                    console.log(`[Cache] Snapshot analysis cache HIT for key ${key}`);
+                    return JSON.parse(cached);
+               }
+
+               this.metrics.misses++;
+               console.log(`[Cache] Snapshot analysis cache MISS for key ${key}`);
+               return null;
+          } catch (error: any) {
+               console.error(`[Cache] Error getting snapshot analysis from cache:`, error.message);
+               this.metrics.misses++;
+               return null; // Graceful degradation
+          }
+     }
+
+     /**
+      * Invalidate snapshot cache by repository ID pattern
+      * Removes all snapshot-related cache entries for a repository
+      * @param repositoryId - Repository ID to invalidate cache for
+      */
+     async invalidateSnapshotCache(repositoryId: string): Promise<void> {
+          try {
+               // Find all keys matching the repository pattern
+               const analysisPattern = `${this.SNAPSHOT_ANALYSIS_PREFIX}${repositoryId}:*`;
+               const selectionPattern = `${this.SNAPSHOT_SELECTION_PREFIX}${repositoryId}:*`;
+
+               // Get all matching keys
+               const analysisKeys = await this.redis.keys(analysisPattern);
+               const selectionKeys = await this.redis.keys(selectionPattern);
+               const allKeys = [...analysisKeys, ...selectionKeys];
+
+               if (allKeys.length > 0) {
+                    await this.redis.del(...allKeys);
+                    console.log(`[Cache] Invalidated ${allKeys.length} snapshot cache entries for repository ${repositoryId}`);
+               } else {
+                    console.log(`[Cache] No snapshot cache entries found for repository ${repositoryId}`);
+               }
+          } catch (error: any) {
+               console.error(`[Cache] Error invalidating snapshot cache:`, error.message);
+               // Don't throw - cache invalidation failure is not critical
           }
      }
 

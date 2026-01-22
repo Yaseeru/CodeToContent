@@ -4,3 +4,4 @@ export { Analysis, IAnalysis, IRawSignals } from './Analysis';
 export { Content, IContent, Platform, ContentFormat, Tweet } from './Content';
 export { LearningJob, ILearningJob, StyleDelta, JobStatus } from './LearningJob';
 export { VoiceArchetype, IVoiceArchetype, ArchetypeCategory } from './VoiceArchetype';
+export { CodeSnapshot, ICodeSnapshot, SnippetMetadata, ImageDimensions, RenderOptions } from './CodeSnapshot';

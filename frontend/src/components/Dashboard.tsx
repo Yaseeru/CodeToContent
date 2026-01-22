@@ -384,6 +384,7 @@ const Dashboard: React.FC = () => {
                                         {/* Content Generator */}
                                         <ContentGenerator
                                              analysisId={analysis.id}
+                                             repositoryId={analysis.repositoryId}
                                              onContentGenerated={handleContentGenerated}
                                         />
 

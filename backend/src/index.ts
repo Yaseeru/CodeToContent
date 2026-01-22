@@ -9,12 +9,14 @@ import { connectDatabase, checkDatabaseHealth } from './config/database';
 import { closeQueue } from './config/queue';
 import { validateEnvironmentVariables } from './config/validateEnv';
 import { validateRedisConnection, checkRedisHealth } from './config/redis';
+import { ServiceManager } from './services/ServiceManager';
 import authRoutes from './routes/auth';
 import repositoryRoutes from './routes/repositories';
 import contentRoutes from './routes/content';
 import queueRoutes from './routes/queue';
 import profileRoutes from './routes/profile';
 import monitoringRoutes from './routes/monitoring';
+import snapshotsRoutes from './routes/snapshots';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,6 +27,9 @@ app.use(cors({
      credentials: true
 }));
 app.use(express.json());
+
+// Serve uploaded snapshot images
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 // Requirements: 2.7, 2.8 - Include Redis and database connection status
@@ -79,6 +84,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/snapshots', snapshotsRoutes);
 
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -106,7 +112,11 @@ const startServer = async () => {
           // 3. Connect to database third (with retry logic)
           await connectDatabase();
 
-          // 4. Only start server after all validations pass
+          // 4. Initialize ServiceManager (for VisualSnapshotService with Puppeteer)
+          const serviceManager = ServiceManager.getInstance();
+          await serviceManager.initialize();
+
+          // 5. Only start server after all validations pass
           app.listen(PORT, () => {
                console.log(`Backend server running on port ${PORT}`);
           });
@@ -121,12 +131,16 @@ startServer();
 // Graceful shutdown
 process.on('SIGTERM', async () => {
      console.log('SIGTERM received, closing server gracefully...');
+     const serviceManager = ServiceManager.getInstance();
+     await serviceManager.cleanup();
      await closeQueue();
      process.exit(0);
 });
 
 process.on('SIGINT', async () => {
      console.log('SIGINT received, closing server gracefully...');
+     const serviceManager = ServiceManager.getInstance();
+     await serviceManager.cleanup();
      await closeQueue();
      process.exit(0);
 });

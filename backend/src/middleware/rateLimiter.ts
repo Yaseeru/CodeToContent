@@ -139,3 +139,66 @@ export async function closeRateLimiterRedis(): Promise<void> {
           logger.log(LogLevel.ERROR, 'Error closing rate limiter Redis connection', { error });
      }
 }
+
+/**
+ * Repository-specific rate limiter for snapshot generation
+ * Limits: 5 generations per repository per hour
+ * Applied to POST /api/snapshots/generate endpoint
+ * Requirements: 9.5 (Visual Intelligence spec)
+ */
+export const snapshotGenerationRateLimiter = rateLimit({
+     store: new RedisStore({
+          // Use sendCommand function for ioredis compatibility
+          sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
+          prefix: 'rl:snapshot:',
+     }),
+     windowMs: 60 * 60 * 1000, // 1 hour
+     max: 5, // 5 generations per repository per hour
+     message: 'Too many snapshot generation requests for this repository',
+     standardHeaders: true, // Return rate limit info in RateLimit-* headers
+     legacyHeaders: false, // Disable X-RateLimit-* headers
+
+     // Use repositoryId from request body for rate limiting key
+     // This ensures rate limiting is per repository, not per user
+     keyGenerator: (req: Request): string => {
+          const repositoryId = req.body?.repositoryId;
+          const userId = req.user?.userId;
+
+          // Combine userId and repositoryId for the key
+          // This limits 5 generations per repository per user per hour
+          if (repositoryId && userId) {
+               return `${userId}:${repositoryId}`;
+          }
+
+          // Fallback to user ID if repositoryId not available
+          return userId || req.ip || 'unknown';
+     },
+
+     // Custom handler for rate limit exceeded
+     handler: (req: Request, res: Response): void => {
+          const userId = req.user?.userId;
+          const repositoryId = req.body?.repositoryId;
+          const endpoint = req.path;
+
+          // Log rate limit violation
+          logger.log(LogLevel.WARN, 'Snapshot generation rate limit exceeded', {
+               userId: userId || 'unauthenticated',
+               repositoryId: repositoryId || 'unknown',
+               ip: req.ip,
+               endpoint,
+               limit: '5 generations per repository per hour',
+          });
+
+          // Return 429 with retry-after header
+          res.status(429).json({
+               error: 'Too many requests',
+               message: 'You have exceeded the rate limit for snapshot generation on this repository. Maximum 5 generations per hour allowed.',
+               retryAfter: res.getHeader('Retry-After'),
+          });
+     },
+
+     // Skip rate limiting for health check endpoints
+     skip: (req: Request): boolean => {
+          return req.path === '/health' || req.path === '/api/health';
+     },
+});

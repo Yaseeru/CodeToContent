@@ -260,4 +260,29 @@ export class GitHubService {
                throw error;
           }
      }
+
+     /**
+      * Fetch file content from repository
+      * Returns the decoded content as a string
+      */
+     async fetchFileContent(owner: string, repo: string, filePath: string): Promise<string> {
+          try {
+               const response = await this.client.get<GitHubReadme>(`/repos/${owner}/${repo}/contents/${filePath}`);
+
+               // Decode base64 content
+               const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+               return content;
+          } catch (error) {
+               if (axios.isAxiosError(error)) {
+                    if (error.response?.status === 404) {
+                         throw new Error(`File not found: ${filePath}`);
+                    }
+                    if (error.response?.status === 403) {
+                         throw new Error('Access forbidden. Repository may be private or token lacks permissions.');
+                    }
+                    throw new Error(`Failed to fetch file content: ${error.message}`);
+               }
+               throw error;
+          }
+     }
 }

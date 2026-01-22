@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { apiClient, getErrorMessage } from '../utils/apiClient';
 import ErrorNotification from './ErrorNotification';
+import SnapshotSelector, { CodeSnapshot } from './SnapshotSelector';
 
 interface ContentGeneratorProps {
      analysisId: string;
+     repositoryId?: string;
      onContentGenerated: (content: GeneratedContent) => void;
 }
 
@@ -66,6 +68,7 @@ const formatOptions: FormatOption[] = [
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({
      analysisId,
+     repositoryId,
      onContentGenerated,
 }) => {
      const [loading, setLoading] = useState<boolean>(false);
@@ -76,6 +79,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
      const [voiceStrength, setVoiceStrength] = useState<number>(80);
      const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
      const [selectedFormat, setSelectedFormat] = useState<ContentFormat>('single');
+     const [selectedSnapshot, setSelectedSnapshot] = useState<CodeSnapshot | null>(null);
+     const [showSnapshotSelector, setShowSnapshotSelector] = useState<boolean>(false);
 
      // Fetch user profile on component mount
      useEffect(() => {
@@ -149,6 +154,22 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
           setVoiceStrength(Number(e.target.value));
      };
 
+     const handleAddVisualClick = () => {
+          setShowSnapshotSelector(true);
+     };
+
+     const handleSnapshotSelected = (snapshot: CodeSnapshot) => {
+          setSelectedSnapshot(snapshot);
+     };
+
+     const handleRemoveSnapshot = () => {
+          setSelectedSnapshot(null);
+     };
+
+     const handleCloseSnapshotSelector = () => {
+          setShowSnapshotSelector(false);
+     };
+
      const hasStyleProfile = profileData?.styleProfile !== undefined && profileData?.styleProfile !== null;
      const evolutionScore = profileData?.evolutionScore || 0;
 
@@ -200,6 +221,84 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                          ))}
                     </div>
                </div>
+
+               {/* Add Visual Section */}
+               {repositoryId && (
+                    <div className="bg-dark-surface border border-dark-border rounded-lg p-4 space-y-3">
+                         <h4 className="text-sm font-medium text-dark-text">Visual Attachment</h4>
+
+                         {!selectedSnapshot ? (
+                              <button
+                                   onClick={handleAddVisualClick}
+                                   className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-dark-bg border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:border-dark-accent hover:bg-dark-accent hover:bg-opacity-10 transition-all"
+                              >
+                                   <svg
+                                        className="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                   >
+                                        <path
+                                             strokeLinecap="round"
+                                             strokeLinejoin="round"
+                                             strokeWidth={2}
+                                             d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                        />
+                                   </svg>
+                                   Add Visual
+                              </button>
+                         ) : (
+                              <div className="relative bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
+                                   {/* Snapshot Preview */}
+                                   <div className="aspect-video">
+                                        <img
+                                             src={selectedSnapshot.imageUrl}
+                                             alt={`Code snapshot from ${selectedSnapshot.snippetMetadata.filePath}`}
+                                             className="w-full h-full object-cover"
+                                        />
+                                   </div>
+
+                                   {/* Snapshot Info */}
+                                   <div className="p-3 border-t border-dark-border">
+                                        <div className="flex items-start justify-between gap-2">
+                                             <div className="flex-1 min-w-0">
+                                                  <p className="text-xs font-mono text-dark-text truncate">
+                                                       {selectedSnapshot.snippetMetadata.filePath}
+                                                  </p>
+                                                  <p className="text-xs text-dark-text-secondary mt-1 line-clamp-1">
+                                                       {selectedSnapshot.selectionReason}
+                                                  </p>
+                                             </div>
+                                             <span className="flex-shrink-0 px-2 py-0.5 bg-dark-accent bg-opacity-20 text-dark-accent text-xs font-medium rounded">
+                                                  {selectedSnapshot.selectionScore}
+                                             </span>
+                                        </div>
+                                   </div>
+
+                                   {/* Remove Button */}
+                                   <button
+                                        onClick={handleRemoveSnapshot}
+                                        className="absolute top-2 right-2 p-1.5 bg-red-600 bg-opacity-90 hover:bg-opacity-100 text-white rounded-full transition-all"
+                                        aria-label="Remove visual"
+                                   >
+                                        <svg
+                                             className="w-4 h-4"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             viewBox="0 0 24 24"
+                                        >
+                                             <path
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  strokeWidth={2}
+                                                  d="M6 18L18 6M6 6l12 12"
+                                             />
+                                        </svg>
+                                   </button>
+                              </div>
+                         )}
+                    </div>
+               )}
 
                {/* Voice Profile Indicator */}
                {!loadingProfile && hasStyleProfile && (
@@ -310,6 +409,15 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                          )}
                     </button>
                </div>
+
+               {/* Snapshot Selector Modal */}
+               {showSnapshotSelector && repositoryId && (
+                    <SnapshotSelector
+                         repositoryId={repositoryId}
+                         onSnapshotSelected={handleSnapshotSelected}
+                         onClose={handleCloseSnapshotSelector}
+                    />
+               )}
           </div>
      );
 };

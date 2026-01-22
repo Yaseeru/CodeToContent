@@ -162,3 +162,37 @@ export const validateSaveEdits = [
 
      handleValidationErrors
 ];
+
+/**
+ * Validation rules for snapshot generation endpoint
+ * Validates: repositoryId (MongoDB ObjectId)
+ */
+export const validateSnapshotGeneration = [
+     body('repositoryId')
+          .notEmpty().withMessage('repositoryId is required')
+          .custom((value) => mongoose.Types.ObjectId.isValid(value))
+          .withMessage('repositoryId must be a valid MongoDB ObjectId'),
+     handleValidationErrors
+];
+
+/**
+ * Validation rules for repository ID parameter
+ * Validates: repositoryId (MongoDB ObjectId)
+ */
+export const validateRepositoryIdParam = [
+     param('repositoryId')
+          .custom((value) => mongoose.Types.ObjectId.isValid(value))
+          .withMessage('repositoryId must be a valid MongoDB ObjectId'),
+     handleValidationErrors
+];
+
+/**
+ * Validation rules for snapshot ID parameter
+ * Validates: snapshotId (MongoDB ObjectId)
+ */
+export const validateSnapshotIdParam = [
+     param('snapshotId')
+          .custom((value) => mongoose.Types.ObjectId.isValid(value))
+          .withMessage('snapshotId must be a valid MongoDB ObjectId'),
+     handleValidationErrors
+];

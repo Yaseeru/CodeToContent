@@ -139,3 +139,69 @@ export const REDIS_CONFIG = {
 export const PROFILE_VERSION_CONFIG = {
      MAX_VERSIONS_STORED: 10,
 } as const;
+
+// Snapshot Configuration
+export const SNAPSHOT_CONFIG = {
+     // Selection Configuration
+     MAX_SNIPPETS_PER_REPOSITORY: 5,
+     SELECTION_TIMEOUT_MS: 5000, // 5 seconds
+     PARALLEL_BATCH_SIZE: 5,
+
+     // Image Rendering Configuration
+     RENDERING_TIMEOUT_MS: 3000, // 3 seconds per snippet
+     IMAGE_QUALITY: 90,
+     MAX_IMAGE_SIZE_BYTES: 5 * 1024 * 1024, // 5MB (X/Twitter limit)
+     DEFAULT_IMAGE_WIDTH: 1200,
+     DEFAULT_IMAGE_HEIGHT: 800,
+     DEVICE_SCALE_FACTOR: 2, // Retina display
+
+     // Rendering Options
+     DEFAULT_THEME: 'nord',
+     DEFAULT_SHOW_LINE_NUMBERS: false,
+     DEFAULT_FONT_SIZE: 14,
+
+     // Caching Configuration
+     ANALYSIS_CACHE_TTL_SECONDS: 24 * 3600, // 24 hours
+     SELECTION_CACHE_TTL_SECONDS: 24 * 3600, // 24 hours
+     IMAGE_CACHE_TTL_SECONDS: 7 * 24 * 3600, // 7 days
+
+     // Storage Configuration
+     CLEANUP_AGE_DAYS: 30,
+     MAX_SNAPSHOTS_PER_USER: 50,
+     DEFAULT_STORAGE_TYPE: 'local', // 'local' or 's3'
+     DEFAULT_STORAGE_PATH: 'uploads/snapshots',
+
+     // S3 Configuration
+     S3_SIGNED_URL_EXPIRATION_SECONDS: 3600, // 1 hour
+     S3_CACHE_CONTROL: 'public, max-age=31536000', // 1 year for CDN
+
+     // Rate Limiting Configuration
+     GENERATION_RATE_LIMIT_PER_HOUR: 5,
+     GENERATION_RATE_WINDOW_MS: 60 * 60 * 1000, // 1 hour
+
+     // Retry Configuration
+     MAX_RETRY_ATTEMPTS: 3,
+     RETRY_DELAYS_MS: [1000, 2000, 4000], // Exponential backoff: 1s, 2s, 4s
+
+     // Snippet Selection Scoring
+     SCORE_MIN: 0,
+     SCORE_MAX: 100,
+     RECENCY_SCORE_MAX: 30,
+     COMPLEXITY_SCORE_MAX: 30,
+     FILE_TYPE_SCORE_MAX: 20,
+     FUNCTION_NAME_SCORE_MAX: 20,
+
+     // Code Snippet Constraints
+     MIN_LINES_OF_CODE: 5,
+     MAX_LINES_OF_CODE: 100,
+     OPTIMAL_LINES_MIN: 20,
+     OPTIMAL_LINES_MAX: 50,
+
+     // Repository Analysis Limits
+     MAX_FILES_TO_ANALYZE: 1000,
+     MAX_CANDIDATES_TO_SCORE: 20,
+
+     // Puppeteer Configuration
+     PAGE_POOL_SIZE: 3,
+     BROWSER_TIMEOUT_MS: 30000, // 30 seconds
+} as const;
