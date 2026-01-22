@@ -38,10 +38,20 @@ export class FeedbackLearningEngine {
      /**
       * Queue a learning job for asynchronous processing
       * Returns immediately without waiting for processing
+      * Detects thread content and includes appropriate metadata
       */
      async queueLearningJob(contentId: string, userId: string): Promise<void> {
           try {
                console.log(`[FeedbackLearning] Queuing learning job for user ${userId}, content ${contentId}`);
+
+               // Fetch content to check if it's a thread
+               const content = await Content.findById(contentId);
+               if (!content) {
+                    console.error(`[FeedbackLearning] Content ${contentId} not found`);
+                    return;
+               }
+
+               const isThread = content.tweets && content.tweets.length > 0;
 
                // Check if we should batch this edit
                if (this.shouldBatchEdit(userId)) {
@@ -55,13 +65,18 @@ export class FeedbackLearningEngine {
                // Start a new batch
                this.editBatchMap.set(userId, [contentId]);
 
-               // Create learning job in database
+               // Create learning job in database with thread metadata
                const job = new LearningJob({
                     userId: new mongoose.Types.ObjectId(userId),
                     contentId: new mongoose.Types.ObjectId(contentId),
                     status: 'pending',
                     priority: 0,
                     attempts: 0,
+                    metadata: {
+                         isThread,
+                         contentFormat: content.contentFormat,
+                         tweetCount: isThread ? content.tweets!.length : 1,
+                    },
                });
 
                await job.save();
@@ -69,7 +84,7 @@ export class FeedbackLearningEngine {
                // Queue job for processing
                await queueJob(userId, contentId, 0);
 
-               console.log(`[FeedbackLearning] Learning job queued successfully: ${job._id}`);
+               console.log(`[FeedbackLearning] Learning job queued successfully: ${job._id} (isThread: ${isThread})`);
           } catch (error: any) {
                console.error(`[FeedbackLearning] Failed to queue learning job:`, error.message);
                // Don't throw - we don't want to block the user
@@ -79,6 +94,7 @@ export class FeedbackLearningEngine {
      /**
       * Process a learning job
       * Extracts style deltas and updates user profile
+      * Handles both single posts and thread content
       */
      async processLearningJob(jobId: string): Promise<void> {
           const startTime = Date.now();
@@ -100,15 +116,40 @@ export class FeedbackLearningEngine {
                job.attempts += 1;
                await job.save();
 
-               // Extract style deltas
-               const styleDelta = await this.extractStyleDeltas(job.contentId.toString());
+               // Check if this is a thread edit
+               const content = await Content.findById(job.contentId);
+               const isThread = content?.tweets && content.tweets.length > 0;
 
-               // Store delta in job
-               job.styleDelta = styleDelta;
+               if (isThread) {
+                    console.log(`[FeedbackLearning] Processing thread edit for job ${jobId}`);
+                    // Process thread edits (metadata already aggregated)
+                    await this.processThreadEdits(job.contentId.toString(), job.userId.toString());
+
+                    // Store aggregated delta in job (from edit metadata)
+                    if (content?.editMetadata) {
+                         job.styleDelta = {
+                              sentenceLengthDelta: content.editMetadata.sentenceLengthDelta,
+                              emojiChanges: content.editMetadata.emojiChanges,
+                              structureChanges: content.editMetadata.structureChanges,
+                              toneShift: content.editMetadata.toneShift,
+                              vocabularyChanges: content.editMetadata.vocabularyChanges,
+                              phrasesAdded: content.editMetadata.phrasesAdded,
+                              phrasesRemoved: content.editMetadata.phrasesRemoved,
+                         };
+                    }
+               } else {
+                    console.log(`[FeedbackLearning] Processing single post edit for job ${jobId}`);
+                    // Extract style deltas for single post
+                    const styleDelta = await this.extractStyleDeltas(job.contentId.toString());
+
+                    // Store delta in job
+                    job.styleDelta = styleDelta;
+
+                    // Update profile from deltas
+                    await this.updateProfileFromDeltas(job.userId.toString(), [styleDelta]);
+               }
+
                await job.save();
-
-               // Update profile from deltas
-               await this.updateProfileFromDeltas(job.userId.toString(), [styleDelta]);
 
                // Mark job as completed
                job.status = 'completed';
@@ -272,6 +313,50 @@ export class FeedbackLearningEngine {
                console.log(`[FeedbackLearning] Learning iterations: ${updatedProfile.learningIterations}`);
           } catch (error: any) {
                console.error(`[FeedbackLearning] Failed to update profile:`, error.message);
+               throw error;
+          }
+     }
+
+     /**
+      * Process thread edits for learning
+      * Extracts style deltas from each edited tweet and aggregates insights
+      */
+     async processThreadEdits(contentId: string, userId: string): Promise<void> {
+          try {
+               console.log(`[FeedbackLearning] Processing thread edits for content ${contentId}`);
+
+               // Get content with edit metadata
+               const content = await Content.findById(contentId);
+               if (!content || !content.editMetadata) {
+                    throw new Error(`Content ${contentId} not found or has no edit metadata`);
+               }
+
+               // Verify this is thread content
+               if (!content.tweets || content.tweets.length === 0) {
+                    console.log(`[FeedbackLearning] Content ${contentId} is not a thread, using standard processing`);
+                    return;
+               }
+
+               console.log(`[FeedbackLearning] Processing ${content.tweets.length} tweets from thread`);
+
+               // The edit metadata has already been aggregated by EditMetadataStorageService
+               // We can use it directly for profile updates
+               const aggregatedDelta: StyleDelta = {
+                    sentenceLengthDelta: content.editMetadata.sentenceLengthDelta,
+                    emojiChanges: content.editMetadata.emojiChanges,
+                    structureChanges: content.editMetadata.structureChanges,
+                    toneShift: content.editMetadata.toneShift,
+                    vocabularyChanges: content.editMetadata.vocabularyChanges,
+                    phrasesAdded: content.editMetadata.phrasesAdded,
+                    phrasesRemoved: content.editMetadata.phrasesRemoved,
+               };
+
+               // Update profile with aggregated insights
+               await this.updateProfileFromDeltas(userId, [aggregatedDelta]);
+
+               console.log(`[FeedbackLearning] Thread edits processed successfully for content ${contentId}`);
+          } catch (error: any) {
+               console.error(`[FeedbackLearning] Failed to process thread edits:`, error.message);
                throw error;
           }
      }

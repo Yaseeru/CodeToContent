@@ -1,13 +1,22 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export type Platform = 'x';
+export type ContentFormat = 'single' | 'mini_thread' | 'full_thread';
+
+export interface Tweet {
+     text: string;
+     position: number; // 1-indexed position in thread
+     characterCount: number;
+}
 
 export interface IContent extends Document {
      analysisId: mongoose.Types.ObjectId;
      userId: mongoose.Types.ObjectId;
      platform: Platform;
+     contentFormat: ContentFormat;
      generatedText: string;
      editedText: string;
+     tweets?: Tweet[]; // Array of tweets for threads (undefined for single posts)
      version: number;
 
      // Edit metadata for learning
@@ -66,6 +75,13 @@ const ContentSchema: Schema = new Schema(
                required: true,
                enum: ['x'],
           },
+          contentFormat: {
+               type: String,
+               required: true,
+               enum: ['single', 'mini_thread', 'full_thread'],
+               default: 'single',
+               index: true,
+          },
           generatedText: {
                type: String,
                required: true,
@@ -73,6 +89,15 @@ const ContentSchema: Schema = new Schema(
           editedText: {
                type: String,
                required: false,
+          },
+          tweets: {
+               type: [{
+                    text: { type: String, required: true },
+                    position: { type: Number, required: true, min: 1 },
+                    characterCount: { type: Number, required: true, min: 0, max: 280 },
+               }],
+               required: false,
+               default: undefined, // Explicitly set to undefined instead of empty array
           },
           version: {
                type: Number,

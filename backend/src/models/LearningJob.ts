@@ -32,6 +32,11 @@ export interface ILearningJob extends Document {
      attempts: number;
      error?: string;
      styleDelta?: StyleDelta;
+     metadata?: {
+          isThread?: boolean;
+          contentFormat?: string;
+          tweetCount?: number;
+     };
      processingStarted?: Date;
      processingCompleted?: Date;
      createdAt: Date;
@@ -116,6 +121,15 @@ const LearningJobSchema: Schema = new Schema(
           styleDelta: {
                type: StyleDeltaSchema,
                required: false,
+          },
+          metadata: {
+               type: {
+                    isThread: { type: Boolean, required: false },
+                    contentFormat: { type: String, required: false },
+                    tweetCount: { type: Number, required: false },
+               },
+               required: false,
+               _id: false,
           },
           processingStarted: {
                type: Date,

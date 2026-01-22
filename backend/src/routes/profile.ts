@@ -19,7 +19,7 @@ const upload = multer({
           fileSize: FILE_UPLOAD_CONFIG.MAX_SIZE_BYTES,
      },
      fileFilter: (req, file, cb) => {
-          if (FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          if (FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype as any)) {
                cb(null, true);
           } else {
                cb(new Error(`Invalid file type. Supported formats: ${FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES.join(', ')}`));

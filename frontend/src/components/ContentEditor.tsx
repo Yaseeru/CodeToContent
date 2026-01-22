@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient, getErrorMessage } from '../utils/apiClient';
-import { GeneratedContent } from './ContentGenerator';
+import { GeneratedContent, Tweet } from './ContentGenerator';
 import ErrorNotification from './ErrorNotification';
+import ThreadTweet from './ThreadTweet';
 
 interface ContentEditorProps {
      content: GeneratedContent;
@@ -14,9 +15,17 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
      onRegenerate,
      onContentUpdate,
 }) => {
+     // Detect if content is a thread
+     const isThread = content.tweets !== undefined && content.tweets.length > 0;
+
      const [editedText, setEditedText] = useState<string>(content.generatedText);
      const [originalText, setOriginalText] = useState<string>(content.generatedText);
      const [isEdited, setIsEdited] = useState<boolean>(false);
+
+     // Thread editing state
+     const [editedTweets, setEditedTweets] = useState<Map<number, string>>(new Map());
+     const [editingTweetPosition, setEditingTweetPosition] = useState<number | null>(null);
+
      const [refining, setRefining] = useState<boolean>(false);
      const [saving, setSaving] = useState<boolean>(false);
      const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
@@ -36,13 +45,82 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                setSaveSuccess(false);
                setIsLearning(false);
           }
-     }, [content, editedText, isEdited]);
+
+          // Reset thread editing state when content changes
+          if (isThread) {
+               setEditedTweets(new Map());
+               setEditingTweetPosition(null);
+          }
+     }, [content, editedText, isEdited, isThread]);
 
      const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
           const newText = e.target.value;
           setEditedText(newText);
           setIsEdited(newText !== originalText);
           setSaveSuccess(false);
+     };
+
+     // Thread editing handlers
+     const handleTweetEdit = (position: number, newText: string) => {
+          setEditedTweets(prev => {
+               const updated = new Map(prev);
+               updated.set(position, newText);
+               return updated;
+          });
+          setIsEdited(true);
+          setSaveSuccess(false);
+     };
+
+     const handleToggleEditTweet = (position: number) => {
+          setEditingTweetPosition(prev => prev === position ? null : position);
+     };
+
+     const saveThreadEdits = async () => {
+          if (editedTweets.size === 0) return;
+
+          try {
+               setSaving(true);
+               setError(null);
+               setShowErrorNotification(false);
+               setIsLearning(true);
+
+               // Format edited tweets as array
+               const editsArray = Array.from(editedTweets.entries()).map(([position, text]) => ({
+                    position,
+                    text,
+               }));
+
+               await apiClient.post(
+                    `/api/content/${content.id}/save-edits`,
+                    {
+                         editedTweets: editsArray,
+                    }
+               );
+
+               // Clear edited tweets and reset state
+               setEditedTweets(new Map());
+               setIsEdited(false);
+               setSaveSuccess(true);
+               setEditingTweetPosition(null);
+
+               // Show learning indicator for 3 seconds
+               setTimeout(() => {
+                    setIsLearning(false);
+               }, 3000);
+
+               // Hide success message after 2 seconds
+               setTimeout(() => {
+                    setSaveSuccess(false);
+               }, 2000);
+          } catch (err) {
+               console.error('Error saving thread edits:', err);
+               const errorMessage = getErrorMessage(err);
+               setError(errorMessage);
+               setShowErrorNotification(true);
+               setIsLearning(false);
+          } finally {
+               setSaving(false);
+          }
      };
 
      const handleRefine = async (instruction: 'shorter' | 'clearer' | 'more engaging') => {
@@ -123,7 +201,10 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 
      const handleCopy = async () => {
           try {
-               await navigator.clipboard.writeText(editedText);
+               const textToCopy = isThread && content.tweets
+                    ? content.tweets.map(t => t.text).join('\n\n')
+                    : editedText;
+               await navigator.clipboard.writeText(textToCopy);
                setCopySuccess(true);
                setTimeout(() => setCopySuccess(false), 2000);
           } catch (err) {
@@ -172,6 +253,11 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                     <div>
                          <h4 className="text-base font-medium text-dark-text">
                               X (Twitter) Content
+                              {isThread && content.tweets && (
+                                   <span className="ml-2 text-sm text-dark-text-secondary">
+                                        ({content.tweets.length} tweets)
+                                   </span>
+                              )}
                          </h4>
                          <p className="text-sm text-dark-text-secondary mt-1">
                               Platform: {content.platform} | Version: {content.version}
@@ -187,46 +273,76 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                     </button>
                </div>
 
-               <textarea
-                    value={editedText}
-                    onChange={handleTextChange}
-                    rows={8}
-                    className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-base text-dark-text placeholder-dark-text-tertiary focus:border-dark-accent focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg resize-y transition-colors"
-                    placeholder="Generated content will appear here..."
-                    aria-label="Content editor"
-               />
+               {/* Thread Display */}
+               {isThread && content.tweets ? (
+                    <div className="space-y-0">
+                         {content.tweets.map((tweet) => {
+                              const currentText = editedTweets.get(tweet.position) || tweet.text;
+                              const tweetWithCurrentText = {
+                                   ...tweet,
+                                   text: currentText,
+                              };
+
+                              return (
+                                   <ThreadTweet
+                                        key={tweet.position}
+                                        tweet={tweetWithCurrentText}
+                                        totalTweets={content.tweets!.length}
+                                        onEdit={handleTweetEdit}
+                                        isEditing={editingTweetPosition === tweet.position}
+                                        onToggleEdit={() => handleToggleEditTweet(tweet.position)}
+                                   />
+                              );
+                         })}
+                    </div>
+               ) : (
+                    /* Single Post Display */
+                    <textarea
+                         value={editedText}
+                         onChange={handleTextChange}
+                         rows={8}
+                         className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-base text-dark-text placeholder-dark-text-tertiary focus:border-dark-accent focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg resize-y transition-colors"
+                         placeholder="Generated content will appear here..."
+                         aria-label="Content editor"
+                    />
+               )}
 
                <div className="flex flex-col gap-3">
-                    <div className="flex flex-wrap gap-2">
-                         <button
-                              onClick={() => handleRefine('shorter')}
-                              disabled={refining}
-                              className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
-                              aria-label="Make content shorter"
-                         >
-                              {refining ? 'Refining...' : 'Make Shorter'}
-                         </button>
-                         <button
-                              onClick={() => handleRefine('clearer')}
-                              disabled={refining}
-                              className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
-                              aria-label="Make content clearer"
-                         >
-                              {refining ? 'Refining...' : 'Make Clearer'}
-                         </button>
-                         <button
-                              onClick={() => handleRefine('more engaging')}
-                              disabled={refining}
-                              className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
-                              aria-label="Make content more engaging"
-                         >
-                              {refining ? 'Refining...' : 'Make More Engaging'}
-                         </button>
-                    </div>
+                    {/* Refine buttons - only for single posts */}
+                    {!isThread && (
+                         <div className="flex flex-wrap gap-2">
+                              <button
+                                   onClick={() => handleRefine('shorter')}
+                                   disabled={refining}
+                                   className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                   aria-label="Make content shorter"
+                              >
+                                   {refining ? 'Refining...' : 'Make Shorter'}
+                              </button>
+                              <button
+                                   onClick={() => handleRefine('clearer')}
+                                   disabled={refining}
+                                   className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                   aria-label="Make content clearer"
+                              >
+                                   {refining ? 'Refining...' : 'Make Clearer'}
+                              </button>
+                              <button
+                                   onClick={() => handleRefine('more engaging')}
+                                   disabled={refining}
+                                   className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                   aria-label="Make content more engaging"
+                              >
+                                   {refining ? 'Refining...' : 'Make More Engaging'}
+                              </button>
+                         </div>
+                    )}
+
+                    {/* Save and Copy buttons */}
                     <div className="flex flex-wrap gap-2">
                          {isEdited && (
                               <button
-                                   onClick={handleSaveEdits}
+                                   onClick={isThread ? saveThreadEdits : handleSaveEdits}
                                    disabled={saving}
                                    className="px-4 py-3 min-h-[44px] bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
                                    aria-label="Save your edits"

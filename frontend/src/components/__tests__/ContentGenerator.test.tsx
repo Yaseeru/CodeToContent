@@ -143,7 +143,9 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
 
           expect(slider.value).toBe('50');
           // Check that the voice strength display (not evolution score) shows 50%
-          const voiceStrengthDisplay = container.querySelector('.space-y-2 .text-sm.font-medium.text-dark-text');
+          const voiceStrengthLabels = container.querySelectorAll('.space-y-2 .text-sm.font-medium.text-dark-text');
+          // The second one should be the voice strength (first is format labels)
+          const voiceStrengthDisplay = Array.from(voiceStrengthLabels).find(el => el.textContent?.includes('%'));
           expect(voiceStrengthDisplay).toHaveTextContent('50%');
      });
 
@@ -248,7 +250,7 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                expect(screen.getByText('Using your voice')).toBeInTheDocument();
           });
 
-          const generateButton = screen.getByText('Generate for LinkedIn');
+          const generateButton = screen.getByText('Generate for X (Twitter)');
           fireEvent.click(generateButton);
 
           await waitFor(() => {
@@ -258,7 +260,8 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          url: '/api/content/generate',
                          data: expect.objectContaining({
                               analysisId: 'test-analysis-id',
-                              platform: 'linkedin',
+                              platform: 'x',
+                              format: 'single',
                               voiceStrength: 80,
                          }),
                     })
@@ -303,7 +306,7 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                expect(screen.queryByText('Using your voice')).not.toBeInTheDocument();
           });
 
-          const generateButton = screen.getByText('Generate for LinkedIn');
+          const generateButton = screen.getByText('Generate for X (Twitter)');
           fireEvent.click(generateButton);
 
           await waitFor(() => {
@@ -313,7 +316,8 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          url: '/api/content/generate',
                          data: expect.objectContaining({
                               analysisId: 'test-analysis-id',
-                              platform: 'linkedin',
+                              platform: 'x',
+                              format: 'single',
                               voiceStrength: undefined,
                          }),
                     })
@@ -370,7 +374,7 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           expect(slider.value).toBe('60');
 
           // Generate content
-          const generateButton = screen.getByText('Generate for X');
+          const generateButton = screen.getByText('Generate for X (Twitter)');
           fireEvent.click(generateButton);
 
           await waitFor(() => {
@@ -379,6 +383,7 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
                          method: 'POST',
                          url: '/api/content/generate',
                          data: expect.objectContaining({
+                              format: 'single',
                               voiceStrength: 60,
                          }),
                     })
@@ -417,7 +422,7 @@ describe('ContentGenerator Voice Enhancements Tests', () => {
           });
 
           // Should still be able to generate content
-          const generateButton = screen.getByText('Generate for LinkedIn');
+          const generateButton = screen.getByText('Generate for X (Twitter)');
           expect(generateButton).toBeEnabled();
      });
 });

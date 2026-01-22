@@ -1,16 +1,29 @@
 import { GoogleGenAI } from '@google/genai';
 import mongoose from 'mongoose';
 import { Analysis, IAnalysis } from '../models/Analysis';
-import { Content, IContent, Platform } from '../models/Content';
+import { Content, IContent, Platform, ContentFormat, Tweet } from '../models/Content';
 import { User, StyleProfile } from '../models/User';
 import { logger } from './LoggerService';
 import { CONTENT_CONFIG, MONITORING_CONFIG, VALIDATION_CONFIG, VOICE_ANALYSIS_CONFIG } from '../config/constants';
 
+/**
+ * Parameters for generating content from a repository analysis
+ * 
+ * @property analysisId - ID of the analysis to generate content from
+ * @property userId - ID of the user requesting content generation
+ * @property platform - Target platform for content (currently only 'x' supported)
+ * @property voiceStrength - Optional voice strength override (0-100). Controls how strongly the user's voice profile is applied
+ * @property format - Optional content format. Defaults to 'single' for backward compatibility
+ *                    - 'single': Single post (200-280 characters)
+ *                    - 'mini_thread': 3-tweet thread with structured narrative
+ *                    - 'full_thread': 5-7 tweet thread with comprehensive storytelling
+ */
 export interface GenerateContentParams {
      analysisId: string;
      userId: string;
      platform: Platform;
      voiceStrength?: number; // Optional voice strength override (0-100)
+     format?: ContentFormat; // Optional content format (defaults to 'single')
 }
 
 export interface RefineContentParams {
@@ -30,8 +43,27 @@ export class ContentGenerationService {
 
      /**
       * Generate platform-specific content from analysis
+      * Routes to appropriate generation method based on format
       */
      async generateContent(params: GenerateContentParams): Promise<IContent> {
+          const { format = 'single' } = params;
+
+          // Route to appropriate generation method based on format
+          if (format === 'single') {
+               return this.generateSinglePost(params);
+          } else if (format === 'mini_thread') {
+               return this.generateMiniThread(params);
+          } else if (format === 'full_thread') {
+               return this.generateFullThread(params);
+          } else {
+               throw new Error(`Invalid content format: ${format}`);
+          }
+     }
+
+     /**
+      * Generate a single post (existing logic extracted)
+      */
+     private async generateSinglePost(params: GenerateContentParams): Promise<IContent> {
           const { analysisId, userId, platform, voiceStrength } = params;
 
           // Retrieve Summary from database
@@ -95,10 +127,12 @@ export class ContentGenerationService {
           }
 
           // Store generated content with metadata
+          // Note: Do NOT set tweets field for single posts - leave it undefined
           const content = new Content({
                analysisId: new mongoose.Types.ObjectId(analysisId),
                userId: new mongoose.Types.ObjectId(userId),
                platform,
+               contentFormat: 'single',
                generatedText,
                editedText: '',
                version: 1,
@@ -113,6 +147,505 @@ export class ContentGenerationService {
           logger.trackContentGeneration(usedStyleProfile);
 
           return content;
+     }
+
+     /**
+      * Generate a mini thread (3 tweets)
+      * Builds a mini thread prompt, calls Gemini API, parses response, and creates thread content
+      * 
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength
+      * @returns Content document with 3-tweet thread
+      * @throws Error if analysis not found, user not found, or generation fails
+      */
+     private async generateMiniThread(params: GenerateContentParams): Promise<IContent> {
+          const { analysisId, userId } = params;
+
+          // Retrieve analysis from database
+          const analysis = await Analysis.findById(analysisId);
+          if (!analysis) {
+               throw new Error('Analysis not found');
+          }
+
+          // Verify user owns this analysis
+          if (analysis.userId.toString() !== userId) {
+               throw new Error('Unauthorized: Analysis does not belong to user');
+          }
+
+          // Retrieve user to check for styleProfile
+          const user = await User.findById(userId);
+          if (!user) {
+               throw new Error('User not found');
+          }
+
+          // Build mini thread prompt with voice profile integration
+          const prompt = await this.buildThreadPrompt(params, 'mini_thread');
+
+          // Validate prompt size (under 8000 tokens, roughly 6000 words)
+          if (!this.validatePromptSize(prompt)) {
+               throw new Error('Thread prompt too large. Please try with a smaller repository analysis.');
+          }
+
+          // Call Gemini API to generate thread
+          const response = await this.callGeminiAPI(
+               prompt,
+               CONTENT_CONFIG.GEMINI_TEMPERATURE,
+               userId,
+               'content_generation'
+          );
+
+          // Parse response expecting exactly 3 tweets
+          const tweets = this.parseThreadResponse(response, 3);
+
+          // Create and return thread content
+          return this.createThreadContent(params, tweets, 'mini_thread');
+     }
+
+     /**
+      * Generate a full thread (5-7 tweets)
+      * Builds a full thread prompt, calls Gemini API, parses response, and creates thread content
+      * 
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength
+      * @returns Content document with 5-7 tweet thread
+      * @throws Error if analysis not found, user not found, or generation fails
+      */
+     private async generateFullThread(params: GenerateContentParams): Promise<IContent> {
+          const { analysisId, userId } = params;
+
+          // Retrieve analysis from database
+          const analysis = await Analysis.findById(analysisId);
+          if (!analysis) {
+               throw new Error('Analysis not found');
+          }
+
+          // Verify user owns this analysis
+          if (analysis.userId.toString() !== userId) {
+               throw new Error('Unauthorized: Analysis does not belong to user');
+          }
+
+          // Retrieve user to check for styleProfile
+          const user = await User.findById(userId);
+          if (!user) {
+               throw new Error('User not found');
+          }
+
+          // Build full thread prompt with voice profile integration
+          const prompt = await this.buildThreadPrompt(params, 'full_thread');
+
+          // Validate prompt size (under 8000 tokens, roughly 6000 words)
+          if (!this.validatePromptSize(prompt)) {
+               throw new Error('Thread prompt too large. Please try with a smaller repository analysis.');
+          }
+
+          // Call Gemini API to generate thread
+          const response = await this.callGeminiAPI(
+               prompt,
+               CONTENT_CONFIG.GEMINI_TEMPERATURE,
+               userId,
+               'content_generation'
+          );
+
+          // Parse response expecting 5-7 tweets
+          const tweets = this.parseThreadResponse(response, 5, 7);
+
+          // Create and return thread content
+          return this.createThreadContent(params, tweets, 'full_thread');
+     }
+
+     /**
+      * Create and save a Content document for thread content
+      * 
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength
+      * @param tweets - Array of Tweet objects with text, position, and characterCount
+      * @param format - Content format ('mini_thread' or 'full_thread')
+      * @returns Saved Content document with thread data
+      * 
+      * This method:
+      * - Creates a Content document with the tweets array
+      * - Concatenates tweets into generatedText field for backward compatibility
+      * - Sets contentFormat appropriately
+      * - Includes voice metadata (usedStyleProfile, voiceStrengthUsed, evolutionScoreAtGeneration)
+      */
+     private async createThreadContent(
+          params: GenerateContentParams,
+          tweets: Tweet[],
+          format: ContentFormat
+     ): Promise<IContent> {
+          const { analysisId, userId, platform, voiceStrength } = params;
+
+          // Retrieve user to get voice metadata
+          const user = await User.findById(userId);
+          if (!user) {
+               throw new Error('User not found');
+          }
+
+          // Determine effective voice strength
+          const effectiveVoiceStrength = voiceStrength !== undefined ? voiceStrength : user.voiceStrength;
+
+          // Calculate voice-aware metadata
+          let usedStyleProfile = false;
+          let evolutionScoreAtGeneration = 0;
+
+          if (user.styleProfile && effectiveVoiceStrength > 0) {
+               usedStyleProfile = true;
+               evolutionScoreAtGeneration = this.calculateEvolutionScore(user.styleProfile);
+          }
+
+          // Concatenate tweets for generatedText field (backward compatibility)
+          // Join with double newlines to separate tweets clearly
+          const generatedText = tweets.map(t => t.text).join('\n\n');
+
+          // Create Content document with all required fields
+          const content = new Content({
+               analysisId: new mongoose.Types.ObjectId(analysisId),
+               userId: new mongoose.Types.ObjectId(userId),
+               platform,
+               contentFormat: format,
+               generatedText,
+               editedText: '',
+               tweets,
+               version: 1,
+               usedStyleProfile,
+               voiceStrengthUsed: effectiveVoiceStrength,
+               evolutionScoreAtGeneration,
+          });
+
+          // Save to database
+          await content.save();
+
+          // Track content generation
+          logger.trackContentGeneration(usedStyleProfile);
+
+          return content;
+     }
+
+     /**
+      * Get mini thread structure template for prompt construction
+      * Returns a formatted string describing the 3-tweet structure
+      */
+     private getMiniThreadStructure(): string {
+          return `
+Tweet 1: Hook + Context
+- Grab attention with a bold statement or question
+- Set up what the project is about
+- Create curiosity
+
+Tweet 2: Problem + Solution
+- Explain the problem this project solves
+- Describe the approach or solution
+- Highlight key technical decisions
+
+Tweet 3: Result + CTA
+- Share the outcome or current state
+- Include a call-to-action (try it, contribute, feedback)
+- End with engagement (question or invitation)
+`;
+     }
+
+     /**
+      * Get full thread structure template for prompt construction
+      * Returns a formatted string describing the 5-7 tweet structure
+      */
+     private getFullThreadStructure(): string {
+          return `
+Tweet 1: Hook / Bold Statement
+- Attention-grabbing opening
+- Make a claim or pose a compelling question
+- Set the stage for the story
+
+Tweet 2: Problem / Why It Matters
+- Explain the problem or gap
+- Why should people care?
+- Context and motivation
+
+Tweet 3: Solution / What Was Built
+- Describe the solution or project
+- High-level overview of the approach
+- Key features or capabilities
+
+Tweet 4: Code Insight / Architecture / Technical Value
+- Technical deep dive
+- Architecture decisions
+- Code examples or patterns used
+
+Tweet 5: CTA / Engagement Question
+- Call to action (star, fork, try it)
+- Ask for feedback or contributions
+- Engagement question
+
+Additional tweets (if needed):
+- Extra technical details
+- Performance metrics
+- Future roadmap
+`;
+     }
+
+     /**
+      * Build thread-specific prompt with voice profile integration
+      * Constructs format-specific prompts for mini_thread or full_thread
+      * Integrates voice profile section when available
+      */
+     private async buildThreadPrompt(
+          params: GenerateContentParams,
+          format: 'mini_thread' | 'full_thread'
+     ): Promise<string> {
+          const { analysisId, userId, voiceStrength } = params;
+
+          // Retrieve analysis from database
+          const analysis = await Analysis.findById(analysisId);
+          if (!analysis) {
+               throw new Error('Analysis not found');
+          }
+
+          // Retrieve user to check for styleProfile
+          const user = await User.findById(userId);
+          if (!user) {
+               throw new Error('User not found');
+          }
+
+          // Determine effective voice strength
+          const effectiveVoiceStrength = voiceStrength !== undefined ? voiceStrength : user.voiceStrength;
+
+          // Get thread structure based on format
+          const threadStructure = format === 'mini_thread'
+               ? this.getMiniThreadStructure()
+               : this.getFullThreadStructure();
+
+          // Determine tweet count for the format
+          const tweetCount = format === 'mini_thread' ? '3' : '5-7';
+
+          // Base repository context from analysis
+          const baseContext = this.formatAnalysisContext(analysis);
+
+          // Build voice-aware section if profile exists and voice strength > 0
+          let voiceSection = '';
+          if (user.styleProfile && effectiveVoiceStrength > 0) {
+               voiceSection = this.buildVoiceSection(user.styleProfile, effectiveVoiceStrength);
+          }
+
+          // Construct the complete thread prompt
+          const prompt = `You are an expert content writer helping a developer communicate their work${user.styleProfile && effectiveVoiceStrength > 0 ? ' in their authentic voice' : ''}.
+
+Repository Context:
+${baseContext}
+
+Thread Structure:
+${threadStructure}
+
+Requirements:
+- Generate exactly ${tweetCount} tweets
+- Each tweet must be 200-280 characters (strict limit)
+- Maintain consistent ${user.styleProfile && effectiveVoiceStrength > 0 ? 'voice and ' : ''}tone across all tweets
+- Use technical details from the repository context
+- Make each tweet self-contained but connected to the narrative
+- Focus on what's interesting, new, or surprising about this project
+- DO NOT add tweet numbers (1/3, 2/3, etc.) - these will be added automatically
+
+${voiceSection}
+
+Output Format:
+Return ONLY the tweets, one per line, in order. No explanations, metadata, or additional text.
+Each line should contain exactly one complete tweet.
+Do not include numbering, bullet points, or any other formatting.
+
+Example format:
+[Tweet 1 text here]
+[Tweet 2 text here]
+[Tweet 3 text here]
+`;
+
+          return prompt;
+     }
+
+     /**
+      * Format analysis context for prompt construction
+      * Extracts and formats key information from analysis
+      */
+     private formatAnalysisContext(analysis: IAnalysis): string {
+          return `
+Problem: ${analysis.problemStatement}
+Target Audience: ${analysis.targetAudience}
+Core Functionality: ${analysis.coreFunctionality.join(', ')}
+Notable Features: ${analysis.notableFeatures.join(', ')}
+Recent Changes: ${analysis.recentChanges.join(', ')}
+Integrations: ${analysis.integrations.join(', ')}
+Value Proposition: ${analysis.valueProposition}
+`.trim();
+     }
+
+     /**
+      * Parse Gemini thread response into structured Tweet objects
+      * Handles various response formats, removes numbering artifacts, validates character limits
+      * 
+      * @param response - Raw text response from Gemini API
+      * @param minTweets - Minimum number of tweets required
+      * @param maxTweets - Optional maximum number of tweets (defaults to minTweets)
+      * @returns Array of Tweet objects with text, position, and character count
+      * @throws Error if minimum tweet count is not met
+      */
+     private parseThreadResponse(
+          response: string,
+          minTweets: number,
+          maxTweets?: number
+     ): Tweet[] {
+          // Use minTweets as maxTweets if not specified
+          const effectiveMaxTweets = maxTweets || minTweets;
+
+          // Split response into individual lines and clean up
+          const lines = response
+               .split('\n')
+               .map(line => line.trim())
+               .filter(line => line.length > 0);
+
+          const tweets: Tweet[] = [];
+
+          for (let i = 0; i < lines.length; i++) {
+               let text = lines[i];
+
+               // Remove common numbering artifacts at the start
+               // Patterns: "1.", "1)", "1/3", "Tweet 1:", etc.
+               text = text.replace(/^(Tweet\s+)?\d+[\.):\-\/]\s*/i, '').trim();
+
+               // Remove position indicators at the end (e.g., "1/3", "2/5")
+               text = text.replace(/\s*\d+\/\d+\s*$/, '').trim();
+
+               // Remove bullet points or dashes at the start
+               text = text.replace(/^[\-\*•]\s*/, '').trim();
+
+               // Skip if text is too short to be a valid tweet (minimum 50 characters)
+               if (text.length < 50) {
+                    continue;
+               }
+
+               // Validate and truncate if needed (280 character limit)
+               if (text.length > 280) {
+                    // Truncate with ellipsis, ensuring we stay within limit
+                    text = text.substring(0, 277) + '...';
+               }
+
+               // Add tweet to array
+               tweets.push({
+                    text,
+                    position: tweets.length + 1,
+                    characterCount: text.length,
+               });
+
+               // Stop if we've reached max tweets
+               if (tweets.length >= effectiveMaxTweets) {
+                    break;
+               }
+          }
+
+          // Ensure we have minimum required tweets
+          if (tweets.length < minTweets) {
+               throw new Error(
+                    `Generated only ${tweets.length} tweets, expected at least ${minTweets}. ` +
+                    `Response may be malformed or too short.`
+               );
+          }
+
+          // Add position indicators (1/3, 2/3, etc.) to each tweet
+          const total = tweets.length;
+          tweets.forEach((tweet, idx) => {
+               const indicator = ` ${idx + 1}/${total}`;
+
+               // Only add indicator if it fits within character limit
+               if (tweet.text.length + indicator.length <= 280) {
+                    tweet.text += indicator;
+                    tweet.characterCount = tweet.text.length;
+               }
+               // If it doesn't fit, the tweet stays as is (already within 280 chars)
+          });
+
+          return tweets;
+     }
+
+     /**
+      * Build voice-aware section for thread prompts
+      * Reuses logic from buildVoiceAwarePrompt but adapted for threads
+      */
+     private buildVoiceSection(styleProfile: StyleProfile, voiceStrength: number): string {
+          // Select representative samples for few-shot learning
+          const samples = this.selectRepresentativeSamples(styleProfile.samplePosts);
+
+          let voiceSection = `\nUser's Writing Style (Voice Strength: ${voiceStrength}%):\n\n`;
+
+          // Voice type
+          voiceSection += `Voice Type: ${styleProfile.voiceType}\n\n`;
+
+          // Tone characteristics
+          const strengthMultiplier = voiceStrength / 100;
+          voiceSection += `Tone Characteristics:\n`;
+          voiceSection += `- Formality: ${this.describeToneLevel(styleProfile.tone.formality, strengthMultiplier)} (${styleProfile.tone.formality}/10)\n`;
+          voiceSection += `- Enthusiasm: ${this.describeToneLevel(styleProfile.tone.enthusiasm, strengthMultiplier)} (${styleProfile.tone.enthusiasm}/10)\n`;
+          voiceSection += `- Directness: ${this.describeToneLevel(styleProfile.tone.directness, strengthMultiplier)} (${styleProfile.tone.directness}/10)\n`;
+          voiceSection += `- Humor: ${this.describeToneLevel(styleProfile.tone.humor, strengthMultiplier)} (${styleProfile.tone.humor}/10)\n`;
+          voiceSection += `- Emotionality: ${this.describeToneLevel(styleProfile.tone.emotionality, strengthMultiplier)} (${styleProfile.tone.emotionality}/10)\n\n`;
+
+          // Writing traits
+          voiceSection += `Writing Traits:\n`;
+          voiceSection += `- Average sentence length: ${Math.round(styleProfile.writingTraits.avgSentenceLength)} words\n`;
+          if (styleProfile.writingTraits.usesQuestionsOften) {
+               voiceSection += `- Frequently uses questions to engage readers\n`;
+          }
+          if (styleProfile.writingTraits.usesEmojis) {
+               voiceSection += `- Uses emojis (frequency: ${styleProfile.writingTraits.emojiFrequency}/5)\n`;
+          }
+          if (styleProfile.writingTraits.usesBulletPoints) {
+               voiceSection += `- Prefers bullet points for lists\n`;
+          }
+          if (styleProfile.writingTraits.usesShortParagraphs) {
+               voiceSection += `- Prefers short, digestible paragraphs\n`;
+          }
+          if (styleProfile.writingTraits.usesHooks) {
+               voiceSection += `- Uses attention-grabbing hooks in openings\n`;
+          }
+          voiceSection += `\n`;
+
+          // Structure preferences
+          voiceSection += `Structure Preferences:\n`;
+          voiceSection += `- Introduction style: ${styleProfile.structurePreferences.introStyle}\n`;
+          voiceSection += `- Body style: ${styleProfile.structurePreferences.bodyStyle}\n`;
+          voiceSection += `- Ending style: ${styleProfile.structurePreferences.endingStyle}\n\n`;
+
+          // Vocabulary level
+          voiceSection += `Vocabulary Level: ${styleProfile.vocabularyLevel}\n\n`;
+
+          // Few-shot examples if available
+          if (samples.length > 0) {
+               voiceSection += `Example writings from this user's style:\n\n`;
+               samples.forEach((sample, idx) => {
+                    voiceSection += `Example ${idx + 1}:\n${sample}\n\n`;
+               });
+               voiceSection += `These examples demonstrate the user's authentic voice, sentence structure, vocabulary choices, and typical phrasing.\n\n`;
+          }
+
+          // Phrases guidance
+          if (styleProfile.commonPhrases.length > 0) {
+               voiceSection += `Common phrases this user frequently uses:\n`;
+               styleProfile.commonPhrases.forEach(phrase => {
+                    voiceSection += `- "${phrase}"\n`;
+               });
+               voiceSection += `Consider incorporating these naturally when appropriate.\n\n`;
+          }
+
+          if (styleProfile.bannedPhrases.length > 0) {
+               voiceSection += `Phrases to AVOID (user dislikes these):\n`;
+               styleProfile.bannedPhrases.forEach(phrase => {
+                    voiceSection += `- "${phrase}"\n`;
+               });
+               voiceSection += `Never use these phrases or similar variations.\n\n`;
+          }
+
+          // Voice strength guidance
+          if (voiceStrength < CONTENT_CONFIG.VOICE_STRENGTH_LOW_THRESHOLD) {
+               voiceSection += `Note: Voice strength is set to ${voiceStrength}%, so blend the user's style with more generic, creative variation.\n`;
+          } else if (voiceStrength >= CONTENT_CONFIG.VOICE_STRENGTH_LOW_THRESHOLD && voiceStrength < CONTENT_CONFIG.VOICE_STRENGTH_HIGH_THRESHOLD) {
+               voiceSection += `Note: Voice strength is set to ${voiceStrength}%, so match the user's style while allowing some creative flexibility.\n`;
+          } else {
+               voiceSection += `Note: Voice strength is set to ${voiceStrength}%, so closely match the user's authentic voice and style across all tweets in the thread.\n`;
+          }
+
+          return voiceSection;
      }
 
      /**

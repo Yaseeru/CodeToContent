@@ -8,6 +8,11 @@ export interface EditMetadataQuery {
      includeProcessed?: boolean;
 }
 
+export interface EditedTweet {
+     position: number;
+     text: string;
+}
+
 export interface AggregatedEditPatterns {
      totalEdits: number;
      avgSentenceLengthDelta: number;
@@ -251,6 +256,142 @@ export class EditMetadataStorageService {
                return count;
           } catch (error: any) {
                console.error(`[EditMetadataStorage] Failed to get edit count:`, error.message);
+               throw error;
+          }
+     }
+
+     /**
+      * Store edit metadata for thread edits
+      * Handles multiple edited tweets and stores aggregated metadata
+      * Maintains backward compatibility with single post edits
+      */
+     static async storeThreadEditMetadata(
+          contentId: string,
+          editedTweets: EditedTweet[],
+          originalTweets: Array<{ position: number; text: string }>
+     ): Promise<void> {
+          try {
+               console.log(`[EditMetadataStorage] Storing thread edit metadata for content ${contentId}`);
+
+               const content = await Content.findById(contentId);
+               if (!content) {
+                    throw new Error(`Content ${contentId} not found`);
+               }
+
+               // Aggregate metadata from all edited tweets
+               let totalSentenceLengthDelta = 0;
+               let totalEmojiAdded = 0;
+               let totalEmojiRemoved = 0;
+               let totalParagraphsAdded = 0;
+               let totalParagraphsRemoved = 0;
+               let allPhrasesAdded: string[] = [];
+               let allPhrasesRemoved: string[] = [];
+               let toneShifts: string[] = [];
+               let allWordsSubstituted: Array<{ from: string; to: string }> = [];
+               let totalComplexityShift = 0;
+               let bulletsAddedCount = 0;
+               let formattingChanges: string[] = [];
+
+               // Concatenate all original and edited texts for aggregated metadata
+               const originalText = originalTweets.map(t => t.text).join('\n\n');
+               const editedText = editedTweets.map(t => t.text).join('\n\n');
+
+               // Import StyleDeltaExtractionService for delta extraction
+               const { StyleDeltaExtractionService } = await import('./StyleDeltaExtractionService');
+               const apiKey = process.env.GEMINI_API_KEY || '';
+               const deltaService = new StyleDeltaExtractionService(apiKey);
+
+               // Extract deltas for each edited tweet
+               for (const editedTweet of editedTweets) {
+                    const originalTweet = originalTweets.find(t => t.position === editedTweet.position);
+                    if (!originalTweet) {
+                         console.warn(`[EditMetadataStorage] Original tweet at position ${editedTweet.position} not found`);
+                         continue;
+                    }
+
+                    // Extract style deltas for this tweet
+                    const delta = await deltaService.extractDeltas(originalTweet.text, editedTweet.text);
+
+                    // Aggregate deltas
+                    totalSentenceLengthDelta += delta.sentenceLengthDelta;
+                    totalEmojiAdded += delta.emojiChanges.added;
+                    totalEmojiRemoved += delta.emojiChanges.removed;
+                    totalParagraphsAdded += delta.structureChanges.paragraphsAdded;
+                    totalParagraphsRemoved += delta.structureChanges.paragraphsRemoved;
+                    if (delta.structureChanges.bulletsAdded) {
+                         bulletsAddedCount++;
+                    }
+                    formattingChanges.push(...delta.structureChanges.formattingChanges);
+                    allPhrasesAdded.push(...delta.phrasesAdded);
+                    allPhrasesRemoved.push(...delta.phrasesRemoved);
+                    if (delta.toneShift && delta.toneShift !== 'no change') {
+                         toneShifts.push(delta.toneShift);
+                    }
+                    allWordsSubstituted.push(...delta.vocabularyChanges.wordsSubstituted);
+                    totalComplexityShift += delta.vocabularyChanges.complexityShift;
+               }
+
+               // Calculate averages
+               const avgSentenceLengthDelta = editedTweets.length > 0
+                    ? totalSentenceLengthDelta / editedTweets.length
+                    : 0;
+               const avgComplexityShift = editedTweets.length > 0
+                    ? Math.round(totalComplexityShift / editedTweets.length)
+                    : 0;
+
+               // Determine most common tone shift
+               const toneShiftCounts: Record<string, number> = {};
+               toneShifts.forEach(shift => {
+                    toneShiftCounts[shift] = (toneShiftCounts[shift] || 0) + 1;
+               });
+               const mostCommonToneShift = Object.entries(toneShiftCounts)
+                    .sort((a, b) => b[1] - a[1])[0]?.[0] || 'no change';
+
+               // Remove duplicates from phrases
+               const uniquePhrasesAdded = [...new Set(allPhrasesAdded)];
+               const uniquePhrasesRemoved = [...new Set(allPhrasesRemoved)];
+               const uniqueFormattingChanges = [...new Set(formattingChanges)];
+
+               // Limit word substitutions to top 10
+               const limitedWordsSubstituted = allWordsSubstituted.slice(0, 10);
+
+               // Store aggregated metadata
+               content.editMetadata = {
+                    originalText,
+                    originalLength: originalText.length,
+                    editedLength: editedText.length,
+                    sentenceLengthDelta: avgSentenceLengthDelta,
+                    emojiChanges: {
+                         added: totalEmojiAdded,
+                         removed: totalEmojiRemoved,
+                         netChange: totalEmojiAdded - totalEmojiRemoved,
+                    },
+                    structureChanges: {
+                         paragraphsAdded: totalParagraphsAdded,
+                         paragraphsRemoved: totalParagraphsRemoved,
+                         bulletsAdded: bulletsAddedCount > 0,
+                         formattingChanges: uniqueFormattingChanges,
+                    },
+                    toneShift: mostCommonToneShift,
+                    vocabularyChanges: {
+                         wordsSubstituted: limitedWordsSubstituted,
+                         complexityShift: avgComplexityShift,
+                    },
+                    phrasesAdded: uniquePhrasesAdded.slice(0, 10),
+                    phrasesRemoved: uniquePhrasesRemoved.slice(0, 10),
+                    editTimestamp: new Date(),
+                    learningProcessed: false,
+               };
+
+               // Update editedText with concatenated edited tweets
+               content.editedText = editedText;
+
+               await content.save();
+
+               console.log(`[EditMetadataStorage] Thread edit metadata stored successfully for content ${contentId}`);
+               console.log(`[EditMetadataStorage] Aggregated ${editedTweets.length} tweet edits`);
+          } catch (error: any) {
+               console.error(`[EditMetadataStorage] Failed to store thread edit metadata:`, error.message);
                throw error;
           }
      }

@@ -35,7 +35,7 @@ export function handleValidationErrors(req: Request, res: Response, next: NextFu
 
 /**
  * Validation rules for content generation endpoint
- * Validates: analysisId (MongoDB ObjectId), platform (linkedin/x), voiceStrength (0-100)
+ * Validates: analysisId (MongoDB ObjectId), platform (linkedin/x), voiceStrength (0-100), format (single/mini_thread/full_thread)
  */
 export const validateContentGeneration = [
      body('analysisId')
@@ -49,6 +49,10 @@ export const validateContentGeneration = [
           .optional()
           .isInt({ min: VALIDATION_CONFIG.VOICE_STRENGTH_MIN, max: VALIDATION_CONFIG.VOICE_STRENGTH_MAX })
           .withMessage(`voiceStrength must be between ${VALIDATION_CONFIG.VOICE_STRENGTH_MIN} and ${VALIDATION_CONFIG.VOICE_STRENGTH_MAX}`),
+     body('format')
+          .optional()
+          .isIn(['single', 'mini_thread', 'full_thread'])
+          .withMessage('format must be one of: "single", "mini_thread", or "full_thread"'),
      handleValidationErrors
 ];
 
@@ -96,19 +100,65 @@ export const validateStyleUpdate = [
 
 /**
  * Validation rules for saving content edits endpoint
- * Validates: content ID (MongoDB ObjectId), editedText (min 10 chars), deltas (array)
+ * Validates: content ID (MongoDB ObjectId), editedText OR editedTweets (mutually exclusive)
+ * For single posts: editedText (min 10 chars)
+ * For threads: editedTweets array with position and text, each tweet ≤ 280 chars
  */
 export const validateSaveEdits = [
      param('id')
           .custom((value) => mongoose.Types.ObjectId.isValid(value))
           .withMessage('Content ID must be a valid MongoDB ObjectId'),
+
+     // Custom validation to ensure either editedText OR editedTweets is provided (not both)
+     body()
+          .custom((value, { req }) => {
+               const hasEditedText = req.body.editedText !== undefined && req.body.editedText !== null;
+               const hasEditedTweets = req.body.editedTweets !== undefined && req.body.editedTweets !== null;
+
+               // Must have exactly one of the two
+               if (!hasEditedText && !hasEditedTweets) {
+                    throw new Error('Either editedText or editedTweets must be provided');
+               }
+
+               if (hasEditedText && hasEditedTweets) {
+                    throw new Error('Cannot provide both editedText and editedTweets - use only one');
+               }
+
+               return true;
+          }),
+
+     // Validate editedText if provided (for single posts)
      body('editedText')
-          .notEmpty().withMessage('editedText is required')
+          .optional()
+          .isString()
+          .withMessage('editedText must be a string')
           .isLength({ min: VALIDATION_CONFIG.EDITED_TEXT_MIN_CHARS })
           .withMessage(`editedText must be at least ${VALIDATION_CONFIG.EDITED_TEXT_MIN_CHARS} characters`),
+
+     // Validate editedTweets if provided (for threads)
+     body('editedTweets')
+          .optional()
+          .isArray({ min: 1 })
+          .withMessage('editedTweets must be a non-empty array'),
+
+     body('editedTweets.*.position')
+          .if(body('editedTweets').exists())
+          .isInt({ min: 1 })
+          .withMessage('Each tweet position must be a positive integer'),
+
+     body('editedTweets.*.text')
+          .if(body('editedTweets').exists())
+          .isString()
+          .withMessage('Each tweet text must be a string')
+          .notEmpty()
+          .withMessage('Each tweet text must not be empty')
+          .isLength({ max: 280 })
+          .withMessage('Each tweet must be 280 characters or less'),
+
      body('deltas')
           .optional()
           .isArray()
           .withMessage('deltas must be an array'),
+
      handleValidationErrors
 ];

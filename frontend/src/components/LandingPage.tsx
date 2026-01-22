@@ -13,7 +13,7 @@ const LandingPage: React.FC = () => {
                          CodeToContent
                     </h1>
                     <p className="text-sm sm:text-base text-dark-text-secondary mb-6 sm:mb-8 leading-relaxed px-2">
-                         Transform your GitHub repositories into compelling content for LinkedIn and X
+                         Turn your code into engaging X posts that sound authentically like you—powered by AI that learns your unique voice
                     </p>
                     <button
                          onClick={handleGitHubLogin}

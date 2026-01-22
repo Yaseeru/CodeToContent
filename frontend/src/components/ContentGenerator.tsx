@@ -7,10 +7,20 @@ interface ContentGeneratorProps {
      onContentGenerated: (content: GeneratedContent) => void;
 }
 
+export type ContentFormat = 'single' | 'mini_thread' | 'full_thread';
+
+export interface Tweet {
+     text: string;
+     position: number;
+     characterCount: number;
+}
+
 export interface GeneratedContent {
      id: string;
      platform: 'x';
+     contentFormat: ContentFormat;
      generatedText: string;
+     tweets?: Tweet[];
      version: number;
 }
 
@@ -26,6 +36,34 @@ interface ProfileData {
      evolutionScore: number;
 }
 
+interface FormatOption {
+     value: ContentFormat;
+     label: string;
+     description: string;
+     tweetCount: string;
+}
+
+const formatOptions: FormatOption[] = [
+     {
+          value: 'single',
+          label: 'Single Post',
+          description: 'One high-impact tweet with hook, update, and CTA',
+          tweetCount: '1 tweet',
+     },
+     {
+          value: 'mini_thread',
+          label: 'Mini Thread',
+          description: 'Hook + Context → Problem + Solution → Result + CTA',
+          tweetCount: '3 tweets',
+     },
+     {
+          value: 'full_thread',
+          label: 'Full Thread',
+          description: 'Comprehensive story with technical depth',
+          tweetCount: '5-7 tweets',
+     },
+];
+
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({
      analysisId,
      onContentGenerated,
@@ -37,6 +75,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
      const [profileData, setProfileData] = useState<ProfileData | null>(null);
      const [voiceStrength, setVoiceStrength] = useState<number>(80);
      const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
+     const [selectedFormat, setSelectedFormat] = useState<ContentFormat>('single');
 
      // Fetch user profile on component mount
      useEffect(() => {
@@ -80,6 +119,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                     {
                          analysisId,
                          platform: 'x',
+                         format: selectedFormat,
                          voiceStrength: profileData?.styleProfile ? voiceStrength : undefined,
                     }
                );
@@ -121,6 +161,45 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                          onRetry={handleRetryGenerate}
                     />
                )}
+
+               {/* Format Selection */}
+               <div className="bg-dark-surface border border-dark-border rounded-lg p-4 space-y-3">
+                    <h4 className="text-sm font-medium text-dark-text">Choose Format</h4>
+                    <div className="space-y-2" role="radiogroup" aria-label="Content format selection">
+                         {formatOptions.map((option) => (
+                              <label
+                                   key={option.value}
+                                   className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedFormat === option.value
+                                        ? 'border-dark-accent bg-dark-accent bg-opacity-10'
+                                        : 'border-dark-border hover:border-dark-accent hover:border-opacity-50'
+                                        }`}
+                              >
+                                   <input
+                                        type="radio"
+                                        name="format"
+                                        value={option.value}
+                                        checked={selectedFormat === option.value}
+                                        onChange={(e) => setSelectedFormat(e.target.value as ContentFormat)}
+                                        className="mt-1 w-4 h-4 text-dark-accent focus:ring-dark-accent focus:ring-offset-dark-bg"
+                                        aria-label={option.label}
+                                   />
+                                   <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                             <span className="text-sm font-medium text-dark-text">
+                                                  {option.label}
+                                             </span>
+                                             <span className="text-xs text-dark-text-secondary">
+                                                  {option.tweetCount}
+                                             </span>
+                                        </div>
+                                        <p className="text-xs text-dark-text-secondary leading-relaxed">
+                                             {option.description}
+                                        </p>
+                                   </div>
+                              </label>
+                         ))}
+                    </div>
+               </div>
 
                {/* Voice Profile Indicator */}
                {!loadingProfile && hasStyleProfile && (
