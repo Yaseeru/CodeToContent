@@ -168,12 +168,12 @@ export class ContentGenerationService {
       * Generate a mini thread (3 tweets)
       * Builds a mini thread prompt, calls Gemini API, parses response, and creates thread content
       * 
-      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId
       * @returns Content document with 3-tweet thread
       * @throws Error if analysis not found, user not found, or generation fails
       */
      private async generateMiniThread(params: GenerateContentParams): Promise<IContent> {
-          const { analysisId, userId } = params;
+          const { analysisId, userId, snapshotId } = params;
 
           // Retrieve analysis from database
           const analysis = await Analysis.findById(analysisId);
@@ -184,6 +184,18 @@ export class ContentGenerationService {
           // Verify user owns this analysis
           if (analysis.userId.toString() !== userId) {
                throw new Error('Unauthorized: Analysis does not belong to user');
+          }
+
+          // If snapshotId provided, validate it exists and belongs to user
+          if (snapshotId) {
+               const { CodeSnapshot } = await import('../models/CodeSnapshot');
+               const snapshot = await CodeSnapshot.findById(snapshotId);
+
+               if (!snapshot) {
+                    console.warn(`Snapshot ${snapshotId} not found, continuing without snapshot`);
+               } else if (snapshot.userId.toString() !== userId) {
+                    throw new Error('Unauthorized: Snapshot does not belong to user');
+               }
           }
 
           // Retrieve user to check for styleProfile
@@ -219,12 +231,12 @@ export class ContentGenerationService {
       * Generate a full thread (5-7 tweets)
       * Builds a full thread prompt, calls Gemini API, parses response, and creates thread content
       * 
-      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId
       * @returns Content document with 5-7 tweet thread
       * @throws Error if analysis not found, user not found, or generation fails
       */
      private async generateFullThread(params: GenerateContentParams): Promise<IContent> {
-          const { analysisId, userId } = params;
+          const { analysisId, userId, snapshotId } = params;
 
           // Retrieve analysis from database
           const analysis = await Analysis.findById(analysisId);
@@ -235,6 +247,18 @@ export class ContentGenerationService {
           // Verify user owns this analysis
           if (analysis.userId.toString() !== userId) {
                throw new Error('Unauthorized: Analysis does not belong to user');
+          }
+
+          // If snapshotId provided, validate it exists and belongs to user
+          if (snapshotId) {
+               const { CodeSnapshot } = await import('../models/CodeSnapshot');
+               const snapshot = await CodeSnapshot.findById(snapshotId);
+
+               if (!snapshot) {
+                    console.warn(`Snapshot ${snapshotId} not found, continuing without snapshot`);
+               } else if (snapshot.userId.toString() !== userId) {
+                    throw new Error('Unauthorized: Snapshot does not belong to user');
+               }
           }
 
           // Retrieve user to check for styleProfile
