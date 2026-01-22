@@ -126,7 +126,10 @@ const startServer = async () => {
      }
 };
 
-startServer();
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+     startServer();
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {

@@ -143,9 +143,12 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
           let errorMessage = 'Failed to generate content';
 
           if (error instanceof Error) {
-               if (error.message.includes('not found')) {
+               if (error.message.includes('Analysis not found')) {
                     statusCode = 404;
                     errorMessage = 'Analysis not found';
+               } else if (error.message.includes('Snapshot does not belong to user')) {
+                    statusCode = 403;
+                    errorMessage = 'You do not have permission to use this snapshot';
                } else if (error.message.includes('Unauthorized')) {
                     statusCode = 401;
                     errorMessage = 'Unauthorized access';

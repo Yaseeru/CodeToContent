@@ -12,6 +12,9 @@ module.exports = {
      transform: {
           '^.+\\.ts$': 'ts-jest'
      },
+     transformIgnorePatterns: [
+          'node_modules/(?!(shiki)/)'
+     ],
      setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
      testTimeout: 30000
 };
