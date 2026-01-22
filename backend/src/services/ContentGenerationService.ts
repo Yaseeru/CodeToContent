@@ -17,6 +17,7 @@ import { CONTENT_CONFIG, MONITORING_CONFIG, VALIDATION_CONFIG, VOICE_ANALYSIS_CO
  *                    - 'single': Single post (200-280 characters)
  *                    - 'mini_thread': 3-tweet thread with structured narrative
  *                    - 'full_thread': 5-7 tweet thread with comprehensive storytelling
+ * @property snapshotId - Optional ID of CodeSnapshot to attach to content
  */
 export interface GenerateContentParams {
      analysisId: string;
@@ -24,6 +25,7 @@ export interface GenerateContentParams {
      platform: Platform;
      voiceStrength?: number; // Optional voice strength override (0-100)
      format?: ContentFormat; // Optional content format (defaults to 'single')
+     snapshotId?: string; // Optional snapshot ID to attach
 }
 
 export interface RefineContentParams {
@@ -64,7 +66,7 @@ export class ContentGenerationService {
       * Generate a single post (existing logic extracted)
       */
      private async generateSinglePost(params: GenerateContentParams): Promise<IContent> {
-          const { analysisId, userId, platform, voiceStrength } = params;
+          const { analysisId, userId, platform, voiceStrength, snapshotId } = params;
 
           // Retrieve Summary from database
           const analysis = await Analysis.findById(analysisId);
@@ -75,6 +77,18 @@ export class ContentGenerationService {
           // Verify user owns this analysis
           if (analysis.userId.toString() !== userId) {
                throw new Error('Unauthorized: Analysis does not belong to user');
+          }
+
+          // If snapshotId provided, validate it exists and belongs to user
+          if (snapshotId) {
+               const { CodeSnapshot } = await import('../models/CodeSnapshot');
+               const snapshot = await CodeSnapshot.findById(snapshotId);
+
+               if (!snapshot) {
+                    console.warn(`Snapshot ${snapshotId} not found, continuing without snapshot`);
+               } else if (snapshot.userId.toString() !== userId) {
+                    throw new Error('Unauthorized: Snapshot does not belong to user');
+               }
           }
 
           // Retrieve user to check for styleProfile
@@ -139,6 +153,7 @@ export class ContentGenerationService {
                usedStyleProfile,
                voiceStrengthUsed: effectiveVoiceStrength,
                evolutionScoreAtGeneration,
+               snapshotId: snapshotId ? new mongoose.Types.ObjectId(snapshotId) : undefined,
           });
 
           await content.save();
@@ -254,7 +269,7 @@ export class ContentGenerationService {
      /**
       * Create and save a Content document for thread content
       * 
-      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId
       * @param tweets - Array of Tweet objects with text, position, and characterCount
       * @param format - Content format ('mini_thread' or 'full_thread')
       * @returns Saved Content document with thread data
@@ -264,13 +279,26 @@ export class ContentGenerationService {
       * - Concatenates tweets into generatedText field for backward compatibility
       * - Sets contentFormat appropriately
       * - Includes voice metadata (usedStyleProfile, voiceStrengthUsed, evolutionScoreAtGeneration)
+      * - Attaches snapshotId if provided
       */
      private async createThreadContent(
           params: GenerateContentParams,
           tweets: Tweet[],
           format: ContentFormat
      ): Promise<IContent> {
-          const { analysisId, userId, platform, voiceStrength } = params;
+          const { analysisId, userId, platform, voiceStrength, snapshotId } = params;
+
+          // If snapshotId provided, validate it exists and belongs to user
+          if (snapshotId) {
+               const { CodeSnapshot } = await import('../models/CodeSnapshot');
+               const snapshot = await CodeSnapshot.findById(snapshotId);
+
+               if (!snapshot) {
+                    console.warn(`Snapshot ${snapshotId} not found, continuing without snapshot`);
+               } else if (snapshot.userId.toString() !== userId) {
+                    throw new Error('Unauthorized: Snapshot does not belong to user');
+               }
+          }
 
           // Retrieve user to get voice metadata
           const user = await User.findById(userId);
@@ -307,6 +335,7 @@ export class ContentGenerationService {
                usedStyleProfile,
                voiceStrengthUsed: effectiveVoiceStrength,
                evolutionScoreAtGeneration,
+               snapshotId: snapshotId ? new mongoose.Types.ObjectId(snapshotId) : undefined,
           });
 
           // Save to database

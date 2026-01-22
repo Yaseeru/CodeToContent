@@ -24,6 +24,8 @@ export interface GeneratedContent {
      generatedText: string;
      tweets?: Tweet[];
      version: number;
+     snapshotId?: string; // Optional reference to attached snapshot
+     imageUrl?: string; // Optional image URL from backend
 }
 
 interface StyleProfile {
@@ -126,6 +128,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                          platform: 'x',
                          format: selectedFormat,
                          voiceStrength: profileData?.styleProfile ? voiceStrength : undefined,
+                         snapshotId: selectedSnapshot?._id, // Include snapshotId if snapshot is selected
                     }
                );
 

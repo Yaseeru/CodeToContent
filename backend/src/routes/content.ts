@@ -24,7 +24,7 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                });
           }
 
-          const { analysisId, platform, voiceStrength, format } = req.body;
+          const { analysisId, platform, voiceStrength, format, snapshotId } = req.body;
 
           // Validate required fields
           if (!analysisId || !platform) {
@@ -70,6 +70,16 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                }
           }
 
+          // Validate snapshotId if provided
+          if (snapshotId !== undefined) {
+               if (!mongoose.Types.ObjectId.isValid(snapshotId)) {
+                    return res.status(400).json({
+                         error: 'Invalid request',
+                         message: 'Invalid snapshotId format',
+                    });
+               }
+          }
+
           // Initialize content generation service
           const geminiApiKey = process.env.GEMINI_API_KEY;
           if (!geminiApiKey) {
@@ -88,6 +98,7 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                platform: platform as Platform,
                voiceStrength,
                format, // Pass format parameter (defaults to 'single' in service)
+               snapshotId, // Pass snapshotId parameter
           });
 
           // Build response object with contentFormat and tweets (if present)
@@ -108,6 +119,17 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
           // Include tweets array when present (for threads)
           if (content.tweets && content.tweets.length > 0) {
                responseContent.tweets = content.tweets;
+          }
+
+          // Include snapshot data if attached
+          if (content.snapshotId) {
+               responseContent.snapshotId = content.snapshotId;
+               // Fetch snapshot to get imageUrl
+               const { CodeSnapshot } = await import('../models/CodeSnapshot');
+               const snapshot = await CodeSnapshot.findById(content.snapshotId);
+               if (snapshot) {
+                    responseContent.imageUrl = snapshot.imageUrl;
+               }
           }
 
           res.json({
@@ -387,6 +409,7 @@ router.post('/:id/save-edits', defaultRateLimiter, validateSaveEdits, async (req
                          editedText: content.editedText,
                          tweets: content.tweets,
                          version: content.version,
+                         snapshotId: content.snapshotId,
                          createdAt: content.createdAt,
                          updatedAt: content.updatedAt,
                     },
@@ -434,6 +457,7 @@ router.post('/:id/save-edits', defaultRateLimiter, validateSaveEdits, async (req
                          generatedText: content.generatedText,
                          editedText: content.editedText,
                          version: content.version,
+                         snapshotId: content.snapshotId,
                          createdAt: content.createdAt,
                          updatedAt: content.updatedAt,
                     },

@@ -35,6 +35,9 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
      const [showErrorNotification, setShowErrorNotification] = useState<boolean>(false);
      const lastRefineInstruction = useRef<'shorter' | 'clearer' | 'more engaging' | null>(null);
 
+     // Track if content has an attached snapshot
+     const hasAttachedSnapshot = content.imageUrl && content.snapshotId;
+
      useEffect(() => {
           // Only update if content actually changed (not just a re-render)
           // This preserves user edits during error scenarios
@@ -246,6 +249,22 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                          </svg>
                          <span className="text-sm text-green-500 font-medium">Edits saved successfully!</span>
+                    </div>
+               )}
+
+               {/* Attached Snapshot Display */}
+               {hasAttachedSnapshot && (
+                    <div className="bg-dark-surface border border-dark-border rounded-lg p-4">
+                         <h4 className="text-sm font-medium text-dark-text mb-3">Attached Visual</h4>
+                         <div className="bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
+                              <div className="aspect-video">
+                                   <img
+                                        src={content.imageUrl}
+                                        alt="Attached code snapshot"
+                                        className="w-full h-full object-cover"
+                                   />
+                              </div>
+                         </div>
                     </div>
                )}
 
