@@ -13,6 +13,7 @@ CodeToContent is a developer-focused application that helps you create compellin
 - **🎨 X (Twitter) Optimized** - Generate optimized content for X (Twitter)
 - **🎤 Voice Profile** - Personalized content generation using your unique writing style
 - **✏️ Content Refinement** - Edit and refine generated content with AI assistance
+- **📸 Visual Intelligence** - Generate beautiful code snapshot images (NEW!)
 - **🌙 Dark Theme UI** - Clean, minimal interface inspired by Raycast
 - **💾 Persistent Storage** - MongoDB stores analyses and content for future reference
 
@@ -33,6 +34,32 @@ The Voice Engine transforms CodeToContent from a generic AI content generator in
 - **🚀 Zero-Setup Option** - Skip onboarding and let the system learn entirely from your edits
 
 **Reality Check:** The Voice Engine improves over time. Early content may need editing, but each edit teaches the system your preferences. Expect 5-10 generations before seeing significant personalization.
+
+### 📸 Visual Intelligence (Code Snapshot Generator) (NEW!)
+
+Transform your code into beautiful, shareable images that boost engagement on X (Twitter). Posts with visuals get significantly more engagement, and Visual Intelligence uses AI to automatically select the most interesting code snippets from your repositories and render them as professional, syntax-highlighted images.
+
+- **🤖 AI-Powered Selection** - Gemini AI analyzes your code to identify the most interesting snippets
+- **🎨 Beautiful Rendering** - Carbon.now.sh-style aesthetics with syntax highlighting
+- **⚡ Smart Caching** - Generated snapshots are cached and reused efficiently
+- **🔄 Staleness Detection** - Automatically invalidates outdated snapshots when code changes
+- **📎 Seamless Integration** - Attach snapshots to your content with one click
+- **🎯 Intelligent Scoring** - Prioritizes new functions, refactored logic, and core algorithms
+- **🖼️ Optimized for X** - Images under 5MB, perfect dimensions for social media
+- **🔍 Heuristic Fallback** - Works even when AI is unavailable
+
+**How It Works:**
+1. Select a repository and click "Generate Snapshots"
+2. AI analyzes your code and selects 5 most interesting snippets
+3. Snippets are rendered as beautiful code images
+4. Click "Add Visual" when generating content to attach a snapshot
+5. Your X post now includes a compelling code visual
+
+**Perfect For:**
+- Showcasing new features or refactored code
+- Sharing interesting algorithms or patterns
+- Making technical posts more engaging
+- Highlighting code quality and craftsmanship
 
 ## 🏗️ Architecture
 
@@ -63,6 +90,7 @@ code-to-content/
 │   │   │   ├── StyleProfileSetup.tsx      # NEW: Voice onboarding
 │   │   │   ├── StyleProfileEditor.tsx     # NEW: Manual profile editing
 │   │   │   ├── ProfileAnalytics.tsx       # NEW: Evolution dashboard
+│   │   │   ├── SnapshotSelector.tsx       # NEW: Snapshot selection modal
 │   │   │   └── __tests__/     # Component tests
 │   │   ├── utils/
 │   │   │   └── apiClient.ts   # API client with auth
@@ -80,14 +108,15 @@ code-to-content/
 │   │   │   ├── User.ts        # Extended with styleProfile
 │   │   │   ├── Repository.ts
 │   │   │   ├── Analysis.ts
-│   │   │   ├── Content.ts     # Extended with editMetadata
+│   │   │   ├── Content.ts     # Extended with editMetadata & snapshotId
+│   │   │   ├── CodeSnapshot.ts # NEW: Code snapshot metadata
 │   │   │   ├── LearningJob.ts # NEW: Async learning jobs
 │   │   │   └── VoiceArchetype.ts # NEW: Pre-built personas
 │   │   ├── services/          # Business logic
 │   │   │   ├── AuthService.ts
 │   │   │   ├── GitHubService.ts
 │   │   │   ├── AnalysisService.ts
-│   │   │   ├── ContentGenerationService.ts # Enhanced with voice
+│   │   │   ├── ContentGenerationService.ts # Enhanced with voice & snapshots
 │   │   │   ├── VoiceAnalysisService.ts    # NEW: Style extraction
 │   │   │   ├── FeedbackLearningEngine.ts  # NEW: Primary learning
 │   │   │   ├── StyleDeltaExtractionService.ts # NEW: Edit analysis
@@ -96,12 +125,17 @@ code-to-content/
 │   │   │   ├── CacheService.ts            # NEW: Redis caching
 │   │   │   ├── ProfileVersioningService.ts # NEW: Rollback support
 │   │   │   ├── AtomicProfileUpdateService.ts # NEW: Concurrency
-│   │   │   └── EditMetadataStorageService.ts # NEW: Edit tracking
+│   │   │   ├── EditMetadataStorageService.ts # NEW: Edit tracking
+│   │   │   ├── VisualSnapshotService.ts   # NEW: Snapshot generation
+│   │   │   ├── SnippetSelectionService.ts # NEW: Code snippet selection
+│   │   │   ├── ImageRenderingService.ts   # NEW: Code image rendering
+│   │   │   └── StorageService.ts          # NEW: Image storage
 │   │   ├── routes/            # API routes
 │   │   │   ├── auth.ts
 │   │   │   ├── repositories.ts
-│   │   │   ├── content.ts     # Enhanced with save-edits
-│   │   │   └── profile.ts     # NEW: Voice profile endpoints
+│   │   │   ├── content.ts     # Enhanced with save-edits & snapshots
+│   │   │   ├── profile.ts     # NEW: Voice profile endpoints
+│   │   │   └── snapshots.ts   # NEW: Snapshot endpoints
 │   │   ├── workers/           # Background workers
 │   │   │   └── learningWorker.ts # NEW: Process learning jobs
 │   │   ├── middleware/
@@ -118,7 +152,11 @@ code-to-content/
 │       │   ├── requirements.md
 │       │   ├── design.md
 │       │   └── tasks.md
-│       └── personalized-voice-engine/  # NEW: Voice Engine spec
+│       ├── personalized-voice-engine/  # NEW: Voice Engine spec
+│       │   ├── requirements.md
+│       │   ├── design.md
+│       │   └── tasks.md
+│       └── visual-intelligence-code-snapshot-generator/  # NEW: Visual Intelligence spec
 │           ├── requirements.md
 │           ├── design.md
 │           └── tasks.md
@@ -137,6 +175,7 @@ code-to-content/
 - **Node.js** 18+ and npm
 - **MongoDB** (local or MongoDB Atlas)
 - **Redis** (local or Redis Cloud) - Required for Voice Engine - See Redis Setup section below
+- **Puppeteer Dependencies** - Required for Visual Intelligence (Chromium, system libraries)
 - **GitHub OAuth App** credentials
 - **Google Gemini API** key
 
@@ -148,12 +187,70 @@ git clone <repository-url>
 cd code-to-content
 ```
 
-2. **Install all dependencies:**
+2. **Install Puppeteer dependencies (for Visual Intelligence):**
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  chromium-browser \
+  ca-certificates \
+  fonts-liberation \
+  libappindicator3-1 \
+  libasound2 \
+  libatk-bridge2.0-0 \
+  libatk1.0-0 \
+  libc6 \
+  libcairo2 \
+  libcups2 \
+  libdbus-1-3 \
+  libexpat1 \
+  libfontconfig1 \
+  libgbm1 \
+  libgcc1 \
+  libglib2.0-0 \
+  libgtk-3-0 \
+  libnspr4 \
+  libnss3 \
+  libpango-1.0-0 \
+  libpangocairo-1.0-0 \
+  libstdc++6 \
+  libx11-6 \
+  libx11-xcb1 \
+  libxcb1 \
+  libxcomposite1 \
+  libxcursor1 \
+  libxdamage1 \
+  libxext6 \
+  libxfixes3 \
+  libxi6 \
+  libxrandr2 \
+  libxrender1 \
+  libxss1 \
+  libxtst6 \
+  lsb-release \
+  wget \
+  xdg-utils
+```
+
+**macOS:**
+```bash
+# Puppeteer will download Chromium automatically
+# No additional dependencies needed
+```
+
+**Windows:**
+```bash
+# Puppeteer will download Chromium automatically
+# Ensure Visual C++ Redistributable is installed
+```
+
+3. **Install all dependencies:**
 ```bash
 npm run install:all
 ```
 
-3. **Set up environment variables:**
+4. **Set up environment variables:**
 
 **Backend** (`backend/.env`):
 ```bash
@@ -215,6 +312,8 @@ The project uses a comprehensive testing approach:
 - ✅ Authentication flow (OAuth, JWT)
 - ✅ Repository analysis (GitHub API, Gemini AI)
 - ✅ Content generation (multi-platform, voice-aware)
+- ✅ Voice Engine (learning, profile evolution, archetypes)
+- ✅ Visual Intelligence (snapshot generation, image rendering, storage)
 - ✅ Data persistence (MongoDB models)
 - ✅ UI components (user interactions, state management)
 
@@ -299,6 +398,31 @@ GEMINI_TEMPERATURE=0.8                # Gemini temperature for voice generation 
 GEMINI_MAX_TOKENS=8000                # Max prompt tokens (default: 8000)
 ```
 
+**Optional (Visual Intelligence):**
+```bash
+# Image Rendering Configuration
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser  # Path to Chromium (auto-detected if omitted)
+SNAPSHOT_MAX_SNIPPETS=5               # Max snippets per repository (default: 5)
+SNAPSHOT_IMAGE_QUALITY=90             # PNG quality 0-100 (default: 90)
+SNAPSHOT_SELECTION_TIMEOUT_MS=5000    # Selection timeout in ms (default: 5000)
+SNAPSHOT_RENDERING_TIMEOUT_MS=3000    # Rendering timeout in ms (default: 3000)
+SNAPSHOT_PARALLEL_BATCH_SIZE=5        # Parallel AI scoring batch size (default: 5)
+
+# Storage Configuration
+SNAPSHOT_STORAGE_TYPE=local           # Storage type: 'local' or 's3' (default: local)
+SNAPSHOT_STORAGE_PATH=./uploads/snapshots  # Local storage path (default: ./uploads/snapshots)
+
+# AWS S3 Configuration (if SNAPSHOT_STORAGE_TYPE=s3)
+AWS_S3_BUCKET=codetocontent-snapshots # S3 bucket name
+AWS_S3_REGION=us-east-1               # S3 region
+AWS_ACCESS_KEY_ID=your_access_key     # AWS access key
+AWS_SECRET_ACCESS_KEY=your_secret_key # AWS secret key
+
+# Caching Configuration
+SNAPSHOT_CACHE_TTL_HOURS=24           # Gemini analysis cache TTL (default: 24)
+SNAPSHOT_CLEANUP_AGE_DAYS=30          # Delete unused snapshots after N days (default: 30)
+```
+
 #### Frontend Environment Variables
 
 ```bash
@@ -377,6 +501,34 @@ docker run -d -p 6379:6379 redis:latest
   - "More engaging" - Add hooks and compelling language
 - One-click copy to clipboard
 - **Each edit improves your voice profile** - expect better results after 5-10 generations
+
+### 5. Visual Intelligence (Code Snapshots)
+- User clicks "Generate Snapshots" for a repository
+- System analyzes code structure and recent changes
+- Gemini AI scores snippets based on:
+  - Cyclomatic complexity
+  - Architectural centrality
+  - Recent additions or refactors
+  - Technical patterns and best practices
+- Top 5 snippets rendered as beautiful code images
+- User clicks "Add Visual" when generating content
+- Select snapshot from modal to attach to post
+- Generated content includes imageUrl for display
+- Snapshots cached and reused until code changes
+
+**Usage Example:**
+```
+1. Select repository "my-awesome-project"
+2. Click "Generate Snapshots" button
+3. Wait 10-15 seconds for AI analysis
+4. View 5 generated snapshot thumbnails
+5. Click "Generate Content" for the repository
+6. Click "Add Visual" button
+7. Select a snapshot from the modal
+8. Preview shows code image attached
+9. Generate content with visual included
+10. Copy and post to X (Twitter)
+```
 
 ## 🎙️ Voice Engine Deep Dive
 
@@ -590,6 +742,84 @@ GET  /api/profile/analytics           # Get profile evolution metrics
 GET  /api/profile/evolution-timeline  # Get learning history with milestones
 ```
 
+#### Code Snapshots (NEW)
+```
+POST /api/snapshots/generate          # Generate snapshots for repository
+GET  /api/snapshots/:repositoryId     # Get snapshots for repository
+GET  /api/snapshots/snapshot/:snapshotId  # Get single snapshot by ID
+DELETE /api/snapshots/:snapshotId     # Delete snapshot
+```
+
+**Snapshot Generation Request:**
+```json
+POST /api/snapshots/generate
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+{
+  "repositoryId": "507f191e810c19729de860ea"
+}
+```
+
+**Snapshot Generation Response:**
+```json
+{
+  "message": "Snapshots generated successfully",
+  "snapshots": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "repositoryId": "507f191e810c19729de860ea",
+      "snippetMetadata": {
+        "filePath": "src/services/AuthService.ts",
+        "startLine": 45,
+        "endLine": 68,
+        "functionName": "authenticateUser",
+        "language": "typescript",
+        "linesOfCode": 23
+      },
+      "selectionScore": 92,
+      "selectionReason": "Core authentication logic with JWT token generation",
+      "imageUrl": "http://localhost:3001/uploads/snapshots/507f1f77bcf86cd799439011.png",
+      "imageSize": 245678,
+      "imageDimensions": {
+        "width": 1200,
+        "height": 800
+      },
+      "isStale": false,
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**Get Snapshots Response:**
+```json
+GET /api/snapshots/:repositoryId
+Authorization: Bearer <jwt_token>
+
+{
+  "snapshots": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "selectionScore": 92,
+      "imageUrl": "http://localhost:3001/uploads/snapshots/507f1f77bcf86cd799439011.png",
+      "snippetMetadata": {
+        "filePath": "src/services/AuthService.ts",
+        "functionName": "authenticateUser"
+      },
+      "isStale": false
+    }
+  ]
+}
+```
+
+**Error Codes:**
+- **400 Bad Request**: Invalid repositoryId format or missing required fields
+- **401 Unauthorized**: Missing or invalid JWT token
+- **403 Forbidden**: User doesn't have access to repository
+- **404 Not Found**: Repository or snapshot not found
+- **500 Internal Server Error**: Snapshot generation failed (AI unavailable, rendering error, storage error)
+
 ### Data Models
 
 **User**
@@ -613,6 +843,16 @@ GET  /api/profile/evolution-timeline  # Get learning history with milestones
   - toneShift, vocabularyChanges, phrasesAdded, phrasesRemoved
   - editTimestamp, learningProcessed
 - **NEW:** Voice metadata - usedStyleProfile, voiceStrengthUsed, evolutionScoreAtGeneration
+- **NEW:** snapshotId (optional) - Reference to attached CodeSnapshot
+
+**CodeSnapshot (NEW)**
+- Repository reference, analysis reference, user reference
+- snippetMetadata - filePath, startLine, endLine, functionName, language, linesOfCode
+- selectionScore (0-100), selectionReason
+- imageUrl, imageSize, imageDimensions (width, height)
+- renderOptions - theme, showLineNumbers, fontSize
+- isStale (staleness tracking), lastCommitSha
+- createdAt, updatedAt
 
 **LearningJob (NEW)**
 - User reference, content reference, status, priority, attempts
@@ -744,6 +984,236 @@ If you need to rollback:
 
 The Voice Engine is designed for zero-downtime deployment and graceful degradation.
 
+## 🔧 Troubleshooting
+
+### Visual Intelligence Issues
+
+#### Puppeteer/Chromium Issues
+
+**Problem: "Failed to launch browser" or "Chromium not found"**
+
+**Solution:**
+```bash
+# Ubuntu/Debian: Install Chromium and dependencies
+sudo apt-get update
+sudo apt-get install -y chromium-browser
+
+# Set executable path in .env
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Or let Puppeteer download Chromium
+cd backend
+npx puppeteer browsers install chrome
+```
+
+**Problem: "Error: Failed to launch the browser process"**
+
+**Solution (Docker):**
+```dockerfile
+# Add to Dockerfile
+RUN apt-get update && apt-get install -y \
+    chromium \
+    fonts-liberation \
+    libnss3 \
+    libxss1 \
+    libappindicator3-1 \
+    libasound2
+
+# Run with --no-sandbox flag
+ENV PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox"
+```
+
+**Problem: "Navigation timeout exceeded"**
+
+**Solution:**
+```bash
+# Increase timeout in .env
+SNAPSHOT_RENDERING_TIMEOUT_MS=10000  # 10 seconds
+
+# Or check network connectivity
+ping google.com
+```
+
+#### Storage Issues
+
+**Problem: "Failed to save image" or "ENOENT: no such file or directory"**
+
+**Solution:**
+```bash
+# Ensure uploads directory exists
+mkdir -p backend/uploads/snapshots
+
+# Check permissions
+chmod 755 backend/uploads
+chmod 755 backend/uploads/snapshots
+
+# Verify in .env
+SNAPSHOT_STORAGE_PATH=./uploads/snapshots
+```
+
+**Problem: "Image URL returns 404"**
+
+**Solution:**
+```bash
+# Verify Express static middleware is configured
+# Check backend/src/index.ts for:
+app.use('/uploads', express.static('uploads'));
+
+# Verify file exists
+ls -la backend/uploads/snapshots/
+```
+
+**Problem: "S3 upload failed" (when using cloud storage)**
+
+**Solution:**
+```bash
+# Verify AWS credentials
+aws s3 ls s3://your-bucket-name
+
+# Check .env configuration
+SNAPSHOT_STORAGE_TYPE=s3
+AWS_S3_BUCKET=your-bucket-name
+AWS_S3_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_secret
+
+# Verify bucket permissions (allow PutObject, GetObject)
+```
+
+#### Snapshot Generation Issues
+
+**Problem: "No snapshots generated" or "Empty snapshot list"**
+
+**Solution:**
+```bash
+# Check repository has analyzable code files
+# Supported languages: TypeScript, JavaScript, Python, Go, Java, etc.
+
+# Verify Gemini API key is valid
+curl -H "Authorization: Bearer $GEMINI_API_KEY" \
+  https://generativelanguage.googleapis.com/v1/models
+
+# Check logs for errors
+tail -f backend/logs/error.log
+
+# Try with heuristic fallback (disable AI temporarily)
+# System will use file-based scoring
+```
+
+**Problem: "Snapshot generation timeout"**
+
+**Solution:**
+```bash
+# Increase timeout in .env
+SNAPSHOT_SELECTION_TIMEOUT_MS=10000  # 10 seconds
+
+# Reduce max snippets for large repos
+SNAPSHOT_MAX_SNIPPETS=3
+
+# Check Gemini API rate limits
+# Free tier: 60 requests per minute
+```
+
+**Problem: "Images are too large (>5MB)"**
+
+**Solution:**
+```bash
+# Reduce image quality in .env
+SNAPSHOT_IMAGE_QUALITY=80  # Lower quality (default: 90)
+
+# Limit code snippet length
+# System automatically limits to 100 lines per snippet
+
+# Check image dimensions
+# Default: 1200x800 (optimized for X/Twitter)
+```
+
+#### Staleness Detection Issues
+
+**Problem: "Snapshots not invalidated after code changes"**
+
+**Solution:**
+```bash
+# Manually invalidate snapshots
+curl -X POST http://localhost:3001/api/snapshots/invalidate \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"repositoryId": "507f191e810c19729de860ea"}'
+
+# Or delete and regenerate
+curl -X DELETE http://localhost:3001/api/snapshots/:snapshotId \
+  -H "Authorization: Bearer $JWT_TOKEN"
+
+# Then regenerate
+curl -X POST http://localhost:3001/api/snapshots/generate \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -d '{"repositoryId": "507f191e810c19729de860ea"}'
+```
+
+### Voice Engine Issues
+
+**Problem: "Redis connection failed"**
+
+**Solution:**
+```bash
+# Check Redis is running
+redis-cli ping  # Should return PONG
+
+# Verify REDIS_URL in .env
+REDIS_URL=redis://localhost:6379
+
+# Check Redis logs
+redis-cli INFO
+```
+
+**Problem: "Learning jobs not processing"**
+
+**Solution:**
+```bash
+# Verify worker process is running
+ps aux | grep worker
+
+# Start worker if not running
+cd backend
+npm run worker
+
+# Check queue health
+curl http://localhost:3001/api/admin/queue-health
+```
+
+### General Issues
+
+**Problem: "Gemini API rate limit exceeded"**
+
+**Solution:**
+```bash
+# Free tier limits:
+# - 60 requests per minute
+# - 1500 requests per day
+
+# Reduce concurrent operations
+LEARNING_QUEUE_CONCURRENCY=2
+SNAPSHOT_PARALLEL_BATCH_SIZE=2
+
+# Increase cache TTL to reduce API calls
+SNAPSHOT_CACHE_TTL_HOURS=48
+PROFILE_CACHE_TTL_SECONDS=7200
+```
+
+**Problem: "MongoDB connection timeout"**
+
+**Solution:**
+```bash
+# Check MongoDB is running
+mongosh --eval "db.adminCommand('ping')"
+
+# Verify MONGODB_URI in .env
+MONGODB_URI=mongodb://localhost:27017/code-to-content
+
+# Check network connectivity
+ping your-mongodb-host
+```
+
 ## 🚢 Deployment
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
@@ -762,6 +1232,129 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 - **Container Orchestration**: Docker Compose, Kubernetes, or Cloud Run
 - **Load Balancer**: For horizontal scaling of main server
 - **Process Manager**: PM2, systemd, or container restart policies
+
+### Visual Intelligence Deployment Considerations
+
+#### Infrastructure Requirements
+
+- **Chromium**: Headless browser for rendering (included with Puppeteer)
+- **System Libraries**: Font libraries, graphics libraries (see installation section)
+- **Storage**: Local filesystem or cloud storage (S3, GCS, Azure Blob)
+- **Memory**: 512MB minimum per rendering process
+- **Disk Space**: 100MB per 1000 snapshots (estimated)
+
+**Recommended Production Setup:**
+- **Cloud Storage**: AWS S3, Google Cloud Storage, or Azure Blob Storage
+- **CDN**: CloudFront, Cloud CDN, or Azure CDN for image delivery
+- **Container**: Docker with Chromium pre-installed
+- **Resource Limits**: Set memory limits to prevent OOM (1GB recommended)
+
+#### Docker Configuration for Visual Intelligence
+
+**Dockerfile:**
+```dockerfile
+FROM node:18-slim
+
+# Install Chromium and dependencies
+RUN apt-get update && apt-get install -y \
+    chromium \
+    fonts-liberation \
+    libnss3 \
+    libxss1 \
+    libappindicator3-1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Puppeteer to use installed Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+
+# Install dependencies
+RUN npm run install:all
+
+# Copy source code
+COPY . .
+
+# Build backend
+RUN npm run build:backend
+
+# Create uploads directory
+RUN mkdir -p backend/uploads/snapshots
+
+EXPOSE 3001
+
+CMD ["node", "backend/dist/index.js"]
+```
+
+**docker-compose.yml with Visual Intelligence:**
+```yaml
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:7
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=code-to-content
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend/uploads:/app/backend/uploads  # Persist snapshots
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/code-to-content
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+      - SNAPSHOT_STORAGE_TYPE=local
+      - SNAPSHOT_STORAGE_PATH=./uploads/snapshots
+    depends_on:
+      - mongodb
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 1G  # Prevent OOM from Chromium
+
+  worker:
+    build: .
+    command: node backend/dist/worker.js
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/code-to-content
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+      - redis
+
+volumes:
+  mongodb_data:
+  redis_data:
+```
 
 #### Docker Deployment
 
@@ -861,6 +1454,13 @@ LEARNING_RATE_LIMIT_MINUTES=10
 - Profile cache hit rate (should be > 80%)
 - Worker process health
 - Gemini API rate limits
+- **Snapshot generation success rate** (NEW)
+- **Average selection time** (NEW - should be < 5s)
+- **Average rendering time** (NEW - should be < 3s)
+- **Gemini AI fallback rate** (NEW - should be < 10%)
+- **Storage usage** (NEW - track disk/S3 usage)
+- **Image rendering failures** (NEW - alert if > 5%)
+- **Puppeteer crashes** (NEW - alert immediately)
 
 **Health Checks:**
 ```bash
