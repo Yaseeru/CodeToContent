@@ -9,6 +9,7 @@ import { SnippetSelectionService, SnippetCandidate, RepositoryContext } from './
 import { ImageRenderingService } from './ImageRenderingService';
 import { LocalStorageService, IStorageService } from './StorageService';
 import { SNAPSHOT_CONFIG } from '../config/constants';
+import { LoggerService, LogLevel } from './LoggerService';
 
 /**
  * Scored snippet with AI analysis
@@ -57,6 +58,7 @@ export class VisualSnapshotService {
      private snippetSelectionService: SnippetSelectionService;
      private imageRenderingService: ImageRenderingService;
      private storageService: IStorageService;
+     private logger: LoggerService;
 
      constructor(
           geminiApiKey: string,
@@ -68,6 +70,7 @@ export class VisualSnapshotService {
           this.snippetSelectionService = new SnippetSelectionService();
           this.imageRenderingService = new ImageRenderingService();
           this.storageService = storageService || new LocalStorageService();
+          this.logger = LoggerService.getInstance();
      }
 
      /**
@@ -75,7 +78,7 @@ export class VisualSnapshotService {
       * Must be called before using the service
       */
      async initialize(): Promise<void> {
-          console.log('[VisualSnapshot] Initializing service');
+          this.logger.log(LogLevel.INFO, 'Initializing VisualSnapshotService');
 
           // Initialize image rendering service
           await this.imageRenderingService.initialize();
@@ -85,7 +88,7 @@ export class VisualSnapshotService {
                await this.storageService.initialize();
           }
 
-          console.log('[VisualSnapshot] Service initialized successfully');
+          this.logger.log(LogLevel.INFO, 'VisualSnapshotService initialized successfully');
      }
 
      /**
@@ -93,9 +96,9 @@ export class VisualSnapshotService {
       * Should be called when shutting down the service
       */
      async cleanup(): Promise<void> {
-          console.log('[VisualSnapshot] Cleaning up service');
+          this.logger.log(LogLevel.INFO, 'Cleaning up VisualSnapshotService');
           await this.imageRenderingService.cleanup();
-          console.log('[VisualSnapshot] Service cleanup complete');
+          this.logger.log(LogLevel.INFO, 'VisualSnapshotService cleanup complete');
      }
 
      /**
@@ -109,7 +112,10 @@ export class VisualSnapshotService {
           options?: GenerationOptions
      ): Promise<ICodeSnapshot[]> {
           try {
-               console.log(`[VisualSnapshot] Starting snapshot generation for repository ${repositoryId}`);
+               this.logger.log(LogLevel.INFO, 'Starting snapshot generation', {
+                    repositoryId,
+                    userId
+               });
 
                // Step 1: Fetch repository and analysis data
                const repository = await Repository.findById(repositoryId);
@@ -135,7 +141,9 @@ export class VisualSnapshotService {
                if (!options?.forceRegenerate) {
                     const existingSnapshots = await this.getSnapshotsForRepository(repositoryId, userId);
                     if (existingSnapshots.length > 0) {
-                         console.log(`[VisualSnapshot] Returning ${existingSnapshots.length} cached snapshots`);
+                         this.logger.log(LogLevel.INFO, 'Returning cached snapshots', {
+                              count: existingSnapshots.length
+                         });
                          return existingSnapshots;
                     }
                }
@@ -173,7 +181,7 @@ export class VisualSnapshotService {
                let scoredSnippets = await this.getCachedSnippetSelection(selectionCacheKey);
 
                if (!scoredSnippets) {
-                    console.log('[VisualSnapshot] Snippet selection cache miss, performing selection');
+                    this.logger.log(LogLevel.INFO, 'Snippet selection cache miss, performing selection');
 
                     const candidates = await this.snippetSelectionService.identifyCandidates(
                          fileStructure,
@@ -184,7 +192,7 @@ export class VisualSnapshotService {
                     const filteredCandidates = this.snippetSelectionService.filterBoilerplate(candidates);
 
                     if (filteredCandidates.length === 0) {
-                         console.log('[VisualSnapshot] No suitable code snippets found');
+                         this.logger.log(LogLevel.WARN, 'No suitable code snippets found');
                          return [];
                     }
 
@@ -194,7 +202,9 @@ export class VisualSnapshotService {
                          SNAPSHOT_CONFIG.MAX_CANDIDATES_TO_SCORE
                     );
 
-                    console.log(`[VisualSnapshot] Scoring ${candidatesToScore.length} candidate snippets`);
+                    this.logger.log(LogLevel.INFO, 'Scoring candidate snippets', {
+                         count: candidatesToScore.length
+                    });
 
                     // Step 6: Score snippets with AI (parallel processing in batches)
                     scoredSnippets = await this.scoreSnippetsInParallel(
@@ -205,7 +215,7 @@ export class VisualSnapshotService {
                     // Cache the scored snippets for future use
                     await this.cacheSnippetSelection(selectionCacheKey, scoredSnippets);
                } else {
-                    console.log('[VisualSnapshot] Using cached snippet selection results');
+                    this.logger.log(LogLevel.INFO, 'Using cached snippet selection results');
                }
 
                // Step 7: Select top N snippets
@@ -214,14 +224,18 @@ export class VisualSnapshotService {
                     .sort((a, b) => b.selectionScore - a.selectionScore)
                     .slice(0, maxSnippets);
 
-               console.log(`[VisualSnapshot] Selected ${topSnippets.length} top snippets for rendering`);
+               this.logger.log(LogLevel.INFO, 'Selected top snippets for rendering', {
+                    count: topSnippets.length
+               });
 
                // Step 8: Fetch code content and render snippets to images
                const snapshots: ICodeSnapshot[] = [];
 
                for (const snippet of topSnippets) {
                     try {
-                         console.log(`[VisualSnapshot] Rendering snippet from ${snippet.filePath}`);
+                         this.logger.log(LogLevel.DEBUG, 'Rendering snippet', {
+                              filePath: snippet.filePath
+                         });
 
                          // Fetch the actual code content from GitHub
                          const codeContent = await githubService.fetchFileContent(owner, repo, snippet.filePath);
@@ -231,7 +245,9 @@ export class VisualSnapshotService {
                          const snippetCode = lines.slice(snippet.startLine - 1, snippet.endLine).join('\n');
 
                          if (!snippetCode || snippetCode.trim().length === 0) {
-                              console.warn(`[VisualSnapshot] Empty code snippet for ${snippet.filePath}, skipping`);
+                              this.logger.log(LogLevel.WARN, 'Empty code snippet, skipping', {
+                                   filePath: snippet.filePath
+                              });
                               continue;
                          }
 
@@ -282,17 +298,26 @@ export class VisualSnapshotService {
                          await snapshot.save();
                          snapshots.push(snapshot);
 
-                         console.log(`[VisualSnapshot] Successfully rendered and stored snapshot for ${snippet.filePath}`);
+                         this.logger.log(LogLevel.DEBUG, 'Successfully rendered and stored snapshot', {
+                              filePath: snippet.filePath
+                         });
                     } catch (error: any) {
-                         console.error(`[VisualSnapshot] Failed to render snippet from ${snippet.filePath}:`, error.message);
+                         this.logger.log(LogLevel.ERROR, 'Failed to render snippet', {
+                              filePath: snippet.filePath,
+                              error: error.message
+                         });
                          // Continue with other snippets even if one fails
                     }
                }
 
-               console.log(`[VisualSnapshot] Successfully generated ${snapshots.length} snapshots`);
+               this.logger.log(LogLevel.INFO, 'Successfully generated snapshots', {
+                    count: snapshots.length
+               });
                return snapshots;
           } catch (error: any) {
-               console.error('[VisualSnapshot] Snapshot generation failed:', error.message);
+               this.logger.log(LogLevel.ERROR, 'Snapshot generation failed', {
+                    error: error.message
+               });
                throw this.handleError(error);
           }
      }
@@ -330,7 +355,9 @@ export class VisualSnapshotService {
           userId: string
      ): Promise<ICodeSnapshot[]> {
           try {
-               console.log(`[VisualSnapshot] Fetching snapshots for repository ${repositoryId}`);
+               this.logger.log(LogLevel.DEBUG, 'Fetching snapshots for repository', {
+                    repositoryId
+               });
 
                const snapshots = await CodeSnapshot.find({
                     repositoryId: new mongoose.Types.ObjectId(repositoryId),
@@ -340,10 +367,14 @@ export class VisualSnapshotService {
                     .sort({ selectionScore: -1 })
                     .exec();
 
-               console.log(`[VisualSnapshot] Found ${snapshots.length} non-stale snapshots`);
+               this.logger.log(LogLevel.DEBUG, 'Found non-stale snapshots', {
+                    count: snapshots.length
+               });
                return snapshots;
           } catch (error: any) {
-               console.error('[VisualSnapshot] Failed to fetch snapshots:', error.message);
+               this.logger.log(LogLevel.ERROR, 'Failed to fetch snapshots', {
+                    error: error.message
+               });
                throw this.handleError(error);
           }
      }
@@ -357,7 +388,9 @@ export class VisualSnapshotService {
           latestCommitSha: string
      ): Promise<void> {
           try {
-               console.log(`[VisualSnapshot] Invalidating stale snapshots for repository ${repositoryId}`);
+               this.logger.log(LogLevel.INFO, 'Invalidating stale snapshots', {
+                    repositoryId
+               });
 
                // Mark snapshots as stale if they have a different commit SHA
                const result = await CodeSnapshot.updateMany(
@@ -371,14 +404,16 @@ export class VisualSnapshotService {
                     }
                );
 
-               console.log(`[VisualSnapshot] Marked ${result.modifiedCount} snapshots as stale`);
+               this.logger.log(LogLevel.INFO, 'Marked snapshots as stale', {
+                    count: result.modifiedCount
+               });
 
                // Clear Redis cache for this repository
-               // Cache keys follow pattern: snapshot:analysis:{repositoryId}:{commitSha}
-               // We'll implement a simple pattern-based deletion
                await this.clearSnapshotCache(repositoryId);
           } catch (error: any) {
-               console.error('[VisualSnapshot] Failed to invalidate snapshots:', error.message);
+               this.logger.log(LogLevel.ERROR, 'Failed to invalidate snapshots', {
+                    error: error.message
+               });
                throw this.handleError(error);
           }
      }
@@ -389,9 +424,13 @@ export class VisualSnapshotService {
      private async clearSnapshotCache(repositoryId: string): Promise<void> {
           try {
                await this.cacheService.invalidateSnapshotCache(repositoryId);
-               console.log(`[VisualSnapshot] Cleared snapshot cache for repository ${repositoryId}`);
+               this.logger.log(LogLevel.DEBUG, 'Cleared snapshot cache', {
+                    repositoryId
+               });
           } catch (error: any) {
-               console.warn('[VisualSnapshot] Failed to clear cache:', error.message);
+               this.logger.log(LogLevel.WARN, 'Failed to clear cache', {
+                    error: error.message
+               });
                // Don't throw - cache clearing failure is not critical
           }
      }
@@ -413,7 +452,9 @@ export class VisualSnapshotService {
                // Check cache first
                const cachedAnalysis = await this.cacheService.getCachedSnapshotAnalysis(cacheKey);
                if (cachedAnalysis) {
-                    console.log(`[VisualSnapshot] Using cached AI analysis for ${snippet.filePath}`);
+                    this.logger.log(LogLevel.DEBUG, 'Using cached AI analysis', {
+                         filePath: snippet.filePath
+                    });
                     return {
                          ...snippet,
                          ...cachedAnalysis,
@@ -463,7 +504,9 @@ export class VisualSnapshotService {
                     technicalInterest: analysis.technicalInterest,
                };
           } catch (error: any) {
-               console.warn('[VisualSnapshot] AI scoring failed, falling back to heuristic:', error.message);
+               this.logger.log(LogLevel.WARN, 'AI scoring failed, falling back to heuristic', {
+                    error: error.message
+               });
 
                // Fallback to heuristic scoring
                const heuristicScore = this.snippetSelectionService.calculateHeuristicScore(snippet, context);
@@ -582,7 +625,11 @@ Respond ONLY with valid JSON.`;
 
                     if (attempt < maxAttempts) {
                          const delayMs = SNAPSHOT_CONFIG.RETRY_DELAYS_MS[attempt - 1] || 4000;
-                         console.log(`[VisualSnapshot] Retry attempt ${attempt}/${maxAttempts} after ${delayMs}ms`);
+                         this.logger.log(LogLevel.DEBUG, 'Retrying operation', {
+                              attempt,
+                              maxAttempts,
+                              delayMs
+                         });
                          await this.delay(delayMs);
                     }
                }
@@ -676,9 +723,13 @@ Respond ONLY with valid JSON.`;
                     scoredSnippets,
                     SNAPSHOT_CONFIG.SELECTION_CACHE_TTL_SECONDS
                );
-               console.log(`[VisualSnapshot] Cached snippet selection results for key ${cacheKey}`);
+               this.logger.log(LogLevel.DEBUG, 'Cached snippet selection results', {
+                    cacheKey
+               });
           } catch (error: any) {
-               console.warn('[VisualSnapshot] Failed to cache snippet selection:', error.message);
+               this.logger.log(LogLevel.WARN, 'Failed to cache snippet selection', {
+                    error: error.message
+               });
                // Don't throw - caching is optional
           }
      }
@@ -690,12 +741,16 @@ Respond ONLY with valid JSON.`;
           try {
                const cached = await this.cacheService.getCachedSnapshotAnalysis(cacheKey);
                if (cached && Array.isArray(cached)) {
-                    console.log(`[VisualSnapshot] Found cached snippet selection for key ${cacheKey}`);
+                    this.logger.log(LogLevel.DEBUG, 'Found cached snippet selection', {
+                         cacheKey
+                    });
                     return cached as ScoredSnippet[];
                }
                return null;
           } catch (error: any) {
-               console.warn('[VisualSnapshot] Failed to get cached snippet selection:', error.message);
+               this.logger.log(LogLevel.WARN, 'Failed to get cached snippet selection', {
+                    error: error.message
+               });
                return null;
           }
      }
@@ -730,7 +785,7 @@ Respond ONLY with valid JSON.`;
                     height: metadata.height || SNAPSHOT_CONFIG.DEFAULT_IMAGE_HEIGHT,
                };
           } catch (error) {
-               console.warn('[VisualSnapshot] Failed to extract image dimensions, using defaults');
+               this.logger.log(LogLevel.WARN, 'Failed to extract image dimensions, using defaults');
                return {
                     width: SNAPSHOT_CONFIG.DEFAULT_IMAGE_WIDTH,
                     height: SNAPSHOT_CONFIG.DEFAULT_IMAGE_HEIGHT,

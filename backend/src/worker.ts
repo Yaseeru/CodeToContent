@@ -7,9 +7,11 @@ import { validateRedisConnection } from './config/redis';
 import { connectDatabase } from './config/database';
 import { learningWorker } from './workers/learningWorker';
 import { startHealthServer } from './workers/healthServer';
+import { LoggerService, LogLevel } from './services/LoggerService';
+
+const logger = LoggerService.getInstance();
 
 // Start worker with validation sequence
-// Requirements: 3.7, 2.6
 const startWorker = async () => {
      try {
           // Step 1: Validate environment variables (fail fast if missing)
@@ -21,13 +23,15 @@ const startWorker = async () => {
           // Step 3: Connect to database (with retry logic)
           await connectDatabase();
 
-          console.log('[Worker] All validations passed');
-          console.log('[Worker] Learning worker is now processing jobs...');
+          logger.log(LogLevel.INFO, 'Worker validations passed');
+          logger.log(LogLevel.INFO, 'Learning worker is now processing jobs');
 
-          // Step 4: Start health check server (Requirement 5.1)
+          // Step 4: Start health check server
           startHealthServer(learningWorker);
      } catch (error) {
-          console.error('[Worker] Failed to start worker:', error);
+          logger.log(LogLevel.ERROR, 'Failed to start worker', {
+               error: error instanceof Error ? error.message : String(error)
+          });
           process.exit(1);
      }
 };

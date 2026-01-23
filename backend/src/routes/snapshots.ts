@@ -11,8 +11,10 @@ import { User } from '../models/User';
 import { Repository } from '../models/Repository';
 import { CodeSnapshot } from '../models/CodeSnapshot';
 import mongoose from 'mongoose';
+import { LoggerService, LogLevel } from '../services/LoggerService';
 
 const router = Router();
+const logger = LoggerService.getInstance();
 
 // All routes require authentication
 router.use(authenticateToken);
@@ -89,7 +91,10 @@ router.post('/generate', snapshotGenerationRateLimiter, validateSnapshotGenerati
                })),
           });
      } catch (error) {
-          console.error('Error generating snapshots:', error);
+          logger.log(LogLevel.ERROR, 'Error generating snapshots', {
+               error: error instanceof Error ? error.message : String(error),
+               repositoryId: req.body.repositoryId
+          });
 
           let statusCode = 500;
           let errorMessage = 'Failed to generate code snapshots';
@@ -174,7 +179,10 @@ router.get('/:repositoryId', validateRepositoryIdParam, async (req: Request, res
                })),
           });
      } catch (error) {
-          console.error('Error fetching snapshots:', error);
+          logger.log(LogLevel.ERROR, 'Error fetching snapshots', {
+               error: error instanceof Error ? error.message : String(error),
+               repositoryId: req.params.repositoryId
+          });
 
           let statusCode = 500;
           let errorMessage = 'Failed to fetch code snapshots';
@@ -262,7 +270,10 @@ router.get('/snapshot/:snapshotId', validateSnapshotIdParam, async (req: Request
                },
           });
      } catch (error) {
-          console.error('Error fetching snapshot:', error);
+          logger.log(LogLevel.ERROR, 'Error fetching snapshot', {
+               error: error instanceof Error ? error.message : String(error),
+               snapshotId: req.params.snapshotId
+          });
 
           let statusCode = 500;
           let errorMessage = 'Failed to fetch code snapshot';
@@ -335,7 +346,10 @@ router.delete('/:snapshotId', validateSnapshotIdParam, async (req: Request, res:
                message: 'Snapshot deleted successfully',
           });
      } catch (error) {
-          console.error('Error deleting snapshot:', error);
+          logger.log(LogLevel.ERROR, 'Error deleting snapshot', {
+               error: error instanceof Error ? error.message : String(error),
+               snapshotId: req.params.snapshotId
+          });
 
           let statusCode = 500;
           let errorMessage = 'Failed to delete code snapshot';

@@ -74,7 +74,6 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
 
                setSnapshots(response.data.snapshots);
           } catch (err) {
-               console.error('Error fetching snapshots:', err);
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
           } finally {
@@ -94,7 +93,6 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                // Refresh snapshot list after generation
                await fetchSnapshots();
           } catch (err) {
-               console.error('Error generating snapshots:', err);
                const errorMessage = getErrorMessage(err);
                setGenerateError(errorMessage);
           } finally {

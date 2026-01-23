@@ -104,7 +104,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                     }
                } catch (err) {
                     // Silently fail - user may not have a profile yet
-                    console.log('No profile found or error fetching profile');
                     setProfileData(null);
                } finally {
                     setLoadingProfile(false);
@@ -134,7 +133,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
 
                onContentGenerated(response.data.content);
           } catch (err) {
-               console.error('Error generating content:', err);
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
                setShowErrorNotification(true);

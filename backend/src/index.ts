@@ -10,6 +10,7 @@ import { closeQueue } from './config/queue';
 import { validateEnvironmentVariables } from './config/validateEnv';
 import { validateRedisConnection, checkRedisHealth } from './config/redis';
 import { ServiceManager } from './services/ServiceManager';
+import { LoggerService, LogLevel } from './services/LoggerService';
 import authRoutes from './routes/auth';
 import repositoryRoutes from './routes/repositories';
 import contentRoutes from './routes/content';
@@ -20,6 +21,7 @@ import snapshotsRoutes from './routes/snapshots';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const logger = LoggerService.getInstance();
 
 // Middleware
 app.use(cors({
@@ -118,7 +120,7 @@ const startServer = async () => {
 
           // 5. Only start server after all validations pass
           app.listen(PORT, () => {
-               console.log(`Backend server running on port ${PORT}`);
+               logger.log(LogLevel.INFO, `Backend server running on port ${PORT}`);
           });
      } catch (error) {
           console.error('Failed to start server:', error);
@@ -133,7 +135,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-     console.log('SIGTERM received, closing server gracefully...');
+     logger.log(LogLevel.INFO, 'SIGTERM received, closing server gracefully');
      const serviceManager = ServiceManager.getInstance();
      await serviceManager.cleanup();
      await closeQueue();
@@ -141,7 +143,7 @@ process.on('SIGTERM', async () => {
 });
 
 process.on('SIGINT', async () => {
-     console.log('SIGINT received, closing server gracefully...');
+     logger.log(LogLevel.INFO, 'SIGINT received, closing server gracefully');
      const serviceManager = ServiceManager.getInstance();
      await serviceManager.cleanup();
      await closeQueue();

@@ -85,7 +85,7 @@ export class ContentGenerationService {
                const snapshot = await CodeSnapshot.findById(snapshotId);
 
                if (!snapshot) {
-                    console.warn(`Snapshot ${snapshotId} not found, continuing without snapshot`);
+                    this.logger.log(LogLevel.WARN, 'Snapshot not found, continuing without snapshot', { snapshotId });
                } else if (snapshot.userId.toString() !== userId) {
                     throw new Error('Unauthorized: Snapshot does not belong to user');
                }
@@ -121,7 +121,7 @@ export class ContentGenerationService {
 
                     // Validate prompt size (under 8000 tokens, roughly 6000 words)
                     if (!this.validatePromptSize(prompt)) {
-                         console.warn('Voice-aware prompt too large, falling back to generic generation');
+                         this.logger.log(LogLevel.WARN, 'Voice-aware prompt too large, falling back to generic generation');
                          throw new Error('Prompt too large');
                     }
 
@@ -129,7 +129,9 @@ export class ContentGenerationService {
                     generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
                     usedStyleProfile = true;
                } catch (error) {
-                    console.error('Voice-aware generation failed, falling back to generic:', error);
+                    this.logger.log(LogLevel.ERROR, 'Voice-aware generation failed, falling back to generic', {
+                         error: error instanceof Error ? error.message : String(error)
+                    });
                     // Fall back to generic generation
                     const prompt = this.constructContentPrompt(analysis, platform);
                     generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
@@ -192,7 +194,7 @@ export class ContentGenerationService {
                const snapshot = await CodeSnapshot.findById(snapshotId);
 
                if (!snapshot) {
-                    console.warn(`Snapshot ${snapshotId} not found, continuing without snapshot`);
+                    this.logger.log(LogLevel.WARN, 'Snapshot not found, continuing without snapshot', { snapshotId });
                } else if (snapshot.userId.toString() !== userId) {
                     throw new Error('Unauthorized: Snapshot does not belong to user');
                }
@@ -255,7 +257,7 @@ export class ContentGenerationService {
                const snapshot = await CodeSnapshot.findById(snapshotId);
 
                if (!snapshot) {
-                    console.warn(`Snapshot ${snapshotId} not found, continuing without snapshot`);
+                    this.logger.log(LogLevel.WARN, 'Snapshot not found, continuing without snapshot', { snapshotId });
                } else if (snapshot.userId.toString() !== userId) {
                     throw new Error('Unauthorized: Snapshot does not belong to user');
                }
@@ -318,7 +320,7 @@ export class ContentGenerationService {
                const snapshot = await CodeSnapshot.findById(snapshotId);
 
                if (!snapshot) {
-                    console.warn(`Snapshot ${snapshotId} not found, continuing without snapshot`);
+                    this.logger.log(LogLevel.WARN, 'Snapshot not found, continuing without snapshot', { snapshotId });
                } else if (snapshot.userId.toString() !== userId) {
                     throw new Error('Unauthorized: Snapshot does not belong to user');
                }
@@ -1163,3 +1165,4 @@ Respond with ONLY the refined content. Do not include any explanations, metadata
           return contents;
      }
 }
+
