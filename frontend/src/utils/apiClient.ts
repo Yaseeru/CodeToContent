@@ -67,8 +67,8 @@ export const apiRequest = async <T = any>(
 
                // Handle authentication errors immediately
                if (error.response?.status === 401) {
-                    localStorage.removeItem('jwt');
-                    window.location.href = '/';
+                    // Don't redirect immediately - let the component handle it
+                    console.error('[apiClient] Authentication error (401):', error.response.data);
                     throw error;
                }
 

@@ -142,7 +142,27 @@ export const PROFILE_VERSION_CONFIG = {
 
 // Snapshot Configuration
 export const SNAPSHOT_CONFIG = {
-     // Selection Configuration
+     // Phase 1: Heuristic filtering
+     MAX_CANDIDATES_FOR_HEURISTIC: 100,
+
+     // Phase 2: Code fetching
+     MAX_CANDIDATES_TO_FETCH: 12,
+     FETCH_CONCURRENCY: 5,
+     FETCH_TIMEOUT_MS: 10000, // 10 seconds
+
+     // Phase 3: AI scoring and final selection
+     MAX_CANDIDATES_TO_SCORE: 12,
+     MAX_FINAL_SNIPPETS: 5,
+
+     // File size limits
+     MAX_FILE_SIZE_BYTES: 1048576, // 1MB
+     MIN_FILE_SIZE_BYTES: 100,
+
+     // Retry configuration for code fetching
+     MAX_FETCH_RETRIES: 2,
+     FETCH_RETRY_DELAY_MS: 1000,
+
+     // Selection Configuration (Legacy - kept for backward compatibility)
      MAX_SNIPPETS_PER_REPOSITORY: 5,
      SELECTION_TIMEOUT_MS: 5000, // 5 seconds
      PARALLEL_BATCH_SIZE: 5,
@@ -179,7 +199,7 @@ export const SNAPSHOT_CONFIG = {
      GENERATION_RATE_LIMIT_PER_HOUR: 5,
      GENERATION_RATE_WINDOW_MS: 60 * 60 * 1000, // 1 hour
 
-     // Retry Configuration
+     // Retry Configuration (General)
      MAX_RETRY_ATTEMPTS: 3,
      RETRY_DELAYS_MS: [1000, 2000, 4000], // Exponential backoff: 1s, 2s, 4s
 
@@ -199,7 +219,6 @@ export const SNAPSHOT_CONFIG = {
 
      // Repository Analysis Limits
      MAX_FILES_TO_ANALYZE: 1000,
-     MAX_CANDIDATES_TO_SCORE: 20,
 
      // Puppeteer Configuration
      PAGE_POOL_SIZE: 3,

@@ -68,12 +68,16 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                setLoading(true);
                setError(null);
 
+               console.log('[SnapshotSelector] Fetching snapshots for repository:', repositoryId);
+
                const response = await apiClient.get<{ snapshots: CodeSnapshot[] }>(
                     `/api/snapshots/${repositoryId}`
                );
 
+               console.log('[SnapshotSelector] Fetched snapshots:', response.data.snapshots.length);
                setSnapshots(response.data.snapshots);
           } catch (err) {
+               console.error('[SnapshotSelector] Fetch snapshots error:', err);
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
           } finally {
@@ -86,13 +90,18 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                setGenerating(true);
                setGenerateError(null);
 
-               await apiClient.post(`/api/snapshots/generate`, {
+               console.log('[SnapshotSelector] Starting snapshot generation for repository:', repositoryId);
+
+               const response = await apiClient.post(`/api/snapshots/generate`, {
                     repositoryId,
                });
+
+               console.log('[SnapshotSelector] Snapshot generation response:', response.data);
 
                // Refresh snapshot list after generation
                await fetchSnapshots();
           } catch (err) {
+               console.error('[SnapshotSelector] Snapshot generation error:', err);
                const errorMessage = getErrorMessage(err);
                setGenerateError(errorMessage);
           } finally {

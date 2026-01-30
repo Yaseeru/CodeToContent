@@ -2,7 +2,11 @@ import { GitHubContent, GitHubCommit } from './GitHubService';
 import { IAnalysis } from '../models/Analysis';
 
 /**
- * Represents a candidate code snippet for visualization
+ * Represents a candidate code snippet for visualization.
+ * 
+ * Note: The `code` property is initially empty during candidate identification
+ * for performance reasons. Code content is fetched later only for top-ranked
+ * candidates to minimize GitHub API calls.
  */
 export interface SnippetCandidate {
      filePath: string;
@@ -11,8 +15,9 @@ export interface SnippetCandidate {
      functionName?: string;
      language: string;
      linesOfCode: number;
-     code: string;
+     code: string; // Empty during identification, populated later for top candidates
      lastModified?: Date;
+     fileSize?: number; // File size in bytes
 }
 
 /**
@@ -32,7 +37,16 @@ export interface RepositoryContext {
  */
 export class SnippetSelectionService {
      /**
-      * Identify candidate code snippets from repository files
+      * Identifies candidate code snippets from repository files.
+      * 
+      * NOTE: The `code` property is intentionally left empty at this stage
+      * for performance optimization. Code content will be fetched later
+      * only for the top-ranked candidates to minimize GitHub API calls.
+      * 
+      * @param fileStructure - Repository file tree from GitHub
+      * @param commits - Recent commit history
+      * @param analysis - Existing repository analysis
+      * @returns Array of snippet candidates with metadata (code empty)
       */
      async identifyCandidates(
           fileStructure: GitHubContent[],
@@ -54,16 +68,14 @@ export class SnippetSelectionService {
                // Determine if file was recently modified
                const lastModified = this.getLastModifiedDate(file.path, commits);
 
-               // Create a candidate for the file
-               // In a real implementation, we would fetch the file content and parse functions
-               // For now, we'll create a placeholder candidate
+               // Create a candidate with metadata only (code fetched later)
                const candidate: SnippetCandidate = {
                     filePath: file.path,
                     startLine: 1,
                     endLine: this.estimateLines(file.size),
                     language: this.detectLanguage(file.path),
                     linesOfCode: this.estimateLines(file.size),
-                    code: '', // Would be fetched from GitHub
+                    code: '', // Intentionally empty - fetched later for top candidates
                     lastModified,
                };
 

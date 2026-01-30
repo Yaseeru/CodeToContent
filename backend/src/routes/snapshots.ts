@@ -25,7 +25,13 @@ router.use(authenticateToken);
  */
 router.post('/generate', snapshotGenerationRateLimiter, validateSnapshotGeneration, async (req: Request, res: Response) => {
      try {
+          logger.log(LogLevel.INFO, 'Snapshot generation request received', {
+               userId: req.user?.userId,
+               repositoryId: req.body.repositoryId
+          });
+
           if (!req.user) {
+               logger.log(LogLevel.WARN, 'Unauthorized snapshot generation attempt');
                return res.status(401).json({
                     error: 'Unauthorized',
                     message: 'User not authenticated',
@@ -50,22 +56,41 @@ router.post('/generate', snapshotGenerationRateLimiter, validateSnapshotGenerati
           });
 
           if (!repository) {
+               logger.log(LogLevel.WARN, 'Repository not found or unauthorized', {
+                    repositoryId,
+                    userId: req.user.userId
+               });
                return res.status(404).json({
                     error: 'Repository not found',
                     message: 'Repository not found or does not belong to user',
                });
           }
 
+          logger.log(LogLevel.INFO, 'Repository found', {
+               repositoryId,
+               repositoryName: repository.name
+          });
+
           // Get VisualSnapshotService from ServiceManager
           const serviceManager = ServiceManager.getInstance();
           const visualSnapshotService = serviceManager.getVisualSnapshotService();
 
           // Call VisualSnapshotService.generateSnapshotsForRepository
+          logger.log(LogLevel.INFO, 'Calling VisualSnapshotService.generateSnapshotsForRepository', {
+               repositoryId,
+               userId: req.user.userId
+          });
+
           const snapshots = await visualSnapshotService.generateSnapshotsForRepository(
                repositoryId,
                req.user.userId,
                user.accessToken
           );
+
+          logger.log(LogLevel.INFO, 'Snapshots generated successfully', {
+               count: snapshots.length,
+               repositoryId
+          });
 
           // Return generated snapshots with metadata
           res.json({
