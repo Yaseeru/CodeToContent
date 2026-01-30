@@ -175,40 +175,51 @@ export class VisualSnapshotService {
                     fileStructure,
                };
 
-               // Step 5: Identify and filter candidate snippets
+               // PHASE 1: Heuristic filtering (existing)
+               this.logger.log(LogLevel.INFO, 'Phase 1: Identifying candidates with heuristic scoring');
+
+               const allCandidates = await this.snippetSelectionService.identifyCandidates(
+                    fileStructure,
+                    commits,
+                    analysis
+               );
+
+               // Filter boilerplate (existing)
+               const filteredCandidates = this.snippetSelectionService.filterBoilerplate(allCandidates);
+
+               if (filteredCandidates.length === 0) {
+                    this.logger.log(LogLevel.WARN, 'No suitable code snippets found');
+                    return [];
+               }
+
+               // Slice to top candidates for code fetching
+               const topCandidates = filteredCandidates.slice(0, SNAPSHOT_CONFIG.MAX_CANDIDATES_TO_FETCH);
+
+               this.logger.log(LogLevel.INFO, `Selected ${topCandidates.length} candidates for code fetching`);
+
+               // PHASE 2: Fetch code content (NEW)
+               this.logger.log(LogLevel.INFO, 'Phase 2: Fetching code content for top candidates');
+               const candidatesWithCode = await this.fetchCodeForCandidates(
+                    topCandidates,
+                    githubService,
+                    owner,
+                    repo,
+                    latestCommitSha
+               );
+
+               // PHASE 3: AI scoring (existing, but now with real code)
+               this.logger.log(LogLevel.INFO, 'Phase 3: Scoring candidates with Gemini AI');
+
                // Check cache first for snippet selection results
                const selectionCacheKey = `${repositoryId}:${latestCommitSha}`;
                let scoredSnippets = await this.getCachedSnippetSelection(selectionCacheKey);
 
                if (!scoredSnippets) {
-                    this.logger.log(LogLevel.INFO, 'Snippet selection cache miss, performing selection');
+                    this.logger.log(LogLevel.INFO, 'Snippet selection cache miss, performing AI scoring');
 
-                    const candidates = await this.snippetSelectionService.identifyCandidates(
-                         fileStructure,
-                         commits,
-                         analysis
-                    );
-
-                    const filteredCandidates = this.snippetSelectionService.filterBoilerplate(candidates);
-
-                    if (filteredCandidates.length === 0) {
-                         this.logger.log(LogLevel.WARN, 'No suitable code snippets found');
-                         return [];
-                    }
-
-                    // Limit candidates to analyze
-                    const candidatesToScore = filteredCandidates.slice(
-                         0,
-                         SNAPSHOT_CONFIG.MAX_CANDIDATES_TO_SCORE
-                    );
-
-                    this.logger.log(LogLevel.INFO, 'Scoring candidate snippets', {
-                         count: candidatesToScore.length
-                    });
-
-                    // Step 6: Score snippets with AI (parallel processing in batches)
+                    // Score snippets with AI (parallel processing in batches)
                     scoredSnippets = await this.scoreSnippetsInParallel(
-                         candidatesToScore,
+                         candidatesWithCode,
                          context
                     );
 
@@ -218,8 +229,8 @@ export class VisualSnapshotService {
                     this.logger.log(LogLevel.INFO, 'Using cached snippet selection results');
                }
 
-               // Step 7: Select top N snippets
-               const maxSnippets = options?.maxSnippets || SNAPSHOT_CONFIG.MAX_SNIPPETS_PER_REPOSITORY;
+               // Select top N snippets for final rendering
+               const maxSnippets = options?.maxSnippets || SNAPSHOT_CONFIG.MAX_FINAL_SNIPPETS;
                const topSnippets = scoredSnippets
                     .sort((a, b) => b.selectionScore - a.selectionScore)
                     .slice(0, maxSnippets);
@@ -228,7 +239,7 @@ export class VisualSnapshotService {
                     count: topSnippets.length
                });
 
-               // Step 8: Fetch code content and render snippets to images
+               // Step 8: Render snippets to images (code already fetched)
                const snapshots: ICodeSnapshot[] = [];
 
                for (const snippet of topSnippets) {
@@ -237,11 +248,9 @@ export class VisualSnapshotService {
                               filePath: snippet.filePath
                          });
 
-                         // Fetch the actual code content from GitHub
-                         const codeContent = await githubService.fetchFileContent(owner, repo, snippet.filePath);
-
+                         // Code is already fetched in Phase 2
                          // Extract the specific lines for this snippet
-                         const lines = codeContent.split('\n');
+                         const lines = snippet.code.split('\n');
                          const snippetCode = lines.slice(snippet.startLine - 1, snippet.endLine).join('\n');
 
                          if (!snippetCode || snippetCode.trim().length === 0) {
@@ -320,6 +329,128 @@ export class VisualSnapshotService {
                });
                throw this.handleError(error);
           }
+     }
+
+     /**
+      * Fetches actual code content for top-ranked candidates.
+      * Uses Promise.allSettled to handle partial failures gracefully.
+      * 
+      * @param candidates - Top candidates from heuristic scoring
+      * @param githubService - GitHub service instance with access token
+      * @param owner - Repository owner
+      * @param repo - Repository name
+      * @param ref - Git reference (branch/commit)
+      * @returns Candidates with populated code property
+      */
+     private async fetchCodeForCandidates(
+          candidates: SnippetCandidate[],
+          githubService: GitHubService,
+          owner: string,
+          repo: string,
+          ref: string
+     ): Promise<SnippetCandidate[]> {
+          this.logger.log(LogLevel.INFO, `Fetching code content for ${candidates.length} candidates`, {
+               owner,
+               repo,
+               ref
+          });
+
+          // Fetch code in parallel with Promise.allSettled for graceful failure handling
+          const fetchPromises = candidates.map(async (candidate) => {
+               try {
+                    // Validate file size before fetching
+                    if (candidate.fileSize && candidate.fileSize > SNAPSHOT_CONFIG.MAX_FILE_SIZE_BYTES) {
+                         this.logger.log(LogLevel.WARN, `Skipping large file: ${candidate.filePath}`, {
+                              size: candidate.fileSize
+                         });
+                         return null;
+                    }
+
+                    // Fetch file content from GitHub with retry logic
+                    const code = await this.retryFetch(async () => {
+                         return await githubService.fetchFileContent(owner, repo, candidate.filePath);
+                    });
+
+                    // Validate code content
+                    if (!code || code.trim().length === 0) {
+                         this.logger.log(LogLevel.WARN, `Empty code content: ${candidate.filePath}`);
+                         return null;
+                    }
+
+                    this.logger.log(LogLevel.DEBUG, `Successfully fetched code for: ${candidate.filePath}`, {
+                         codeLength: code.length
+                    });
+
+                    return {
+                         ...candidate,
+                         code
+                    };
+               } catch (error: any) {
+                    this.logger.log(LogLevel.ERROR, `Failed to fetch code for: ${candidate.filePath}`, {
+                         error: error.message
+                    });
+                    return null;
+               }
+          });
+
+          // Wait for all fetches to complete
+          const results = await Promise.allSettled(fetchPromises);
+
+          // Filter successful fetches
+          const candidatesWithCode = results
+               .filter(
+                    (result): result is PromiseFulfilledResult<SnippetCandidate> =>
+                         result.status === 'fulfilled' && result.value !== null
+               )
+               .map(result => result.value);
+
+          const successCount = candidatesWithCode.length;
+          const failureCount = candidates.length - successCount;
+
+          this.logger.log(LogLevel.INFO, `Code fetching complete`, {
+               total: candidates.length,
+               successful: successCount,
+               failed: failureCount
+          });
+
+          // Require minimum successful fetches
+          if (successCount < 3) {
+               throw new Error(
+                    `Insufficient code snippets fetched (${successCount}/3 minimum required)`
+               );
+          }
+
+          return candidatesWithCode;
+     }
+
+     /**
+      * Retries a fetch operation with exponential backoff.
+      * 
+      * @param operation - Async operation to retry
+      * @param maxRetries - Maximum number of retry attempts
+      * @returns Result of successful operation
+      */
+     private async retryFetch<T>(
+          operation: () => Promise<T>,
+          maxRetries: number = SNAPSHOT_CONFIG.MAX_FETCH_RETRIES
+     ): Promise<T> {
+          let lastError: Error;
+
+          for (let attempt = 0; attempt <= maxRetries; attempt++) {
+               try {
+                    return await operation();
+               } catch (error: any) {
+                    lastError = error;
+
+                    if (attempt < maxRetries) {
+                         const delayMs = SNAPSHOT_CONFIG.FETCH_RETRY_DELAY_MS * Math.pow(2, attempt);
+                         this.logger.log(LogLevel.DEBUG, `Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms`);
+                         await this.delay(delayMs);
+                    }
+               }
+          }
+
+          throw lastError!;
      }
 
      /**

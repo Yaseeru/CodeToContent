@@ -77,6 +77,7 @@ export class SnippetSelectionService {
                     linesOfCode: this.estimateLines(file.size),
                     code: '', // Intentionally empty - fetched later for top candidates
                     lastModified,
+                    fileSize: file.size, // Include file size for validation during code fetching
                };
 
                candidates.push(candidate);
