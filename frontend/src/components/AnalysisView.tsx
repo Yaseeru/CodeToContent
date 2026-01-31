@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient, getErrorMessage } from '../utils/apiClient';
 import ErrorNotification from './ErrorNotification';
+import SkeletonLoader from './SkeletonLoader';
 
 interface Analysis {
      id: string;
@@ -92,12 +93,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
 
      if (loading) {
           return (
-               <div className="flex flex-col items-center justify-center py-16">
-                    <div className="w-10 h-10 border-3 border-dark-border border-t-dark-accent rounded-full spinner mb-4"></div>
-                    <p className="text-base text-dark-text-secondary">Analyzing repository...</p>
-                    <p className="text-sm text-dark-text-tertiary mt-2">
-                         This may take a few moments
-                    </p>
+               <div className="space-y-6">
+                    <SkeletonLoader type="analysis" />
                </div>
           );
      }

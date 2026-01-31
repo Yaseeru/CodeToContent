@@ -174,8 +174,9 @@ const Dashboard: React.FC = () => {
           <div className="min-h-screen bg-dark-bg text-dark-text">
                {/* Onboarding Modal */}
                {showOnboardingModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                         <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <div className="modal-backdrop-mobile md:modal-desktop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-enter">
+                         <div className="modal-mobile md:modal-content-desktop w-full max-w-3xl bg-dark-surface modal-content-mobile">
+                              <div className="modal-swipe-indicator md:hidden"></div>
                               <StyleProfileSetup
                                    onComplete={handleOnboardingComplete}
                                    onSkip={handleOnboardingSkip}
@@ -186,8 +187,9 @@ const Dashboard: React.FC = () => {
 
                {/* Profile Analytics Modal */}
                {showProfileAnalytics && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                         <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <div className="modal-backdrop-mobile md:modal-desktop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-enter">
+                         <div className="modal-mobile md:modal-content-desktop w-full max-w-4xl bg-dark-surface modal-content-mobile">
+                              <div className="modal-swipe-indicator md:hidden"></div>
                               <ProfileAnalytics onClose={() => setShowProfileAnalytics(false)} />
                          </div>
                     </div>
@@ -195,8 +197,9 @@ const Dashboard: React.FC = () => {
 
                {/* Profile Editor Modal */}
                {showProfileEditor && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                         <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <div className="modal-backdrop-mobile md:modal-desktop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-enter">
+                         <div className="modal-mobile md:modal-content-desktop w-full max-w-4xl bg-dark-surface modal-content-mobile">
+                              <div className="modal-swipe-indicator md:hidden"></div>
                               <StyleProfileEditor
                                    onClose={() => setShowProfileEditor(false)}
                                    onSave={() => {
@@ -210,8 +213,9 @@ const Dashboard: React.FC = () => {
 
                {/* Delete Confirmation Modal */}
                {showDeleteConfirmation && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                         <div className="bg-dark-surface border border-dark-border rounded-lg p-6 max-w-md w-full">
+                    <div className="modal-backdrop-mobile md:modal-desktop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-enter">
+                         <div className="modal-mobile md:modal-content-desktop bg-dark-surface border border-dark-border rounded-lg p-6 max-w-md w-full">
+                              <div className="modal-swipe-indicator md:hidden"></div>
                               <h3 className="text-xl font-semibold text-dark-text mb-4">Delete Voice Profile?</h3>
                               <p className="text-dark-text-secondary mb-6">
                                    This will permanently delete your voice profile and all learning data.
@@ -220,14 +224,14 @@ const Dashboard: React.FC = () => {
                               <div className="flex flex-col sm:flex-row gap-3 justify-end">
                                    <button
                                         onClick={() => setShowDeleteConfirmation(false)}
-                                        className="px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                        className="btn-enhanced focus-enhanced-secondary px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
                                         aria-label="Cancel profile deletion"
                                    >
                                         Cancel
                                    </button>
                                    <button
                                         onClick={handleDeleteProfile}
-                                        className="px-4 py-3 min-h-[44px] bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                                        className="btn-enhanced focus-enhanced-primary px-4 py-3 min-h-[44px] bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
                                         aria-label="Confirm profile deletion"
                                    >
                                         Delete Profile

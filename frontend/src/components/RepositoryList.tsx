@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { apiClient, getErrorMessage } from '../utils/apiClient';
+import { apiClient } from '../utils/apiClient';
 import ErrorNotification from './ErrorNotification';
+import SkeletonLoader from './SkeletonLoader';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 interface Repository {
      id: string;
@@ -22,8 +24,7 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
 }) => {
      const [repositories, setRepositories] = useState<Repository[]>([]);
      const [loading, setLoading] = useState<boolean>(true);
-     const [error, setError] = useState<string | null>(null);
-     const [showErrorNotification, setShowErrorNotification] = useState<boolean>(false);
+     const { error, handleError, clearError } = useErrorHandler();
 
      useEffect(() => {
           fetchRepositories();
@@ -32,28 +33,24 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
      const fetchRepositories = async () => {
           try {
                setLoading(true);
-               setError(null);
-               setShowErrorNotification(false);
+               clearError();
 
                const response = await apiClient.get('/api/repositories');
                setRepositories(response.data.repositories);
           } catch (err) {
-               console.error('Error fetching repositories:', err);
-               const errorMessage = getErrorMessage(err);
-               setError(errorMessage);
-               setShowErrorNotification(true);
+               handleError(err, 'Failed to fetch repositories');
           } finally {
                setLoading(false);
           }
      };
 
      const handleRetryFetch = () => {
-          setShowErrorNotification(false);
+          clearError();
           fetchRepositories();
      };
 
      const handleCloseErrorNotification = () => {
-          setShowErrorNotification(false);
+          clearError();
      };
 
      const handleRepositoryClick = async (repositoryId: string) => {
@@ -75,8 +72,10 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
 
      if (loading) {
           return (
-               <div className="flex items-center justify-center py-12 sm:py-16">
-                    <div className="text-sm sm:text-base text-dark-text-secondary">Loading repositories...</div>
+               <div className="space-y-3">
+                    {Array.from({ length: 5 }, (_, i) => (
+                         <SkeletonLoader key={i} type="repository" />
+                    ))}
                </div>
           );
      }
@@ -84,18 +83,18 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
      if (error) {
           return (
                <>
-                    {showErrorNotification && (
+                    {error.showNotification && (
                          <ErrorNotification
-                              message={error}
+                              message={error.message}
                               onClose={handleCloseErrorNotification}
                               onRetry={handleRetryFetch}
                          />
                     )}
                     <div className="bg-dark-error-bg border border-dark-error rounded-lg p-4">
-                         <p className="text-dark-error text-sm mb-3">{error}</p>
+                         <p className="text-dark-error text-sm mb-3">{error.message}</p>
                          <button
                               onClick={handleRetryFetch}
-                              className="px-4 py-3 min-h-[44px] bg-dark-error text-white text-sm font-medium rounded-lg hover:bg-dark-error-hover focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                              className="btn-enhanced focus-enhanced-primary px-4 py-3 min-h-[44px] bg-dark-error text-white text-sm font-medium rounded-lg hover:bg-dark-error-hover"
                               aria-label="Retry loading repositories"
                          >
                               Retry
@@ -121,7 +120,7 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
                     <div
                          key={repo.id}
                          onClick={() => handleRepositoryClick(repo.id)}
-                         className="bg-dark-surface border border-dark-border rounded-lg p-3 sm:p-4 cursor-pointer hover:bg-dark-surface-hover focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg transition-colors"
+                         className="interactive-card bg-dark-surface border border-dark-border rounded-lg p-3 sm:p-4 cursor-pointer focus-enhanced-secondary"
                          role="button"
                          tabIndex={0}
                          aria-label={`Select repository ${repo.name}`}

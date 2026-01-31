@@ -133,9 +133,218 @@ textarea:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* Ensure no gradients */
-* {
-  background-image: none !important;
+/* Enhanced button interactions */
+.btn-enhanced {
+  @apply relative overflow-hidden transform transition-all duration-200 ease-in-out;
+}
+
+.btn-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-enhanced:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-enhanced:hover {
+  @apply transform scale-105 shadow-lg;
+}
+
+.btn-enhanced:active {
+  @apply transform scale-95;
+}
+
+/* Focus states for better accessibility */
+.focus-enhanced:focus {
+  @apply outline-none ring-2 ring-offset-2 ring-offset-dark-bg;
+}
+
+.focus-enhanced-primary:focus {
+  @apply ring-dark-accent;
+}
+
+.focus-enhanced-secondary:focus {
+  @apply ring-dark-border;
+}
+
+/* Loading button states */
+.btn-loading {
+  @apply relative pointer-events-none;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Success button animation */
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700;
+}
+
+.btn-success::after {
+  content: '✓';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  animation: checkmarkFadeIn 0.3s ease-in-out forwards;
+}
+
+@keyframes checkmarkFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+/* Enhanced hover states for interactive elements */
+.interactive-card {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.interactive-card:hover {
+  @apply transform -translate-y-1 shadow-xl border-dark-accent;
+}
+
+.interactive-card:active {
+  @apply transform translate-y-0 shadow-lg;
+}
+
+/* Mobile-optimized modals */
+@media (max-width: 768px) {
+  .modal-mobile {
+    @apply fixed inset-x-4 bottom-4 top-auto max-h-[80vh] w-auto rounded-t-2xl;
+  }
+  
+  .modal-backdrop-mobile {
+    @apply bg-black bg-opacity-50;
+  }
+  
+  .modal-content-mobile {
+    @apply max-h-[70vh] overflow-y-auto;
+    /* Better scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent rubber banding */
+    overscroll-behavior: contain;
+  }
+  
+  /* Larger touch targets for mobile */
+  .modal-mobile button,
+  .modal-mobile input,
+  .modal-mobile textarea,
+  .modal-mobile select {
+    @apply min-h-[48px] min-w-[48px];
+  }
+  
+  /* Better spacing for mobile */
+  .modal-mobile .modal-header {
+    @apply px-6 pt-6 pb-4 border-b border-dark-border;
+  }
+  
+  .modal-mobile .modal-body {
+    @apply px-6 py-4;
+  }
+  
+  .modal-mobile .modal-footer {
+    @apply px-6 py-4 border-t border-dark-border;
+  }
+  
+  /* Swipe indicator for mobile modals */
+  .modal-swipe-indicator {
+    @apply w-12 h-1 bg-dark-border rounded-full mx-auto mt-3 mb-2;
+  }
+}
+
+/* Desktop modal styles */
+@media (min-width: 769px) {
+  .modal-desktop {
+    @apply fixed inset-0 flex items-center justify-center p-4;
+  }
+  
+  .modal-content-desktop {
+    @apply w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg;
+  }
+}
+
+/* Modal animations */
+.modal-enter {
+  animation: modalSlideIn 0.3s ease-out forwards;
+}
+
+.modal-exit {
+  animation: modalSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+/* Desktop modal animation */
+@media (min-width: 769px) {
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes modalSlideOut {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+  }
 }
 
 /* Scrollbar styling for dark theme */
