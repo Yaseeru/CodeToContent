@@ -4,6 +4,7 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 import { connectDatabase, checkDatabaseHealth } from './config/database';
 import { closeQueue } from './config/queue';
@@ -24,6 +25,7 @@ const PORT = process.env.PORT || 3001;
 const logger = LoggerService.getInstance();
 
 // Middleware
+app.use(helmet());
 app.use(cors({
      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
      credentials: true
