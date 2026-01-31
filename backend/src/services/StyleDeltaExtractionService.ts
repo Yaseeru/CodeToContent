@@ -412,7 +412,6 @@ export class StyleDeltaExtractionService {
                return this.parseToneShiftResponse(response);
           } catch (error: any) {
                // If Gemini fails, return a default value
-               console.error('Failed to classify tone shift:', error.message);
                return 'no change';
           }
      }

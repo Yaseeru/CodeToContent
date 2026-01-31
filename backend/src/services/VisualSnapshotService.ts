@@ -154,7 +154,7 @@ export class VisualSnapshotService {
 
                const [commits, fileStructure] = await Promise.all([
                     githubService.fetchCommitHistory(owner, repo, 50),
-                    githubService.fetchFileStructure(owner, repo),
+                    githubService.fetchAllFiles(owner, repo, 3), // Recursively fetch all files up to depth 3
                ]);
 
                if (commits.length === 0) {
@@ -184,11 +184,24 @@ export class VisualSnapshotService {
                     analysis
                );
 
+               this.logger.log(LogLevel.DEBUG, 'Identified candidates before filtering', {
+                    count: allCandidates.length,
+                    files: allCandidates.slice(0, 5).map(c => ({ path: c.filePath, loc: c.linesOfCode }))
+               });
+
                // Filter boilerplate (existing)
                const filteredCandidates = this.snippetSelectionService.filterBoilerplate(allCandidates);
 
+               this.logger.log(LogLevel.DEBUG, 'Candidates after filtering', {
+                    count: filteredCandidates.length,
+                    files: filteredCandidates.slice(0, 5).map(c => ({ path: c.filePath, loc: c.linesOfCode }))
+               });
+
                if (filteredCandidates.length === 0) {
-                    this.logger.log(LogLevel.WARN, 'No suitable code snippets found');
+                    this.logger.log(LogLevel.WARN, 'No suitable code snippets found', {
+                         totalFiles: fileStructure.length,
+                         candidatesBeforeFilter: allCandidates.length
+                    });
                     return [];
                }
 
@@ -368,7 +381,7 @@ export class VisualSnapshotService {
 
                     // Fetch file content from GitHub with retry logic
                     const code = await this.retryFetch(async () => {
-                         return await githubService.fetchFileContent(owner, repo, candidate.filePath);
+                         return await githubService.fetchFileContent(owner, repo, candidate.filePath, ref);
                     });
 
                     // Validate code content

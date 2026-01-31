@@ -99,7 +99,6 @@ export class ProfileEvolutionService {
 
                return finalScore;
           } catch (error: any) {
-               console.error(`[ProfileEvolution] Failed to calculate evolution score:`, error.message);
                throw error;
           }
      }
@@ -187,7 +186,6 @@ export class ProfileEvolutionService {
 
                return milestones;
           } catch (error: any) {
-               console.error(`[ProfileEvolution] Failed to get evolution timeline:`, error.message);
                throw error;
           }
      }
@@ -242,7 +240,6 @@ export class ProfileEvolutionService {
 
                return analytics;
           } catch (error: any) {
-               console.error(`[ProfileEvolution] Failed to get analytics:`, error.message);
                throw error;
           }
      }
@@ -301,7 +298,6 @@ export class ProfileEvolutionService {
 
                return examples;
           } catch (error: any) {
-               console.error(`[ProfileEvolution] Failed to get before/after examples:`, error.message);
                throw error;
           }
      }
@@ -431,7 +427,6 @@ export class ProfileEvolutionService {
 
                return Math.round(consistencyScore);
           } catch (error: any) {
-               console.error(`[ProfileEvolution] Failed to calculate edit consistency:`, error.message);
                return 0;
           }
      }

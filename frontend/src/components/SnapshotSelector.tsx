@@ -68,16 +68,12 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                setLoading(true);
                setError(null);
 
-               console.log('[SnapshotSelector] Fetching snapshots for repository:', repositoryId);
-
                const response = await apiClient.get<{ snapshots: CodeSnapshot[] }>(
                     `/api/snapshots/${repositoryId}`
                );
 
-               console.log('[SnapshotSelector] Fetched snapshots:', response.data.snapshots.length);
                setSnapshots(response.data.snapshots);
           } catch (err) {
-               console.error('[SnapshotSelector] Fetch snapshots error:', err);
                const errorMessage = getErrorMessage(err);
                setError(errorMessage);
           } finally {
@@ -90,18 +86,13 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                setGenerating(true);
                setGenerateError(null);
 
-               console.log('[SnapshotSelector] Starting snapshot generation for repository:', repositoryId);
-
                const response = await apiClient.post(`/api/snapshots/generate`, {
                     repositoryId,
                });
 
-               console.log('[SnapshotSelector] Snapshot generation response:', response.data);
-
                // Refresh snapshot list after generation
                await fetchSnapshots();
           } catch (err) {
-               console.error('[SnapshotSelector] Snapshot generation error:', err);
                const errorMessage = getErrorMessage(err);
                setGenerateError(errorMessage);
           } finally {
@@ -117,6 +108,39 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
           if (selectedSnapshot) {
                onSnapshotSelected(selectedSnapshot);
                onClose();
+          }
+     };
+
+     const handleDownloadSnapshot = async () => {
+          if (!selectedSnapshot) return;
+
+          try {
+               // Fetch the image as a blob
+               const response = await fetch(selectedSnapshot.imageUrl);
+               const blob = await response.blob();
+
+               // Create a download link
+               const url = window.URL.createObjectURL(blob);
+               const link = document.createElement('a');
+               link.href = url;
+
+               // Generate filename from file path and timestamp
+               const fileName = selectedSnapshot.snippetMetadata.filePath
+                    .split('/')
+                    .pop()
+                    ?.replace(/\.[^/.]+$/, '') || 'code-snapshot';
+               const timestamp = new Date().toISOString().split('T')[0];
+               link.download = `${fileName}-${timestamp}.png`;
+
+               // Trigger download
+               document.body.appendChild(link);
+               link.click();
+
+               // Cleanup
+               document.body.removeChild(link);
+               window.URL.revokeObjectURL(url);
+          } catch (error) {
+               alert('Failed to download snapshot. Please try again.');
           }
      };
 
@@ -409,43 +433,72 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                               {!loading && !error && snapshots.length > 0 && (
                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {snapshots.map((snapshot) => (
-                                             <button
+                                             <div
                                                   key={snapshot._id}
-                                                  onClick={() => handleThumbnailClick(snapshot)}
-                                                  className="group relative bg-dark-bg border border-dark-border rounded-lg overflow-hidden hover:border-dark-accent transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface"
+                                                  className="group relative bg-dark-bg border border-dark-border rounded-lg overflow-hidden hover:border-dark-accent transition-all duration-200"
                                              >
-                                                  {/* Thumbnail Image */}
-                                                  <div className="aspect-video bg-dark-bg flex items-center justify-center overflow-hidden">
-                                                       <img
-                                                            src={snapshot.imageUrl}
-                                                            alt={`Code snapshot from ${snapshot.snippetMetadata.filePath}`}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                                            loading="lazy"
-                                                       />
-                                                  </div>
+                                                  <button
+                                                       onClick={() => handleThumbnailClick(snapshot)}
+                                                       className="w-full focus:outline-none focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface"
+                                                  >
+                                                       {/* Thumbnail Image */}
+                                                       <div className="aspect-video bg-dark-bg flex items-center justify-center overflow-hidden">
+                                                            <img
+                                                                 src={snapshot.imageUrl}
+                                                                 alt={`Code snapshot from ${snapshot.snippetMetadata.filePath}`}
+                                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                                                 loading="lazy"
+                                                            />
+                                                       </div>
 
-                                                  {/* Metadata */}
-                                                  <div className="p-3 space-y-2">
-                                                       <div className="flex items-start justify-between gap-2">
-                                                            <p className="text-xs font-mono text-dark-text truncate flex-1">
-                                                                 {formatFilePath(snapshot.snippetMetadata.filePath)}
+                                                       {/* Metadata */}
+                                                       <div className="p-3 space-y-2">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                 <p className="text-xs font-mono text-dark-text truncate flex-1">
+                                                                      {formatFilePath(snapshot.snippetMetadata.filePath)}
+                                                                 </p>
+                                                                 <span className="flex-shrink-0 px-2 py-0.5 bg-dark-accent bg-opacity-20 text-dark-accent text-xs font-medium rounded">
+                                                                      {snapshot.selectionScore}
+                                                                 </span>
+                                                            </div>
+                                                            <p className="text-xs text-dark-text-secondary line-clamp-2 text-left">
+                                                                 {snapshot.selectionReason}
                                                             </p>
-                                                            <span className="flex-shrink-0 px-2 py-0.5 bg-dark-accent bg-opacity-20 text-dark-accent text-xs font-medium rounded">
-                                                                 {snapshot.selectionScore}
-                                                            </span>
+                                                            <div className="flex items-center gap-2 text-xs text-dark-text-secondary">
+                                                                 <span className="px-2 py-0.5 bg-dark-border rounded">
+                                                                      {snapshot.snippetMetadata.language}
+                                                                 </span>
+                                                                 <span>
+                                                                      {snapshot.snippetMetadata.linesOfCode} lines
+                                                                 </span>
+                                                            </div>
                                                        </div>
-                                                       <p className="text-xs text-dark-text-secondary line-clamp-2 text-left">
-                                                            {snapshot.selectionReason}
-                                                       </p>
-                                                       <div className="flex items-center gap-2 text-xs text-dark-text-secondary">
-                                                            <span className="px-2 py-0.5 bg-dark-border rounded">
-                                                                 {snapshot.snippetMetadata.language}
-                                                            </span>
-                                                            <span>
-                                                                 {snapshot.snippetMetadata.linesOfCode} lines
-                                                            </span>
-                                                       </div>
-                                                  </div>
+                                                  </button>
+
+                                                  {/* Download button overlay */}
+                                                  <button
+                                                       onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedSnapshot(snapshot);
+                                                            setTimeout(() => handleDownloadSnapshot(), 100);
+                                                       }}
+                                                       className="absolute top-2 left-2 p-2 bg-dark-surface bg-opacity-90 hover:bg-opacity-100 text-dark-text hover:text-dark-accent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-dark-accent"
+                                                       title="Download snapshot"
+                                                  >
+                                                       <svg
+                                                            className="w-4 h-4"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                       >
+                                                            <path
+                                                                 strokeLinecap="round"
+                                                                 strokeLinejoin="round"
+                                                                 strokeWidth={2}
+                                                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                                            />
+                                                       </svg>
+                                                  </button>
 
                                                   {/* Stale indicator */}
                                                   {snapshot.isStale && (
@@ -453,7 +506,7 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                                                             Outdated
                                                        </div>
                                                   )}
-                                             </button>
+                                             </div>
                                         ))}
                                    </div>
                               )}
@@ -596,19 +649,40 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                          </div>
 
                          {/* Footer Actions */}
-                         <div className="flex items-center justify-end gap-3 p-6 border-t border-dark-border">
+                         <div className="flex items-center justify-between p-6 border-t border-dark-border">
                               <button
-                                   onClick={handleClosePreview}
-                                   className="px-4 py-2 text-sm font-medium text-dark-text hover:text-dark-text-secondary transition-colors"
+                                   onClick={handleDownloadSnapshot}
+                                   className="px-4 py-2 text-sm font-medium text-dark-accent hover:text-dark-accent-hover transition-colors flex items-center gap-2"
                               >
-                                   Cancel
+                                   <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                   >
+                                        <path
+                                             strokeLinecap="round"
+                                             strokeLinejoin="round"
+                                             strokeWidth={2}
+                                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                        />
+                                   </svg>
+                                   Download
                               </button>
-                              <button
-                                   onClick={handleSelectSnapshot}
-                                   className="px-6 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover transition-colors"
-                              >
-                                   Select
-                              </button>
+                              <div className="flex items-center gap-3">
+                                   <button
+                                        onClick={handleClosePreview}
+                                        className="px-4 py-2 text-sm font-medium text-dark-text hover:text-dark-text-secondary transition-colors"
+                                   >
+                                        Cancel
+                                   </button>
+                                   <button
+                                        onClick={handleSelectSnapshot}
+                                        className="px-6 py-2 bg-dark-accent text-white text-sm font-medium rounded-lg hover:bg-dark-accent-hover transition-colors"
+                                   >
+                                        Select
+                                   </button>
+                              </div>
                          </div>
                     </div>
                )}

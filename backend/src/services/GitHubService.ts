@@ -224,6 +224,42 @@ export class GitHubService {
      }
 
      /**
+      * Recursively fetch all files in repository (up to a depth limit)
+      * This is needed because fetchFileStructure only returns one directory level
+      */
+     async fetchAllFiles(owner: string, repo: string, maxDepth: number = 3): Promise<GitHubContent[]> {
+          const allFiles: GitHubContent[] = [];
+          const visited = new Set<string>();
+
+          const fetchRecursive = async (path: string = '', depth: number = 0): Promise<void> => {
+               if (depth > maxDepth || visited.has(path)) {
+                    return;
+               }
+
+               visited.add(path);
+
+               try {
+                    const contents = await this.fetchFileStructure(owner, repo, path);
+
+                    for (const item of contents) {
+                         if (item.type === 'file') {
+                              allFiles.push(item);
+                         } else if (item.type === 'dir' && depth < maxDepth) {
+                              // Recursively fetch directory contents
+                              await fetchRecursive(item.path, depth + 1);
+                         }
+                    }
+               } catch (error) {
+                    // Skip directories that can't be accessed
+                    console.warn(`Failed to fetch directory ${path}:`, error);
+               }
+          };
+
+          await fetchRecursive('', 0);
+          return allFiles;
+     }
+
+     /**
       * Get current rate limit status
       */
      async getRateLimitStatus(): Promise<RateLimitInfo> {
@@ -264,10 +300,17 @@ export class GitHubService {
      /**
       * Fetch file content from repository
       * Returns the decoded content as a string
+      * 
+      * @param owner - Repository owner
+      * @param repo - Repository name
+      * @param filePath - File path in repository
+      * @param ref - Git reference (branch/commit SHA), optional
       */
-     async fetchFileContent(owner: string, repo: string, filePath: string): Promise<string> {
+     async fetchFileContent(owner: string, repo: string, filePath: string, ref?: string): Promise<string> {
           try {
-               const response = await this.client.get<GitHubReadme>(`/repos/${owner}/${repo}/contents/${filePath}`);
+               // Build URL with optional ref parameter
+               const url = `/repos/${owner}/${repo}/contents/${filePath}${ref ? `?ref=${ref}` : ''}`;
+               const response = await this.client.get<GitHubReadme>(url);
 
                // Decode base64 content
                const content = Buffer.from(response.data.content, 'base64').toString('utf-8');

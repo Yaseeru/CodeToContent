@@ -121,16 +121,6 @@ export class LoggerService {
           this.profileUpdateLogs.push(log);
           this.metrics.profileUpdateCount++;
 
-          console.log(
-               `[${log.timestamp.toISOString()}] [PROFILE_UPDATE] ${log.updateType} | ` +
-               `User: ${log.userId} | Changed Fields: ${log.changedFields.join(', ')} | ` +
-               `Learning Iterations: ${log.learningIterations}`
-          );
-
-          // Log detailed before/after for debugging
-          console.log(`[PROFILE_UPDATE] Before:`, JSON.stringify(log.before, null, 2));
-          console.log(`[PROFILE_UPDATE] After:`, JSON.stringify(log.after, null, 2));
-
           // Keep only last 500 logs in memory
           if (this.profileUpdateLogs.length > 500) {
                this.profileUpdateLogs.shift();
