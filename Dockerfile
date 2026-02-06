@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for CodeToContent
+# Multi-stage Dockerfile for CodeToContent - Node 20
 # Stage 1: Build Frontend
 FROM node:20-alpine AS frontend-builder
 
