@@ -132,6 +132,10 @@ export class ContentGenerationService {
 
                     // Call Gemini API with voice-aware prompt
                     generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
+
+                    // Validate and truncate if necessary
+                    generatedText = this.validateAndTruncateContent(generatedText);
+
                     usedStyleProfile = true;
                } catch (error) {
                     logger.log(LogLevel.ERROR, 'Voice-aware generation failed, falling back to generic', {
@@ -140,11 +144,17 @@ export class ContentGenerationService {
                     // Fall back to generic generation
                     const prompt = this.constructContentPrompt(analysis, platform, effectiveUseEmojis);
                     generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
+
+                    // Validate and truncate if necessary
+                    generatedText = this.validateAndTruncateContent(generatedText);
                }
           } else {
                // Use generic generation without voice profile
                const prompt = this.constructContentPrompt(analysis, platform, effectiveUseEmojis);
                generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
+
+               // Validate and truncate if necessary
+               generatedText = this.validateAndTruncateContent(generatedText);
           }
 
           // Store generated content with metadata
@@ -507,7 +517,7 @@ ${threadStructure}
 
 Requirements:
 - Generate exactly ${tweetCount} tweets
-- Each tweet must be 200-280 characters (strict limit)
+- Each tweet must be 200-280 characters (STRICT MAXIMUM: 280 characters per tweet for free X accounts)
 - Maintain consistent ${user.styleProfile && effectiveVoiceStrength > 0 ? 'voice and ' : ''}tone across all tweets
 - Use technical details from the repository context
 - Make each tweet self-contained but connected to the narrative
@@ -521,6 +531,8 @@ Output Format:
 Return ONLY the tweets, one per line, in order. No explanations, metadata, or additional text.
 Each line should contain exactly one complete tweet.
 Do not include numbering, bullet points, or any other formatting.
+
+CRITICAL: Each tweet MUST be 280 characters or less. This is a hard limit. Count carefully for each tweet.
 
 Example format:
 [Tweet 1 text here]
@@ -595,6 +607,10 @@ Value Proposition: ${analysis.valueProposition}
                if (text.length > 280) {
                     // Truncate with ellipsis, ensuring we stay within limit
                     text = text.substring(0, 277) + '...';
+                    logger.log(LogLevel.WARN, 'Tweet in thread exceeds 280 characters, truncated', {
+                         originalLength: text.length,
+                         position: tweets.length + 1
+                    });
                }
 
                // Add tweet to array
@@ -752,7 +768,8 @@ Value Proposition: ${analysis.valueProposition}
 Platform: X (Twitter)
 Guidelines:
 - Concise and engaging tone suitable for X audience
-- Length: 200-280 characters (single tweet) or up to 500 characters for thread-style
+- Length: STRICT MAXIMUM of 280 characters (this is a hard limit for free X accounts)
+- Aim for 200-280 characters for optimal engagement
 - Structure: Hook in first sentence, key points, call-to-action or insight
 - Can be more casual and direct
 - Focus on what's interesting, new, or surprising
@@ -767,6 +784,8 @@ ${platformGuidelines}
 
 Generate ONE coherent narrative post for this repository. Do not create multiple posts or per-commit content.
 The content should be clear, engaging, and appropriate for the target platform.
+
+CRITICAL: The post MUST be 280 characters or less. This is a hard limit. Count carefully.
 
 Respond with ONLY the post content. Do not include any explanations, metadata, or formatting markers.`;
 
@@ -807,7 +826,8 @@ Value Proposition: ${analysis.valueProposition}
 Platform: X (Twitter)
 Guidelines:
 - Concise and engaging tone suitable for X audience
-- Length: 200-280 characters (single tweet) or up to 500 characters for thread-style
+- Length: STRICT MAXIMUM of 280 characters (this is a hard limit for free X accounts)
+- Aim for 200-280 characters for optimal engagement
 - Structure: Hook in first sentence, key points, call-to-action or insight
 - Can be more casual and direct
 - Focus on what's interesting, new, or surprising
@@ -847,6 +867,8 @@ ${phrasesGuidance}
 Generate ONE coherent narrative post for this repository that matches the user's authentic writing style.
 Do not create multiple posts or per-commit content.
 The content should sound like it was written by the user themselves, not by an AI.
+
+CRITICAL: The post MUST be 280 characters or less. This is a hard limit. Count carefully.
 
 Respond with ONLY the post content. Do not include any explanations, metadata, or formatting markers.`;
 
@@ -989,6 +1011,52 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
           // So 8000 tokens ≈ 6000 words
           const wordCount = prompt.split(/\s+/).length;
           return wordCount < CONTENT_CONFIG.PROMPT_MAX_WORDS;
+     }
+
+     /**
+      * Validate and truncate content to ensure it fits within X character limits
+      * @param content - The generated content text
+      * @returns Validated and potentially truncated content
+      */
+     private validateAndTruncateContent(content: string): string {
+          const trimmedContent = content.trim();
+
+          // Check if content exceeds the 280 character limit
+          if (trimmedContent.length <= CONTENT_CONFIG.TWITTER_SINGLE_POST_MAX_CHARS) {
+               return trimmedContent;
+          }
+
+          // Content is too long, truncate intelligently
+          logger.log(LogLevel.WARN, 'Generated content exceeds 280 character limit, truncating', {
+               originalLength: trimmedContent.length,
+               maxLength: CONTENT_CONFIG.TWITTER_SINGLE_POST_MAX_CHARS
+          });
+
+          // Try to truncate at sentence boundary
+          const truncateAt = CONTENT_CONFIG.TWITTER_SINGLE_POST_MAX_CHARS - 3; // Leave room for "..."
+          let truncated = trimmedContent.substring(0, truncateAt);
+
+          // Find last sentence ending (., !, ?)
+          const lastSentenceEnd = Math.max(
+               truncated.lastIndexOf('.'),
+               truncated.lastIndexOf('!'),
+               truncated.lastIndexOf('?')
+          );
+
+          if (lastSentenceEnd > truncateAt * 0.7) {
+               // If we can keep at least 70% of content with a clean sentence break, do it
+               truncated = truncated.substring(0, lastSentenceEnd + 1);
+          } else {
+               // Otherwise, truncate at word boundary
+               const lastSpace = truncated.lastIndexOf(' ');
+               if (lastSpace > truncateAt * 0.8) {
+                    truncated = truncated.substring(0, lastSpace) + '...';
+               } else {
+                    truncated = truncated + '...';
+               }
+          }
+
+          return truncated;
      }
 
      /**

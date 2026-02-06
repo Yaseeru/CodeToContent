@@ -71,8 +71,12 @@ export const CACHE_CONFIG = {
 
 // Content Generation Configuration
 export const CONTENT_CONFIG = {
-     TWITTER_MIN_CHARS: 200,
-     TWITTER_MAX_CHARS: 500,
+     // X (Twitter) Character Limits (as of 2024)
+     TWITTER_SINGLE_POST_MIN_CHARS: 50, // Minimum for meaningful content
+     TWITTER_SINGLE_POST_MAX_CHARS: 280, // Free account limit
+     TWITTER_PREMIUM_MAX_CHARS: 25000, // X Premium subscriber limit
+     TWITTER_THREAD_MAX_TWEETS: 25, // Maximum tweets per thread for free accounts
+
      PROMPT_MAX_WORDS: 6000, // ~8000 tokens
      GEMINI_TEMPERATURE: 0.8,
      EVOLUTION_SCORE_MAX: 100,

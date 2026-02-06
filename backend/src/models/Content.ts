@@ -96,7 +96,7 @@ const ContentSchema: Schema = new Schema(
           },
           tweets: {
                type: [{
-                    text: { type: String, required: true },
+                    text: { type: String, required: true, maxlength: 280 },
                     position: { type: Number, required: true, min: 1 },
                     characterCount: { type: Number, required: true, min: 0, max: 280 },
                }],

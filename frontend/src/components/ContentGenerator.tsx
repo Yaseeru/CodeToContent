@@ -53,19 +53,19 @@ const formatOptions: FormatOption[] = [
           value: 'single',
           label: 'Single Post',
           description: 'One high-impact tweet with hook, update, and CTA',
-          tweetCount: '1 tweet',
+          tweetCount: '1 tweet (280 chars max)',
      },
      {
           value: 'mini_thread',
           label: 'Mini Thread',
           description: 'Hook + Context → Problem + Solution → Result + CTA',
-          tweetCount: '3 tweets',
+          tweetCount: '3 tweets (280 chars each)',
      },
      {
           value: 'full_thread',
           label: 'Full Thread',
           description: 'Comprehensive story with technical depth',
-          tweetCount: '5-7 tweets',
+          tweetCount: '5-7 tweets (280 chars each)',
      },
 ];
 
