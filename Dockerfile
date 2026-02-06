@@ -1,6 +1,6 @@
-# Multi-stage Dockerfile for CodeToContent on Google Cloud Run
+# Multi-stage Dockerfile for CodeToContent
 # Stage 1: Build Frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -17,7 +17,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build Backend
-FROM node:18-alpine AS backend-builder
+FROM node:20-alpine AS backend-builder
 
 WORKDIR /app/backend
 
@@ -35,7 +35,7 @@ COPY backend/src ./src
 RUN npm run build
 
 # Stage 3: Production Runtime
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
