@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient, getErrorMessage } from '../utils/apiClient';
-import { GeneratedContent, Tweet } from './ContentGenerator';
+import { GeneratedContent } from './ContentGenerator';
 import ErrorNotification from './ErrorNotification';
 import ThreadTweet from './ThreadTweet';
 

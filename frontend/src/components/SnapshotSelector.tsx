@@ -86,7 +86,7 @@ const SnapshotSelector: React.FC<SnapshotSelectorProps> = ({
                setGenerating(true);
                setGenerateError(null);
 
-               const response = await apiClient.post(`/api/snapshots/generate`, {
+               await apiClient.post(`/api/snapshots/generate`, {
                     repositoryId,
                });
 
