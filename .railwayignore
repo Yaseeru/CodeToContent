@@ -1,0 +1,40 @@
+# Railway ignore file - exclude from deployment
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+backend/test-*.js
+test-*.js
+
+# Documentation
+*.md
+!README.md
+
+# Development files
+.vscode/
+.kiro/
+.git/
+
+# Coverage reports
+coverage/
+
+# Local environment files (Railway uses environment variables)
+.env
+.env.local
+.env.development
+.env.production
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local
+
+# Uploads (user-generated content - should use cloud storage in production)
+backend/uploads/
+
+# Build artifacts (will be rebuilt)
+dist/
+build/
+node_modules/
