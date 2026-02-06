@@ -235,22 +235,40 @@ textarea:focus:not(:focus-visible) {
   @apply transform translate-y-0 shadow-lg;
 }
 
-/* Mobile-optimized modals */
+/* Touch gesture support for mobile modals */
 @media (max-width: 768px) {
   .modal-mobile {
-    @apply fixed inset-x-4 bottom-4 top-auto max-h-[80vh] w-auto rounded-t-2xl;
+    @apply fixed inset-x-4 bottom-4 top-auto max-h-[85vh] w-auto rounded-t-2xl;
+    /* Enable touch manipulation for swipe gestures */
+    touch-action: pan-y;
+    /* Add momentum scrolling */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent rubber banding */
+    overscroll-behavior: contain;
   }
   
   .modal-backdrop-mobile {
     @apply bg-black bg-opacity-50;
+    /* Prevent backdrop scrolling */
+    position: fixed;
+    overflow: hidden;
   }
   
   .modal-content-mobile {
-    @apply max-h-[70vh] overflow-y-auto;
+    @apply max-h-[75vh] overflow-y-auto;
     /* Better scrolling on iOS */
     -webkit-overflow-scrolling: touch;
     /* Prevent rubber banding */
     overscroll-behavior: contain;
+    /* Custom scrollbar for mobile */
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3a #1a1a1a;
+    /* Hardware acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
   }
   
   /* Larger touch targets for mobile */
@@ -259,24 +277,69 @@ textarea:focus:not(:focus-visible) {
   .modal-mobile textarea,
   .modal-mobile select {
     @apply min-h-[48px] min-w-[48px];
+    /* Remove tap delay on mobile */
+    -webkit-tap-highlight-color: transparent;
+    /* Better touch feedback */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  .modal-mobile button:active {
+    transform: scale(0.98) translateZ(0);
+    transition: transform 0.1s ease-out;
+  }
+  
+  /* Prevent zoom on input focus */
+  .modal-mobile input,
+  .modal-mobile textarea,
+  .modal-mobile select {
+    font-size: 16px; /* Prevents zoom on iOS */
   }
   
   /* Better spacing for mobile */
   .modal-mobile .modal-header {
     @apply px-6 pt-6 pb-4 border-b border-dark-border;
+    /* Sticky header on mobile */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #242424;
   }
   
   .modal-mobile .modal-body {
     @apply px-6 py-4;
+    /* Ensure body can scroll */
+    overflow-y: auto;
   }
   
   .modal-mobile .modal-footer {
     @apply px-6 py-4 border-t border-dark-border;
+    /* Sticky footer on mobile */
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background-color: #242424;
   }
   
   /* Swipe indicator for mobile modals */
   .modal-swipe-indicator {
     @apply w-12 h-1 bg-dark-border rounded-full mx-auto mt-3 mb-2;
+  }
+  
+  /* Swipe gesture handling */
+  .modal-swipe-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    cursor: grab;
+    z-index: 20;
+  }
+  
+  .modal-swipe-area:active {
+    cursor: grabbing;
   }
 }
 
@@ -284,10 +347,19 @@ textarea:focus:not(:focus-visible) {
 @media (min-width: 769px) {
   .modal-desktop {
     @apply fixed inset-0 flex items-center justify-center p-4;
+    /* Prevent backdrop scrolling */
+    position: fixed;
+    overflow: hidden;
   }
   
   .modal-content-desktop {
     @apply w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg;
+    /* Better scrolling behavior */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3a #1a1a1a;
   }
 }
 
@@ -347,6 +419,92 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* Enhanced backdrop animations */
+.modal-backdrop-enter {
+  animation: backdropFadeIn 0.2s ease-out forwards;
+}
+
+.modal-backdrop-exit {
+  animation: backdropFadeOut 0.2s ease-in forwards;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdropFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Content stagger animations */
+.modal-content-enter {
+  animation: contentSlideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes contentSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth transitions for modal content */
+.modal-content-mobile,
+.modal-content-desktop {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Enhanced hover states */
+.modal-content-mobile:hover,
+.modal-content-desktop:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* Focus management */
+.modal-content-mobile:focus-within,
+.modal-content-desktop:focus-within {
+  outline: 2px solid #5b8def;
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .modal-enter,
+  .modal-exit,
+  .modal-backdrop-enter,
+  .modal-backdrop-exit,
+  .modal-content-enter {
+    animation: none;
+    transition: none;
+  }
+  
+  .modal-content-mobile,
+  .modal-content-desktop {
+    transition: none;
+  }
+  
+  .modal-content-mobile:hover,
+  .modal-content-desktop:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
 /* Scrollbar styling for dark theme */
 ::-webkit-scrollbar {
   width: 8px;
@@ -364,4 +522,63 @@ textarea:focus:not(:focus-visible) {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #4a4a4a;
+}
+
+/* Enhanced scrollbar for modal content */
+.modal-content-mobile::-webkit-scrollbar,
+.modal-content-desktop::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content-mobile::-webkit-scrollbar-track,
+.modal-content-desktop::-webkit-scrollbar-track {
+  background: #242424;
+}
+
+.modal-content-mobile::-webkit-scrollbar-thumb,
+.modal-content-desktop::-webkit-scrollbar-thumb {
+  background: #5b8def;
+  border-radius: 3px;
+}
+
+.modal-content-mobile::-webkit-scrollbar-thumb:hover,
+.modal-content-desktop::-webkit-scrollbar-thumb:hover {
+  background: #4a7dd9;
+}
+
+/* Firefox scrollbar styling */
+.modal-content-mobile,
+.modal-content-desktop {
+  scrollbar-width: thin;
+  scrollbar-color: #5b8def #242424;
+}
+
+/* Responsive modal improvements */
+@media (max-width: 480px) {
+  .modal-mobile {
+    @apply inset-x-2 bottom-2 max-h-[90vh];
+  }
+  
+  .modal-content-mobile {
+    @apply max-h-[80vh];
+  }
+}
+
+@media (min-width: 1024px) {
+  .modal-content-desktop {
+    @apply max-w-5xl max-h-[85vh];
+  }
+}
+
+@media (min-width: 1440px) {
+  .modal-content-desktop {
+    @apply max-w-6xl max-h-[80vh];
+  }
+}
+
+/* Tablet-specific modal styles */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .modal-content-desktop {
+    @apply max-w-3xl max-h-[88vh];
+  }
 }

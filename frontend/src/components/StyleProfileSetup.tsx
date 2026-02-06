@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { apiClient, getErrorMessage } from '../utils/apiClient';
 import ErrorNotification from './ErrorNotification';
 import { useToast } from '../contexts/ToastContext';
-import VoiceErrorBoundary from './VoiceErrorBoundary';
 import LoadingSpinner from './LoadingSpinner';
 
 interface StyleProfileSetupProps {
@@ -193,61 +192,65 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
      // Choose path view
      if (currentPath === 'choose') {
           return (
-               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto relative">
-                    <button
-                         onClick={onSkip}
-                         className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2"
-                         aria-label="Close voice profile setup"
-                    >
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                         </svg>
-                    </button>
-                    <div className="text-center mb-8">
-                         <h2 className="text-2xl font-semibold text-dark-text mb-2">
-                              Set Up Your Voice Profile
-                         </h2>
-                         <p className="text-sm text-dark-text-secondary leading-relaxed">
-                              Choose how you'd like to personalize your content generation
-                         </p>
+               <div className="modal-content-mobile bg-dark-surface border border-dark-border rounded-lg max-w-2xl md:max-w-3xl mx-auto relative max-h-[90vh] flex flex-col">
+                    <div className="modal-header flex-shrink-0 sticky top-0 z-20 p-6 md:p-8 pb-4 bg-dark-surface border-b border-dark-border">
+                         <button
+                              onClick={onSkip}
+                              className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2 z-30"
+                              aria-label="Close voice profile setup"
+                         >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                         </button>
+                         <div className="text-center pr-12">
+                              <h2 className="text-xl md:text-2xl font-semibold text-dark-text mb-2">
+                                   Set Up Your Voice Profile
+                              </h2>
+                              <p className="text-sm text-dark-text-secondary leading-relaxed">
+                                   Choose how you'd like to personalize your content generation
+                              </p>
+                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                         <button
-                              onClick={() => setCurrentPath('quickstart')}
-                              className="w-full p-6 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-surface-hover text-left transition-colors"
-                         >
-                              <h3 className="text-lg font-medium text-dark-text mb-2">
-                                   Quick Start
-                              </h3>
-                              <p className="text-sm text-dark-text-secondary leading-relaxed">
-                                   Paste a writing sample or upload a file to analyze your style
-                              </p>
-                         </button>
+                    <div className="modal-body flex-1 overflow-y-auto px-6 md:px-8 pb-6 md:pb-8">
+                         <div className="space-y-4">
+                              <button
+                                   onClick={() => setCurrentPath('quickstart')}
+                                   className="w-full p-4 md:p-6 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-surface-hover text-left transition-colors"
+                              >
+                                   <h3 className="text-base md:text-lg font-medium text-dark-text mb-2">
+                                        Quick Start
+                                   </h3>
+                                   <p className="text-sm text-dark-text-secondary leading-relaxed">
+                                        Paste a writing sample or upload a file to analyze your style
+                                   </p>
+                              </button>
 
-                         <button
-                              onClick={() => setCurrentPath('archetype')}
-                              className="w-full p-6 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-surface-hover text-left transition-colors"
-                         >
-                              <h3 className="text-lg font-medium text-dark-text mb-2">
-                                   Choose an Archetype
-                              </h3>
-                              <p className="text-sm text-dark-text-secondary leading-relaxed">
-                                   Start with a pre-built voice template that matches your style
-                              </p>
-                         </button>
+                              <button
+                                   onClick={() => setCurrentPath('archetype')}
+                                   className="w-full p-4 md:p-6 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-surface-hover text-left transition-colors"
+                              >
+                                   <h3 className="text-base md:text-lg font-medium text-dark-text mb-2">
+                                        Choose an Archetype
+                                   </h3>
+                                   <p className="text-sm text-dark-text-secondary leading-relaxed">
+                                        Start with a pre-built voice template that matches your style
+                                   </p>
+                              </button>
 
-                         <button
-                              onClick={handleSkip}
-                              className="w-full p-6 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-surface-hover text-left transition-colors"
-                         >
-                              <h3 className="text-lg font-medium text-dark-text mb-2">
-                                   Skip for Now
-                              </h3>
-                              <p className="text-sm text-dark-text-secondary leading-relaxed">
-                                   Start generating content immediately. The system will learn from your edits over time.
-                              </p>
-                         </button>
+                              <button
+                                   onClick={handleSkip}
+                                   className="w-full p-4 md:p-6 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-surface-hover text-left transition-colors"
+                              >
+                                   <h3 className="text-base md:text-lg font-medium text-dark-text mb-2">
+                                        Skip for Now
+                                   </h3>
+                                   <p className="text-sm text-dark-text-secondary leading-relaxed">
+                                        Start generating content immediately. The system will learn from your edits over time.
+                                   </p>
+                              </button>
+                         </div>
                     </div>
                </div>
           );
@@ -257,14 +260,14 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
      if (currentPath === 'quickstart') {
           if (evolutionScore !== null) {
                return (
-                    <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto text-center">
+                    <div className="modal-content-mobile bg-dark-surface border border-dark-border rounded-lg p-6 md:p-8 max-w-2xl md:max-w-3xl mx-auto text-center">
                          <div className="mb-6">
                               <div className="w-16 h-16 bg-dark-success rounded-full flex items-center justify-center mx-auto mb-4">
                                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                    </svg>
                               </div>
-                              <h2 className="text-2xl font-semibold text-dark-text mb-2">
+                              <h2 className="text-xl md:text-2xl font-semibold text-dark-text mb-2">
                                    Voice Profile Created!
                               </h2>
                               <p className="text-sm text-dark-text-secondary leading-relaxed mb-4">
@@ -286,16 +289,27 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
           }
 
           return (
-               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto relative">
-                    <button
-                         onClick={onSkip}
-                         className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2"
-                         aria-label="Close voice profile setup"
-                    >
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                         </svg>
-                    </button>
+               <div className="modal-content-mobile bg-dark-surface border border-dark-border rounded-lg p-6 md:p-8 max-w-2xl md:max-w-3xl mx-auto relative">
+                    <div className="modal-header flex-shrink-0 sticky top-0 z-20 bg-dark-surface border-b border-dark-border -mx-6 md:-mx-8 px-6 md:px-8 py-4">
+                         <button
+                              onClick={onSkip}
+                              className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2 z-30"
+                              aria-label="Close voice profile setup"
+                         >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                         </button>
+                         <div className="text-center pr-12">
+                              <h2 className="text-xl md:text-2xl font-semibold text-dark-text mb-2">
+                                   Quick Start
+                              </h2>
+                              <p className="text-sm text-dark-text-secondary leading-relaxed">
+                                   Provide a writing sample to analyze your style
+                              </p>
+                         </div>
+                    </div>
+
                     {showErrorNotification && error && (
                          <div className="mb-6">
                               <ErrorNotification
@@ -318,16 +332,7 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
                          </button>
                     </div>
 
-                    <div className="text-center mb-6">
-                         <h2 className="text-2xl font-semibold text-dark-text mb-2">
-                              Quick Start
-                         </h2>
-                         <p className="text-sm text-dark-text-secondary leading-relaxed">
-                              Provide a writing sample to analyze your style
-                         </p>
-                    </div>
-
-                    <div className="space-y-6">
+                    <div className="modal-body overflow-y-auto space-y-6">
                          <div>
                               <label className="block text-sm font-medium text-dark-text mb-2">
                                    Paste Your Writing Sample
@@ -409,14 +414,14 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
      if (currentPath === 'archetype') {
           if (evolutionScore !== null) {
                return (
-                    <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto text-center">
+                    <div className="modal-content-mobile bg-dark-surface border border-dark-border rounded-lg p-6 md:p-8 max-w-2xl md:max-w-3xl mx-auto text-center">
                          <div className="mb-6">
                               <div className="w-16 h-16 bg-dark-success rounded-full flex items-center justify-center mx-auto mb-4">
                                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                    </svg>
                               </div>
-                              <h2 className="text-2xl font-semibold text-dark-text mb-2">
+                              <h2 className="text-xl md:text-2xl font-semibold text-dark-text mb-2">
                                    Archetype Applied!
                               </h2>
                               <p className="text-sm text-dark-text-secondary leading-relaxed mb-4">
@@ -438,16 +443,27 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
           }
 
           return (
-               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto relative">
-                    <button
-                         onClick={onSkip}
-                         className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2"
-                         aria-label="Close voice profile setup"
-                    >
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                         </svg>
-                    </button>
+               <div className="modal-content-mobile bg-dark-surface border border-dark-border rounded-lg p-6 md:p-8 max-w-2xl md:max-w-3xl mx-auto relative">
+                    <div className="modal-header flex-shrink-0 sticky top-0 z-20 bg-dark-surface border-b border-dark-border -mx-6 md:-mx-8 px-6 md:px-8 py-4">
+                         <button
+                              onClick={onSkip}
+                              className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2 z-30"
+                              aria-label="Close voice profile setup"
+                         >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                         </button>
+                         <div className="text-center pr-12">
+                              <h2 className="text-xl md:text-2xl font-semibold text-dark-text mb-2">
+                                   Choose an Archetype
+                              </h2>
+                              <p className="text-sm text-dark-text-secondary leading-relaxed">
+                                   Select a pre-built voice template to get started quickly
+                              </p>
+                         </div>
+                    </div>
+
                     {showErrorNotification && error && (
                          <div className="mb-6">
                               <ErrorNotification
@@ -470,30 +486,21 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
                          </button>
                     </div>
 
-                    <div className="text-center mb-6">
-                         <h2 className="text-2xl font-semibold text-dark-text mb-2">
-                              Choose an Archetype
-                         </h2>
-                         <p className="text-sm text-dark-text-secondary leading-relaxed">
-                              Select a pre-built voice template to get started quickly
-                         </p>
-                    </div>
-
                     {loading && archetypes.length === 0 ? (
                          <LoadingSpinner size="lg" message="Loading archetypes..." />
                     ) : (
-                         <div className="space-y-4">
+                         <div className="modal-body overflow-y-auto space-y-4">
                               {archetypes.map((archetype) => (
                                    <button
                                         key={archetype.id}
                                         onClick={() => setSelectedArchetype(archetype.id)}
-                                        className={`w-full p-6 border rounded-lg text-left transition-colors ${selectedArchetype === archetype.id
+                                        className={`w-full p-4 md:p-6 border rounded-lg text-left transition-colors ${selectedArchetype === archetype.id
                                              ? 'bg-dark-accent bg-opacity-10 border-dark-accent'
                                              : 'bg-dark-bg border-dark-border hover:bg-dark-surface-hover'
                                              }`}
                                         disabled={loading}
                                    >
-                                        <h3 className="text-lg font-medium text-dark-text mb-2">
+                                        <h3 className="text-base md:text-lg font-medium text-dark-text mb-2">
                                              {archetype.name}
                                         </h3>
                                         <p className="text-sm text-dark-text-secondary leading-relaxed">
@@ -528,28 +535,32 @@ const StyleProfileSetup: React.FC<StyleProfileSetupProps> = ({ onComplete, onSki
      // Skip confirmation view
      if (currentPath === 'skip') {
           return (
-               <div className="bg-dark-surface border border-dark-border rounded-lg p-8 max-w-2xl mx-auto text-center relative">
-                    <button
-                         onClick={onSkip}
-                         className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2"
-                         aria-label="Close voice profile setup"
-                    >
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                         </svg>
-                    </button>
-                    <div className="mb-6">
-                         <div className="w-16 h-16 bg-dark-bg border border-dark-border rounded-full flex items-center justify-center mx-auto mb-4">
-                              <svg className="w-8 h-8 text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+               <div className="modal-content-mobile bg-dark-surface border border-dark-border rounded-lg p-6 md:p-8 max-w-2xl md:max-w-3xl mx-auto text-center relative">
+                    <div className="modal-header flex-shrink-0 sticky top-0 z-20 bg-dark-surface border-b border-dark-border -mx-6 md:-mx-8 px-6 md:px-8 py-4">
+                         <button
+                              onClick={onSkip}
+                              className="absolute top-4 right-4 text-dark-text-secondary hover:text-dark-text transition-colors focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-surface rounded p-2 z-30"
+                              aria-label="Close voice profile setup"
+                         >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
+                         </button>
+                    </div>
+                    <div className="modal-body overflow-y-auto">
+                         <div className="mb-6">
+                              <div className="w-16 h-16 bg-dark-bg border border-dark-border rounded-full flex items-center justify-center mx-auto mb-4">
+                                   <svg className="w-8 h-8 text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                   </svg>
+                              </div>
+                              <h2 className="text-xl md:text-2xl font-semibold text-dark-text mb-2">
+                                   No Problem!
+                              </h2>
+                              <p className="text-sm text-dark-text-secondary leading-relaxed">
+                                   You can start generating content right away. The system will learn your writing style from your edits over time.
+                              </p>
                          </div>
-                         <h2 className="text-2xl font-semibold text-dark-text mb-2">
-                              No Problem!
-                         </h2>
-                         <p className="text-sm text-dark-text-secondary leading-relaxed">
-                              You can start generating content right away. The system will learn your writing style from your edits over time.
-                         </p>
                     </div>
                </div>
           );

@@ -214,14 +214,16 @@ const Dashboard: React.FC = () => {
                {/* Delete Confirmation Modal */}
                {showDeleteConfirmation && (
                     <div className="modal-backdrop-mobile md:modal-desktop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-enter">
-                         <div className="modal-mobile md:modal-content-desktop bg-dark-surface border border-dark-border rounded-lg p-6 max-w-md w-full">
+                         <div className="modal-mobile md:modal-content-desktop bg-dark-surface border border-dark-border rounded-lg p-6 max-w-md w-full modal-content-mobile">
                               <div className="modal-swipe-indicator md:hidden"></div>
-                              <h3 className="text-xl font-semibold text-dark-text mb-4">Delete Voice Profile?</h3>
-                              <p className="text-dark-text-secondary mb-6">
-                                   This will permanently delete your voice profile and all learning data.
-                                   You can always create a new profile later.
-                              </p>
-                              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                              <div className="modal-header">
+                                   <h3 className="text-xl font-semibold text-dark-text mb-4">Delete Voice Profile?</h3>
+                                   <p className="text-dark-text-secondary mb-6">
+                                        This will permanently delete your voice profile and all learning data.
+                                        You can always create a new profile later.
+                                   </p>
+                              </div>
+                              <div className="modal-footer flex flex-col sm:flex-row gap-3 justify-end">
                                    <button
                                         onClick={() => setShowDeleteConfirmation(false)}
                                         className="btn-enhanced focus-enhanced-secondary px-4 py-3 min-h-[44px] bg-dark-surface border border-dark-border text-dark-text text-sm font-medium rounded-lg hover:bg-dark-surface-hover"
