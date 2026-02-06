@@ -24,7 +24,7 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                });
           }
 
-          const { analysisId, platform, voiceStrength, format, snapshotId } = req.body;
+          const { analysisId, platform, voiceStrength, format, snapshotId, useEmojis } = req.body;
 
           // Validate required fields
           if (!analysisId || !platform) {
@@ -80,6 +80,16 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                }
           }
 
+          // Validate useEmojis if provided (boolean)
+          if (useEmojis !== undefined) {
+               if (typeof useEmojis !== 'boolean') {
+                    return res.status(400).json({
+                         error: 'Invalid request',
+                         message: 'useEmojis must be a boolean',
+                    });
+               }
+          }
+
           // Initialize content generation service
           const geminiApiKey = process.env.GEMINI_API_KEY;
           if (!geminiApiKey) {
@@ -99,6 +109,7 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                voiceStrength,
                format, // Pass format parameter (defaults to 'single' in service)
                snapshotId, // Pass snapshotId parameter
+               useEmojis, // Pass useEmojis parameter
           });
 
           // Build response object with contentFormat and tweets (if present)
@@ -113,6 +124,7 @@ router.post('/generate', strictRateLimiter, validateContentGeneration, async (re
                usedStyleProfile: content.usedStyleProfile,
                voiceStrengthUsed: content.voiceStrengthUsed,
                evolutionScoreAtGeneration: content.evolutionScoreAtGeneration,
+               useEmojis: content.useEmojis, // Include emoji preference used
                createdAt: content.createdAt,
           };
 

@@ -53,6 +53,9 @@ export interface IContent extends Document {
      voiceStrengthUsed?: number;
      evolutionScoreAtGeneration?: number;
 
+     // Emoji preference used during generation
+     useEmojis?: boolean;
+
      createdAt: Date;
      updatedAt: Date;
 }
@@ -166,6 +169,10 @@ const ContentSchema: Schema = new Schema(
           snapshotId: {
                type: Schema.Types.ObjectId,
                ref: 'CodeSnapshot',
+               required: false,
+          },
+          useEmojis: {
+               type: Boolean,
                required: false,
           },
      },

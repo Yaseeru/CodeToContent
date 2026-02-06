@@ -88,6 +88,9 @@ export interface IUser extends Document {
      // Voice strength preference (0-100, default 80)
      voiceStrength: number;
 
+     // Emoji preference (default true)
+     emojiPreference: boolean;
+
      // Manual overrides (protected from feedback learning)
      manualOverrides?: ManualOverrides;
 
@@ -257,6 +260,10 @@ const UserSchema: Schema = new Schema(
                min: 0,
                max: 100,
                default: 80,
+          },
+          emojiPreference: {
+               type: Boolean,
+               default: true,
           },
           manualOverrides: {
                type: ManualOverridesSchema,

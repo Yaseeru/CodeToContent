@@ -172,6 +172,7 @@ router.get('/style', async (req: Request, res: Response) => {
                profile: user.styleProfile,
                evolutionScore,
                voiceStrength: user.voiceStrength,
+               emojiPreference: user.emojiPreference !== undefined ? user.emojiPreference : true,
           });
      } catch (error) {
           console.error('Error retrieving style profile:', error);
@@ -254,6 +255,17 @@ router.put('/style', defaultRateLimiter, validateStyleUpdate, async (req: Reques
                user.voiceStrength = value;
           }
 
+          // Validate emoji preference if provided
+          if (updates.emojiPreference !== undefined) {
+               if (typeof updates.emojiPreference !== 'boolean') {
+                    return res.status(400).json({
+                         error: 'Invalid request',
+                         message: 'emojiPreference must be a boolean',
+                    });
+               }
+               user.emojiPreference = updates.emojiPreference;
+          }
+
           // Update profile fields
           if (updates.tone) {
                user.styleProfile.tone = { ...user.styleProfile.tone, ...updates.tone };
@@ -308,6 +320,7 @@ router.put('/style', defaultRateLimiter, validateStyleUpdate, async (req: Reques
                profile: user.styleProfile,
                evolutionScore,
                voiceStrength: user.voiceStrength,
+               emojiPreference: user.emojiPreference !== undefined ? user.emojiPreference : true,
           });
      } catch (error) {
           console.error('Error updating style profile:', error);

@@ -26,6 +26,7 @@ export interface GenerateContentParams {
      voiceStrength?: number; // Optional voice strength override (0-100)
      format?: ContentFormat; // Optional content format (defaults to 'single')
      snapshotId?: string; // Optional snapshot ID to attach
+     useEmojis?: boolean; // Optional emoji toggle (defaults to user preference or true)
 }
 
 export interface RefineContentParams {
@@ -66,7 +67,7 @@ export class ContentGenerationService {
       * Generate a single post (existing logic extracted)
       */
      private async generateSinglePost(params: GenerateContentParams): Promise<IContent> {
-          const { analysisId, userId, platform, voiceStrength, snapshotId } = params;
+          const { analysisId, userId, platform, voiceStrength, snapshotId, useEmojis } = params;
 
           // Retrieve Summary from database
           const analysis = await Analysis.findById(analysisId);
@@ -100,6 +101,9 @@ export class ContentGenerationService {
           // Determine voice strength to use
           const effectiveVoiceStrength = voiceStrength !== undefined ? voiceStrength : user.voiceStrength;
 
+          // Determine emoji preference to use (param > user preference > default true)
+          const effectiveUseEmojis = useEmojis !== undefined ? useEmojis : (user.emojiPreference !== undefined ? user.emojiPreference : true);
+
           // Initialize voice-aware metadata
           let usedStyleProfile = false;
           let evolutionScoreAtGeneration = 0;
@@ -116,7 +120,8 @@ export class ContentGenerationService {
                          analysis,
                          user.styleProfile,
                          platform,
-                         effectiveVoiceStrength
+                         effectiveVoiceStrength,
+                         effectiveUseEmojis
                     );
 
                     // Validate prompt size (under 8000 tokens, roughly 6000 words)
@@ -133,12 +138,12 @@ export class ContentGenerationService {
                          error: error instanceof Error ? error.message : String(error)
                     });
                     // Fall back to generic generation
-                    const prompt = this.constructContentPrompt(analysis, platform);
+                    const prompt = this.constructContentPrompt(analysis, platform, effectiveUseEmojis);
                     generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
                }
           } else {
                // Use generic generation without voice profile
-               const prompt = this.constructContentPrompt(analysis, platform);
+               const prompt = this.constructContentPrompt(analysis, platform, effectiveUseEmojis);
                generatedText = await this.callGeminiAPI(prompt, CONTENT_CONFIG.GEMINI_TEMPERATURE, userId, 'content_generation');
           }
 
@@ -156,6 +161,7 @@ export class ContentGenerationService {
                voiceStrengthUsed: effectiveVoiceStrength,
                evolutionScoreAtGeneration,
                snapshotId: snapshotId ? new mongoose.Types.ObjectId(snapshotId) : undefined,
+               useEmojis: effectiveUseEmojis,
           });
 
           await content.save();
@@ -170,12 +176,12 @@ export class ContentGenerationService {
       * Generate a mini thread (3 tweets)
       * Builds a mini thread prompt, calls Gemini API, parses response, and creates thread content
       * 
-      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId, useEmojis
       * @returns Content document with 3-tweet thread
       * @throws Error if analysis not found, user not found, or generation fails
       */
      private async generateMiniThread(params: GenerateContentParams): Promise<IContent> {
-          const { analysisId, userId, snapshotId } = params;
+          const { analysisId, userId, snapshotId, useEmojis } = params;
 
           // Retrieve analysis from database
           const analysis = await Analysis.findById(analysisId);
@@ -233,12 +239,12 @@ export class ContentGenerationService {
       * Generate a full thread (5-7 tweets)
       * Builds a full thread prompt, calls Gemini API, parses response, and creates thread content
       * 
-      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId, useEmojis
       * @returns Content document with 5-7 tweet thread
       * @throws Error if analysis not found, user not found, or generation fails
       */
      private async generateFullThread(params: GenerateContentParams): Promise<IContent> {
-          const { analysisId, userId, snapshotId } = params;
+          const { analysisId, userId, snapshotId, useEmojis } = params;
 
           // Retrieve analysis from database
           const analysis = await Analysis.findById(analysisId);
@@ -295,7 +301,7 @@ export class ContentGenerationService {
      /**
       * Create and save a Content document for thread content
       * 
-      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId
+      * @param params - Generation parameters including analysisId, userId, platform, voiceStrength, snapshotId, useEmojis
       * @param tweets - Array of Tweet objects with text, position, and characterCount
       * @param format - Content format ('mini_thread' or 'full_thread')
       * @returns Saved Content document with thread data
@@ -306,13 +312,14 @@ export class ContentGenerationService {
       * - Sets contentFormat appropriately
       * - Includes voice metadata (usedStyleProfile, voiceStrengthUsed, evolutionScoreAtGeneration)
       * - Attaches snapshotId if provided
+      * - Stores emoji preference used
       */
      private async createThreadContent(
           params: GenerateContentParams,
           tweets: Tweet[],
           format: ContentFormat
      ): Promise<IContent> {
-          const { analysisId, userId, platform, voiceStrength, snapshotId } = params;
+          const { analysisId, userId, platform, voiceStrength, snapshotId, useEmojis } = params;
 
           // If snapshotId provided, validate it exists and belongs to user
           if (snapshotId) {
@@ -334,6 +341,9 @@ export class ContentGenerationService {
 
           // Determine effective voice strength
           const effectiveVoiceStrength = voiceStrength !== undefined ? voiceStrength : user.voiceStrength;
+
+          // Determine emoji preference to use (param > user preference > default true)
+          const effectiveUseEmojis = useEmojis !== undefined ? useEmojis : (user.emojiPreference !== undefined ? user.emojiPreference : true);
 
           // Calculate voice-aware metadata
           let usedStyleProfile = false;
@@ -362,6 +372,7 @@ export class ContentGenerationService {
                voiceStrengthUsed: effectiveVoiceStrength,
                evolutionScoreAtGeneration,
                snapshotId: snapshotId ? new mongoose.Types.ObjectId(snapshotId) : undefined,
+               useEmojis: effectiveUseEmojis,
           });
 
           // Save to database
@@ -443,7 +454,7 @@ Additional tweets (if needed):
           params: GenerateContentParams,
           format: 'mini_thread' | 'full_thread'
      ): Promise<string> {
-          const { analysisId, userId, voiceStrength } = params;
+          const { analysisId, userId, voiceStrength, useEmojis } = params;
 
           // Retrieve analysis from database
           const analysis = await Analysis.findById(analysisId);
@@ -459,6 +470,9 @@ Additional tweets (if needed):
 
           // Determine effective voice strength
           const effectiveVoiceStrength = voiceStrength !== undefined ? voiceStrength : user.voiceStrength;
+
+          // Determine emoji preference to use (param > user preference > default true)
+          const effectiveUseEmojis = useEmojis !== undefined ? useEmojis : (user.emojiPreference !== undefined ? user.emojiPreference : true);
 
           // Get thread structure based on format
           const threadStructure = format === 'mini_thread'
@@ -477,6 +491,11 @@ Additional tweets (if needed):
                voiceSection = this.buildVoiceSection(user.styleProfile, effectiveVoiceStrength);
           }
 
+          // Build emoji guidance
+          const emojiGuidance = effectiveUseEmojis
+               ? '- Emojis can be used naturally where appropriate to enhance engagement\n'
+               : '- DO NOT use any emojis in any tweet\n';
+
           // Construct the complete thread prompt
           const prompt = `You are an expert content writer helping a developer communicate their work${user.styleProfile && effectiveVoiceStrength > 0 ? ' in their authentic voice' : ''}.
 
@@ -494,6 +513,7 @@ Requirements:
 - Make each tweet self-contained but connected to the narrative
 - Focus on what's interesting, new, or surprising about this project
 - DO NOT add tweet numbers (1/3, 2/3, etc.) - these will be added automatically
+${emojiGuidance}
 
 ${voiceSection}
 
@@ -708,7 +728,8 @@ Value Proposition: ${analysis.valueProposition}
       */
      private constructContentPrompt(
           analysis: IAnalysis,
-          platform: Platform
+          platform: Platform,
+          useEmojis: boolean = true
      ): string {
           // Base content from analysis
           const baseContext = `
@@ -721,6 +742,11 @@ Integrations: ${analysis.integrations.join(', ')}
 Value Proposition: ${analysis.valueProposition}
 `;
 
+          // Build emoji guidance
+          const emojiGuidance = useEmojis
+               ? '- Emojis can be used naturally where appropriate\n'
+               : '- DO NOT use any emojis\n';
+
           // Platform-specific guidelines
           const platformGuidelines = `
 Platform: X (Twitter)
@@ -730,6 +756,7 @@ Guidelines:
 - Structure: Hook in first sentence, key points, call-to-action or insight
 - Can be more casual and direct
 - Focus on what's interesting, new, or surprising
+${emojiGuidance}
 `;
 
           const prompt = `You are an expert content writer helping developers communicate their work to broader audiences.
@@ -753,7 +780,8 @@ Respond with ONLY the post content. Do not include any explanations, metadata, o
           analysis: IAnalysis,
           styleProfile: StyleProfile,
           platform: Platform,
-          voiceStrength: number
+          voiceStrength: number,
+          useEmojis: boolean = true
      ): string {
           // Select 3-6 representative samples
           const samples = this.selectRepresentativeSamples(styleProfile.samplePosts);
@@ -769,6 +797,11 @@ Integrations: ${analysis.integrations.join(', ')}
 Value Proposition: ${analysis.valueProposition}
 `;
 
+          // Build emoji guidance
+          const emojiGuidance = useEmojis
+               ? '- Emojis can be used naturally where appropriate\n'
+               : '- DO NOT use any emojis\n';
+
           // Platform-specific guidelines
           const platformGuidelines = `
 Platform: X (Twitter)
@@ -778,6 +811,7 @@ Guidelines:
 - Structure: Hook in first sentence, key points, call-to-action or insight
 - Can be more casual and direct
 - Focus on what's interesting, new, or surprising
+${emojiGuidance}
 `;
 
           // Build voice profile description

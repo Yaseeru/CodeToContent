@@ -38,6 +38,7 @@ interface ProfileData {
      styleProfile?: StyleProfile;
      voiceStrength: number;
      evolutionScore: number;
+     emojiPreference: boolean;
 }
 
 interface FormatOption {
@@ -83,6 +84,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
      const [selectedFormat, setSelectedFormat] = useState<ContentFormat>('single');
      const [selectedSnapshot, setSelectedSnapshot] = useState<CodeSnapshot | null>(null);
      const [showSnapshotSelector, setShowSnapshotSelector] = useState<boolean>(false);
+     const [useEmojis, setUseEmojis] = useState<boolean>(true);
 
      // Fetch user profile on component mount
      useEffect(() => {
@@ -96,11 +98,17 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                          styleProfile: data.styleProfile,
                          voiceStrength: data.voiceStrength || 80,
                          evolutionScore: data.evolutionScore || 0,
+                         emojiPreference: data.emojiPreference !== undefined ? data.emojiPreference : true,
                     });
 
                     // Set initial voice strength from user's preference
                     if (data.voiceStrength !== undefined) {
                          setVoiceStrength(data.voiceStrength);
+                    }
+
+                    // Set initial emoji preference from user's preference
+                    if (data.emojiPreference !== undefined) {
+                         setUseEmojis(data.emojiPreference);
                     }
                } catch (err) {
                     // Silently fail - user may not have a profile yet
@@ -128,6 +136,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                          format: selectedFormat,
                          voiceStrength: profileData?.styleProfile ? voiceStrength : undefined,
                          snapshotId: selectedSnapshot?._id, // Include snapshotId if snapshot is selected
+                         useEmojis, // Include emoji preference
                     }
                );
 
@@ -153,6 +162,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
 
      const handleVoiceStrengthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           setVoiceStrength(Number(e.target.value));
+     };
+
+     const handleEmojiToggle = () => {
+          setUseEmojis(!useEmojis);
      };
 
      const handleAddVisualClick = () => {
@@ -384,6 +397,42 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
                          </div>
                     </div>
                )}
+
+               {/* Emoji Toggle */}
+               <div className="bg-dark-surface border border-dark-border rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                              <span className="text-2xl" role="img" aria-label="emoji">
+                                   😊
+                              </span>
+                              <div>
+                                   <label
+                                        htmlFor="emoji-toggle"
+                                        className="text-sm font-medium text-dark-text cursor-pointer"
+                                   >
+                                        Include Emojis
+                                   </label>
+                                   <p className="text-xs text-dark-text-secondary mt-0.5">
+                                        Add emojis to make content more engaging
+                                   </p>
+                              </div>
+                         </div>
+                         <button
+                              id="emoji-toggle"
+                              type="button"
+                              role="switch"
+                              aria-checked={useEmojis}
+                              onClick={handleEmojiToggle}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-dark-accent focus:ring-offset-2 focus:ring-offset-dark-bg ${useEmojis ? 'bg-dark-accent' : 'bg-dark-border'
+                                   }`}
+                         >
+                              <span
+                                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${useEmojis ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                              />
+                         </button>
+                    </div>
+               </div>
 
                <div>
                     <h3 className="text-base font-medium text-dark-text mb-2">
